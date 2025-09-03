@@ -9,6 +9,7 @@ import RiskDetail from './pages/RiskDetail';
 import RiskFormPage from './pages/RiskFormPage';
 import { ProfileManagement } from './pages/ProfileManagement';
 import { UserManagement } from './pages/UserManagement';
+import Reports from './pages/Reports';
 import Indicators from './pages/Indicators';
 import IndicatorDetails from './pages/IndicatorDetails';
 import CreateIndicator from './pages/CreateIndicator';
@@ -148,6 +149,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <EditAction />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Rota de Relatórios */}
+          <Route 
+            path="/relatorios" 
+            element={
+              <ProtectedRoute>
+                <Reports />
               </ProtectedRoute>
             } 
           />

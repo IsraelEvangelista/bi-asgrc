@@ -51,6 +51,10 @@ const navigationItems: NavItem[] = [
     path: '/formularios',
   },
   {
+    label: 'Relatórios',
+    path: '/relatorios',
+  },
+  {
     label: 'Cadastro',
     path: '/cadastro',
   },
