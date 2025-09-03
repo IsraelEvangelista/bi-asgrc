@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="https://mfgnuiozkznfqmtnlzgs.supabase.co/storage/v1/object/public/media-files/bf5ff449-a432-4b2c-b33e-ed85c4cbf4a5/1756835962585.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BI ASGRC</title>
+    <script type="module">
+      if (import.meta.hot?.on) {
+        import.meta.hot.on('vite:error', (error) => {
+          if (error.err) {
+            console.error([error.err.message, error.err.frame].filter(Boolean).join('\n'));
+          }
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Debug script para capturar todos os logs
+
+      
+      // Interceptar console.log para garantir que os logs sejam visíveis
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
+      
+      console.log = function(...args) {
+        originalLog.apply(console, ['[LOG]', ...args]);
+      };
+      
+      console.error = function(...args) {
+        originalError.apply(console, ['[ERROR]', ...args]);
+      };
+      
+      console.warn = function(...args) {
+        originalWarn.apply(console, ['[WARN]', ...args]);
+      };
+      
+      // Log inicial para teste
+
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

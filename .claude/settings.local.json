@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p .project/docs/auxiliary_docs)",
+      "Bash(mv REQUISITOS_FUNCIONAIS_GERENCIAMENTO_RISCO.md .project/docs/auxiliary_docs/REQUISITOS_WIZARD_FORMULARIOS_RISCO.md)",
+      "Bash(mv PROJECT_BRIEF.md .project/docs/auxiliary_docs/)",
+      "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
+      "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
+      "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
+      "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
