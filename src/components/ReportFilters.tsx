@@ -61,7 +61,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
           setProcessosOptions(
             processos.map(processo => ({
               value: processo.id,
-              label: `${processo.processo} (${processo.macroprocessos?.macroprocesso || 'N/A'})`
+              label: `${processo.processo} (${(processo.macroprocessos as any)?.macroprocesso || 'N/A'})`
             }))
           );
         }

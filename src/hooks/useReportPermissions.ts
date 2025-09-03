@@ -33,7 +33,7 @@ const RESTRICTED_REPORTS: Record<ReportType, string[]> = {
 };
 
 export const useReportPermissions = (): ReportPermissions => {
-  const { user, profile } = useAuthStore();
+  const { userProfile, profile } = useAuthStore();
 
   const userRole = useMemo(() => {
     if (!profile) return null;
@@ -58,8 +58,8 @@ export const useReportPermissions = (): ReportPermissions => {
   }, [profile]);
 
   const userAreaId = useMemo(() => {
-    return user?.area_gerencia_id || null;
-  }, [user]);
+    return userProfile?.area_gerencia_id || null;
+  }, [userProfile]);
 
   const canViewReport = (reportType: ReportType): boolean => {
     if (!userRole) return false;

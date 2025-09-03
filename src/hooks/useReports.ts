@@ -229,40 +229,6 @@ export const useReports = () => {
     }
   }, [validateReportAccess, filterDataByPermissions, getRestrictedColumns]);
 
-  // Export report to different formats
-  const exportReport = useCallback(async (reportData: ReportData, options: ExportOptions): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Check export permissions
-      if (!canExportReport(reportData.config.type)) {
-        throw new Error('Você não tem permissão para exportar este tipo de relatório.');
-      }
-      const filename = options.filename || `relatorio_${reportData.config.type}_${new Date().toISOString().split('T')[0]}`;
-
-      switch (options.format) {
-        case 'csv':
-          await exportToCSV(reportData, filename);
-          break;
-        case 'excel':
-          await exportToExcel(reportData, filename);
-          break;
-        case 'pdf':
-          await exportToPDF(reportData, filename, options);
-          break;
-        default:
-          throw new Error('Formato de exportação não suportado');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar relatório';
-      console.error('Report export error:', err);
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [canExportReport, exportToCSV, exportToExcel, exportToPDF]);
-
   // Export to CSV
   const exportToCSV = useCallback(async (reportData: ReportData, filename: string) => {
     const { data } = reportData;
@@ -332,6 +298,40 @@ export const useReports = () => {
 
     console.log('PDF export - using text format for now. Implement jsPDF for proper PDF generation.');
   }, []);
+
+  // Export report to different formats
+  const exportReport = useCallback(async (reportData: ReportData, options: ExportOptions): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Check export permissions
+      if (!canExportReport(reportData.config.type)) {
+        throw new Error('Você não tem permissão para exportar este tipo de relatório.');
+      }
+      const filename = options.filename || `relatorio_${reportData.config.type}_${new Date().toISOString().split('T')[0]}`;
+
+      switch (options.format) {
+        case 'csv':
+          await exportToCSV(reportData, filename);
+          break;
+        case 'excel':
+          await exportToExcel(reportData, filename);
+          break;
+        case 'pdf':
+          await exportToPDF(reportData, filename, options);
+          break;
+        default:
+          throw new Error('Formato de exportação não suportado');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar relatório';
+      console.error('Report export error:', err);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [canExportReport, exportToCSV, exportToExcel, exportToPDF]);
 
   // Get available columns for a report type
   const getAvailableColumns = useCallback((reportType: ReportType) => {
