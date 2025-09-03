@@ -10,6 +10,10 @@ import RiskFormPage from './pages/RiskFormPage';
 import { ProfileManagement } from './pages/ProfileManagement';
 import { UserManagement } from './pages/UserManagement';
 import Reports from './pages/Reports';
+import ProcessHierarchy from './pages/ProcessHierarchy';
+import MacroprocessManagement from './pages/MacroprocessManagement';
+import ProcessManagement from './pages/ProcessManagement';
+import SubprocessManagement from './pages/SubprocessManagement';
 import Indicators from './pages/Indicators';
 import IndicatorDetails from './pages/IndicatorDetails';
 import CreateIndicator from './pages/CreateIndicator';
@@ -159,6 +163,42 @@ function App() {
             element={
               <ProtectedRoute>
                 <Reports />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Rotas de Processos */}
+          <Route 
+            path="/processos" 
+            element={
+              <ProtectedRoute>
+                <ProcessHierarchy />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Rotas de Gerenciamento de Processos */}
+          <Route 
+            path="/configuracoes/macroprocessos" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/macroprocessos">
+                <MacroprocessManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/configuracoes/processos" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/processos">
+                <ProcessManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/configuracoes/subprocessos" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/subprocessos">
+                <SubprocessManagement />
               </ProtectedRoute>
             } 
           />

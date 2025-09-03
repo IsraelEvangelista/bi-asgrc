@@ -22,9 +22,10 @@ const navigationItems: NavItem[] = [
   {
     label: 'Processos',
     children: [
-      { label: 'Cadeia de Valor', path: '/processos/cadeia-valor' },
-      { label: 'Arquitetura de Processos', path: '/processos/arquitetura' },
-      { label: 'Riscos de Processos de Trabalho', path: '/processos/riscos' },
+      { label: 'Hierarquia de Processos', path: '/processos' },
+      { label: 'Gerenciar Macroprocessos', path: '/configuracoes/macroprocessos' },
+      { label: 'Gerenciar Processos', path: '/configuracoes/processos' },
+      { label: 'Gerenciar Subprocessos', path: '/configuracoes/subprocessos' },
     ],
   },
   {
