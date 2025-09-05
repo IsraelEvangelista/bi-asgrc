@@ -1,27 +1,38 @@
-import { useEffect, memo } from 'react';
+import { useEffect, memo, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import RiskList from './pages/RiskList';
-import RiskDetail from './pages/RiskDetail';
-import RiskFormPage from './pages/RiskFormPage';
-import { ProfileManagement } from './pages/ProfileManagement';
-import { UserManagement } from './pages/UserManagement';
-import Reports from './pages/Reports';
-import ProcessHierarchy from './pages/ProcessHierarchy';
-import MacroprocessManagement from './pages/MacroprocessManagement';
-import ProcessManagement from './pages/ProcessManagement';
-import SubprocessManagement from './pages/SubprocessManagement';
-import Indicators from './pages/Indicators';
-import IndicatorDetails from './pages/IndicatorDetails';
-import CreateIndicator from './pages/CreateIndicator';
-import EditIndicator from './pages/EditIndicator';
-import Actions from './pages/Actions';
-import ActionDetails from './pages/ActionDetails';
-import CreateAction from './pages/CreateAction';
-import EditAction from './pages/EditAction';
+import NotificationInitializer from './components/NotificationInitializer';
+import RealtimeStatus from './components/RealtimeStatus';
+import LoadingSpinner, { FullScreenLoader } from './components/LoadingSpinner';
+
+// Lazy loading para componentes de páginas
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const RiskList = lazy(() => import('./pages/RiskList'));
+const RiskDetail = lazy(() => import('./pages/RiskDetail'));
+const RiskFormPage = lazy(() => import('./pages/RiskFormPage'));
+const ProfileManagement = lazy(() => import('./pages/ProfileManagement').then(module => ({ default: module.ProfileManagement })));
+const UserManagement = lazy(() => import('./pages/UserManagement').then(module => ({ default: module.UserManagement })));
+const Reports = lazy(() => import('./pages/Reports'));
+const ProcessHierarchy = lazy(() => import('./pages/ProcessHierarchy'));
+const MacroprocessManagement = lazy(() => import('./pages/MacroprocessManagement'));
+const ProcessManagement = lazy(() => import('./pages/ProcessManagement'));
+const SubprocessManagement = lazy(() => import('./pages/SubprocessManagement'));
+const Indicators = lazy(() => import('./pages/Indicators'));
+const IndicatorDetails = lazy(() => import('./pages/IndicatorDetails'));
+const CreateIndicator = lazy(() => import('./pages/CreateIndicator'));
+const EditIndicator = lazy(() => import('./pages/EditIndicator'));
+const Actions = lazy(() => import('./pages/Actions'));
+const ActionDetails = lazy(() => import('./pages/ActionDetails'));
+const CreateAction = lazy(() => import('./pages/CreateAction'));
+const EditAction = lazy(() => import('./pages/EditAction'));
+const ConfigDashboard = lazy(() => import('./pages/ConfigDashboard'));
+const AreasManagement = lazy(() => import('./pages/AreasManagement'));
+const NaturezaManagement = lazy(() => import('./pages/NaturezaManagement'));
+const CategoriaManagement = lazy(() => import('./pages/CategoriaManagement'));
+const SubcategoriaManagement = lazy(() => import('./pages/SubcategoriaManagement'));
+const Conceitos = lazy(() => import('./pages/Conceitos'));
 
 function App() {
   const authStore = useAuthStore();
@@ -37,10 +48,13 @@ function App() {
     };
     
     initializeAuth();
-  }, []); // Removida dependência 'initialize' para evitar loops infinitos
+  }, [initialize]);
 
   return (
     <Router>
+      <NotificationInitializer />
+      <RealtimeStatus />
+      <Suspense fallback={<FullScreenLoader text="Carregando página..." />}>
         <Routes>
           {/* Rota pública - Login */}
           <Route path="/login" element={<Login />} />
@@ -167,12 +181,68 @@ function App() {
             } 
           />
           
+          {/* Rota de Conceitos */}
+          <Route 
+            path="/conceitos" 
+            element={
+              <ProtectedRoute>
+                <Conceitos />
+              </ProtectedRoute>
+            } 
+          />
+          
           {/* Rotas de Processos */}
           <Route 
             path="/processos" 
             element={
               <ProtectedRoute>
                 <ProcessHierarchy />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Rota principal de Configurações */}
+          <Route 
+            path="/configuracoes" 
+            element={
+              <ProtectedRoute>
+                <ConfigDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/configuracoes/areas" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/areas">
+                <AreasManagement />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/configuracoes/natureza" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/natureza">
+                <NaturezaManagement />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/configuracoes/categoria" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/categoria">
+                <CategoriaManagement />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/configuracoes/subcategoria" 
+            element={
+              <ProtectedRoute requiredRoute="/configuracoes/subcategoria">
+                <SubcategoriaManagement />
               </ProtectedRoute>
             } 
           />
@@ -228,7 +298,8 @@ function App() {
           {/* Rota catch-all redireciona para dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </Router>
+      </Suspense>
+    </Router>
   );
 }
 

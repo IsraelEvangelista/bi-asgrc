@@ -34,15 +34,15 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
         // Load responsáveis (areas/gerências)
         const { data: areas } = await supabase
           .from('003_areas_gerencias')
-          .select('id, nome_area, sigla_area')
+          .select('id, gerencia, sigla_area')
           .eq('ativa', true)
-          .order('nome_area');
+          .order('gerencia');
 
         if (areas) {
           setResponsaveisOptions(
             areas.map(area => ({
               value: area.id,
-              label: `${area.nome_area} (${area.sigla_area})`
+              label: `${area.gerencia} (${area.sigla_area})`
             }))
           );
         }
@@ -61,7 +61,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
           setProcessosOptions(
             processos.map(processo => ({
               value: processo.id,
-              label: `${processo.processo} (${(processo.macroprocessos as any)?.macroprocesso || 'N/A'})`
+              label: `${processo.processo} (${(processo.macroprocessos as { macroprocesso?: string })?.macroprocesso || 'N/A'})`
             }))
           );
         }

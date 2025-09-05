@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Clock, XCircle, CheckCircle, Info } from 'lucide-react';
+import { AlertTriangle, XCircle, CheckCircle, Info } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export type AlertType = 'warning' | 'danger' | 'success' | 'info';

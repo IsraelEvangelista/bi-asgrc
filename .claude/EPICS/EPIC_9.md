@@ -8,7 +8,7 @@
     - **Eu quero:** Criar uma nova tabela no Supabase para armazenar as notificações.
     - **Para que:** Persistir as notificações que serão exibidas aos usuários.
     - **Critérios de Aceite:**
-        - Uma tabela `notificacoes` é criada com os seguintes campos: `id` (PK), `id_usuario_destino` (FK para `002_USUARIOS`), `mensagem` (TEXT), `tipo_notificacao` (ENUM, ex: 'alerta', 'informativo'), `lida` (BOOLEAN, default FALSE), `link_redirecionamento` (TEXT), `created_at`.
+        - Uma tabela `021_notificacoes` é criada com os seguintes campos: `id` (PK), `id_usuario_destino` (FK para `002_USUARIOS`), `mensagem` (TEXT), `tipo_notificacao` (ENUM, ex: 'alerta', 'informativo'), `lida` (BOOLEAN, default FALSE), `link_redirecionamento` (TEXT), `created_at`.
 
   b. **Componente de Notificações na UI:**
     - **Como:** Um usuário logado

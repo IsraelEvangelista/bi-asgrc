@@ -132,7 +132,7 @@ const Login: React.FC = () => {
     setSignupSuccess(false);
     setRedirectCountdown(0);
     clearMessages();
-  }, [activeTab, clearError, loginForm, registerForm]);
+  }, [activeTab, clearError, loginForm, registerForm, clearMessages]);
 
   // Countdown para redirecionamento após cadastro
   useEffect(() => {
@@ -254,9 +254,7 @@ const Login: React.FC = () => {
             <div className="flex flex-col items-center gap-0 -ml-1">
               {/* Nome COGERH com animação */}
               <div className="relative">
-                <h2 className="text-2xl font-bold animate-text-sweep relative overflow-hidden" id="cogerh-text">
-                  COGERH
-                </h2>
+                <h2 className="text-2xl font-bold animate-text-sweep relative overflow-hidden" id="cogerh-text">COGERH</h2>
               </div>
               {/* Nova imagem com largura igual ao nome COGERH */}
                <img

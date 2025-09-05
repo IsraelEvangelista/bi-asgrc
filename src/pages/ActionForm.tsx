@@ -7,17 +7,11 @@ import {
   X,
   FileText,
   AlertCircle,
-  Calendar,
-  User,
-  Target,
-  MessageSquare,
   Eye,
   Download
 } from 'lucide-react';
 import {
   Action,
-  CreateActionInput,
-  UpdateActionInput,
   ActionFormData,
   ActionEvidence,
   ActionEvidenceUpload,
@@ -26,9 +20,9 @@ import {
   SituacaoAcao,
   TIPO_ACAO_OPTIONS,
   STATUS_ACAO_OPTIONS,
-  SITUACAO_ACAO_OPTIONS,
-  isActionOverdue
+  SITUACAO_ACAO_OPTIONS
 } from '../types/action';
+import Layout from '../components/Layout';
 
 interface ActionFormProps {
   mode: 'create' | 'edit';
@@ -204,7 +198,7 @@ const ActionForm: React.FC<ActionFormProps> = ({ mode }) => {
     }
   };
 
-  const handleInputChange = (field: keyof ActionFormData, value: any) => {
+  const handleInputChange = (field: keyof ActionFormData, value: string | boolean | string[] | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Limpar erro do campo quando o usuário começar a digitar
@@ -258,7 +252,7 @@ const ActionForm: React.FC<ActionFormProps> = ({ mode }) => {
     setPendingUploads(prev => {
       const newUploads = [...prev];
       // Remove preview URL if it exists (not part of the interface but may be added dynamically)
-      const upload = newUploads[index] as any;
+      const upload = newUploads[index] as ActionEvidenceUpload & { preview_url?: string };
       if (upload.preview_url) {
         URL.revokeObjectURL(upload.preview_url);
       }
@@ -302,7 +296,8 @@ const ActionForm: React.FC<ActionFormProps> = ({ mode }) => {
   }
 
   return (
-    <div className="p-6">
+    <Layout>
+      <div className="p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link
@@ -679,7 +674,8 @@ const ActionForm: React.FC<ActionFormProps> = ({ mode }) => {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

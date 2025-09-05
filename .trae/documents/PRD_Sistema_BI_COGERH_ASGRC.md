@@ -33,11 +33,11 @@ Nosso sistema de BI para gestão de riscos consiste nas seguintes páginas princ
 
 O sistema contará com um centro de notificações dentro da aplicação para alertar os usuários sobre eventos importantes. As notificações por e-mail estão fora do escopo inicial, mas podem ser implementadas futuramente.
 
-| Gatilho da Notificação                  | Destinatário(s)              | Canal  | Mensagem (Exemplo)                                            |
-| --------------------------------------- | ---------------------------- | ------ | ------------------------------------------------------------- |
+| Gatilho da Notificação                    | Destinatário(s)              | Canal  | Mensagem (Exemplo)                                              |
+| ----------------------------------------- | ---------------------------- | ------ | --------------------------------------------------------------- |
 | Prazo de ação de mitigação se aproximando | Responsável pela Ação        | No App | "Atenção: A ação 'XYZ' tem o prazo de implementação em 3 dias." |
-| Indicador de risco fora da tolerância   | Gestor de Risco, Responsável | No App | "Alerta: O indicador 'ABC' está fora da tolerância definida." |
-| Novo risco atribuído                    | Responsável pelo Risco       | No App | "Você foi designado como responsável pelo risco 'R-123'."     |
+| Indicador de risco fora da tolerância     | Gestor de Risco, Responsável | No App | "Alerta: O indicador 'ABC' está fora da tolerância definida."   |
+| Novo risco atribuído                      | Responsável pelo Risco       | No App | "Você foi designado como responsável pelo risco 'R-123'."       |
 
 ### 2.3 Page Details
 
@@ -100,34 +100,51 @@ graph TD
 #### 4.1.1 Paleta de Cores
 
 * **Tema Principal**: Clean, com fundo branco (#FFFFFF) para máxima legibilidade e profissionalismo
+
 * **Cabeçalho**: Gradiente de tons de azul corporativo, criando identidade visual forte
+
 * **Bordas e Destaques**: Azul claro para elementos interativos e áreas de foco
-* **Cores Funcionais**: 
-  - Verde (#059669) para indicadores positivos e status de sucesso
-  - Vermelho (#DC2626) para alertas, riscos altos e estados de erro
-  - Cinza neutro (#6B7280) para textos secundários e elementos de apoio
-  - Azul claro (#EFF6FF) para áreas de destaque e hover states
+
+* **Cores Funcionais**:
+
+  * Verde (#059669) para indicadores positivos e status de sucesso
+
+  * Vermelho (#DC2626) para alertas, riscos altos e estados de erro
+
+  * Cinza neutro (#6B7280) para textos secundários e elementos de apoio
+
+  * Azul claro (#EFF6FF) para áreas de destaque e hover states
 
 #### 4.1.2 Logo e Identidade Visual
 
 O logo oficial da COGERH deve ser utilizado no cabeçalho da aplicação:
-- **URL do Logo**: `https://mfgnuiozkznfqmtnlzgs.supabase.co/storage/v1/object/public/media-files/bf5ff449-a432-4b2c-b33e-ed85c4cbf4a5/1756835962585.png`
-- **Posicionamento**: Canto superior esquerdo do cabeçalho
-- **Comportamento**: Link para a página inicial (dashboard executivo)
+
+* **URL do Logo**: `https://mfgnuiozkznfqmtnlzgs.supabase.co/storage/v1/object/public/media-files/bf5ff449-a432-4b2c-b33e-ed85c4cbf4a5/1756835962585.png`
+
+* **Posicionamento**: Canto superior esquerdo do cabeçalho
+
+* **Comportamento**: Link para a página inicial (dashboard executivo)
 
 #### 4.1.3 Dimensões e Layout Geral
 
 * **Resolução Alvo**: 1920px de largura por 1020px de altura (padrão desktop corporativo)
+
 * **Estrutura de Layout**:
-  - **Cabeçalho (Header)**: Fixo no topo da página, contendo logo, título da aplicação e informações do usuário
-  - **Painel de Navegação (Navbar)**: Fixo, localizado imediatamente abaixo do cabeçalho, com menu horizontal
-  - **Área de Conteúdo (Main)**: Ocupa o restante do espaço vertical, com scroll independente
+
+  * **Cabeçalho (Header)**: Fixo no topo da página, contendo logo, título da aplicação e informações do usuário
+
+  * **Painel de Navegação (Navbar)**: Fixo, localizado imediatamente abaixo do cabeçalho, com menu horizontal
+
+  * **Área de Conteúdo (Main)**: Ocupa o restante do espaço vertical, com scroll independente
 
 #### 4.1.4 Elementos de Interface
 
 * **Estilo de Botões**: Botões arredondados com cantos suaves (border-radius: 8px), efeitos de hover e estados de loading
+
 * **Tipografia**: Inter como fonte principal (16px para textos, 14px para labels), títulos em peso semi-bold, hierarquia clara de tamanhos
+
 * **Layout**: Design baseado em cards com sombras sutis, navegação horizontal fixa, breadcrumbs para orientação, grid responsivo
+
 * **Ícones**: Lucide React para consistência, ícones outline para ações secundárias, filled para ações primárias
 
 ### 4.2 Estrutura de Navegação
@@ -137,25 +154,41 @@ O sistema implementa uma navegação hierárquica baseada na estrutura organizac
 #### 4.2.1 Menu Principal
 
 * **Conceitos**: Link direto para visualização dos conceitos fundamentais de gestão de riscos
+
 * **Processos**: Menu suspenso com três subseções:
-  - Cadeia de Valor
-  - Arquitetura de Processos  
-  - Riscos de Processos de Trabalho
+
+  * Cadeia de Valor
+
+  * Arquitetura de Processos
+
+  * Riscos de Processos de Trabalho
+
 * **Riscos Estratégicos**: Menu suspenso organizado em duas categorias:
-  - **Portfólio de Riscos**:
-    - Matriz de Risco
-    - Portfólio de Ações
-  - **Monitoramento**:
-    - Plano de Ações
-    - Indicadores
+
+  * **Portfólio de Riscos**:
+
+    * Matriz de Risco
+
+    * Portfólio de Ações
+
+  * **Monitoramento**:
+
+    * Plano de Ações
+
+    * Indicadores
+
 * **Formulários**: Link para seção de formulários de entrada de dados de indicadores
+
 * **Cadastro**: Link para interfaces de cadastro de entidades (acesso restrito por perfil de usuário)
 
 #### 4.2.2 Comportamento da Navegação
 
 * **Hover States**: Menus suspensos aparecem ao passar o mouse sobre itens principais
+
 * **Indicadores Visuais**: Item ativo destacado com cor diferenciada
+
 * **Breadcrumbs**: Navegação contextual mostrando localização atual na hierarquia
+
 * **Responsividade**: Menu colapsa em hambúrguer em resoluções menores
 
 ### 4.3 Princípios de Interatividade
@@ -165,7 +198,9 @@ A interface implementa comportamentos avançados de BI para proporcionar experi�
 #### 4.3.1 Filtragem Cruzada (Cross-filtering)
 
 * **Filtro Primário**: Cada página possui conjunto de filtros principais (período, área, responsável)
+
 * **Filtro Secundário (Contextual)**:
+
   1. Clique em segmento de componente visual (barra de gráfico, célula de tabela) ativa filtro secundário
   2. **TODOS** os outros componentes visuais na página são filtrados automaticamente
   3. Remoção do filtro: novo clique no mesmo segmento ou clique em área neutra
@@ -174,8 +209,11 @@ A interface implementa comportamentos avançados de BI para proporcionar experi�
 #### 4.3.2 Feedback Visual
 
 * **Estados de Loading**: Indicadores visuais durante carregamento de dados
+
 * **Hover Effects**: Destaque de elementos interativos
+
 * **Seleção Ativa**: Elementos selecionados com bordas ou backgrounds diferenciados
+
 * **Tooltips Informativos**: Informações contextuais em componentes complexos
 
 ### 4.4 Page Design Overview
@@ -194,12 +232,12 @@ A interface implementa comportamentos avançados de BI para proporcionar experi�
 
 A interface deve tratar de forma clara e útil os cenários em que não há dados para exibir, guiando o usuário sobre os próximos passos.
 
-| Página/Componente   | Perfil de Usuário        | Mensagem de Estado Vazio                                                                                         |
-| ------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Dashboard Executivo | Gestor de Risco          | "Não há riscos registrados no sistema. Acesse a área de **Gestão de Riscos** para iniciar o processo de cadastro." |
-| Dashboard Executivo | Outros Perfis            | "Não há riscos disponíveis para visualização no momento."                                                        |
-| Lista de Planos de Ação | Todos | "Nenhum plano de ação cadastrado para este risco." |
-| Histórico de Indicadores | Todos | "Não há registros históricos para este indicador." |
+| Página/Componente        | Perfil de Usuário | Mensagem de Estado Vazio                                                                                           |
+| ------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Dashboard Executivo      | Gestor de Risco   | "Não há riscos registrados no sistema. Acesse a área de **Gestão de Riscos** para iniciar o processo de cadastro." |
+| Dashboard Executivo      | Outros Perfis     | "Não há riscos disponíveis para visualização no momento."                                                          |
+| Lista de Planos de Ação  | Todos             | "Nenhum plano de ação cadastrado para este risco."                                                                 |
+| Histórico de Indicadores | Todos             | "Não há registros históricos para este indicador."                                                                 |
 
 ### 4.5 Responsiveness
 
@@ -339,17 +377,17 @@ erDiagram
   
   006_MATRIZ_RISCOS {
     uuid id PK
+    text sigla
     text eventos_riscos
     int probabilidade
     int impacto
     int severidade
-    text classificacao
     text priorizado
     bool vulnerabilidade_imagem
     bool afeta_geracao_valor
-    uuid responsavel_risco FK
+    uuid responsavel_risco FK "nullable"
     bool responsabilidade_compartilhada
-    uuid demais_responsaveis FK
+    uuid demais_responsaveis FK "nullable"
     date created_at
     date updated_at
     timestamp deleted_at
@@ -358,13 +396,14 @@ erDiagram
   008_INDICADORES {
     uuid id PK
     uuid id_risco FK
-    uuid responsavel_risco FK
-    text indicador_risco
-    text situacao_indicador
+    uuid responsavel_risco FK "nullable"
+    text indicador_risco "nullable"
+    enum situacao_indicador "nullable" // Valores: 'Implementado', 'Não iniciado', 'Em implementação'
     text justificativa_observacao
     text impacto_n_implementacao
     text meta_desc
-    text tolerancia
+    float meta_efetiva
+    enum tolerancia "nullable" // Valores: 'Dentro da Tolerância', 'Fora da Tolerância'
     text limite_tolerancia
     text tipo_acompanhamento
     number resultado_mes
@@ -375,7 +414,9 @@ erDiagram
   
   015_RISCOS_X_ACOES_PROC_TRAB {
     uuid id PK
-    uuid responsavel_processo FK
+    text sigla_processo
+    uuid id_resp_processo FK
+    text responsavel_processo
     text situacao_risco
     uuid id_risco FK
     text nivel_risco
@@ -396,6 +437,7 @@ erDiagram
   
   014_ACOES_CONTROLE_PROC_TRAB {
     uuid id PK
+    text sigla_ac_controle
     text acao
     date created_at
     date updated_at
@@ -403,6 +445,7 @@ erDiagram
   
   007_RISCOS_TRABALHO {
     uuid id PK
+    text sigla_rt
     text risco
     date created_at
     date updated_at
@@ -410,6 +453,7 @@ erDiagram
   
   004_MACROPROCESSOS {
     uuid id PK
+    text sigla_macro
     enum tipo_macroprocesso
     text macroprocesso
     text link_macro
@@ -428,6 +472,7 @@ erDiagram
   
   005_PROCESSOS {
     uuid id PK
+    text sigla_processo
     text processo
     uuid id_macro FK
     bool publicado
@@ -444,10 +489,13 @@ erDiagram
     text desenho_situacao_futura
     text monitoramento
     text encerramento
+    date created_at
+    date updated_at
   }
   
   013_SUBPROCESSOS {
     uuid id PK
+    text sigla_sub
     text cod_subprocesso
     text subprocesso
     uuid id_processo FK
@@ -468,6 +516,7 @@ erDiagram
   
   010_NATUREZA {
     uuid id PK
+    text sigla_natureza
     text desc_natureza
     date created_at
     date updated_at
@@ -475,6 +524,7 @@ erDiagram
   
   011_CATEGORIA {
     uuid id PK
+    text sigla_categoria
     text desc_categoria
     uuid id_natureza FK
     date created_at
@@ -483,6 +533,7 @@ erDiagram
   
   012_SUBCATEGORIA {
     uuid id PK
+    text sigla_subcategoria
     text desc_subcategoria
     uuid id_categoria FK
     date created_at
@@ -491,6 +542,7 @@ erDiagram
   
   009_ACOES {
     uuid id PK
+    text sigla_acao
     uuid id_ref FK
     text desc_acao
     json area_executora
@@ -533,16 +585,16 @@ erDiagram
     uuid id PK
     uuid id_acao FK
     uuid id_risco FK
+    text desc_acao
     date created_at
     date updated_at
   }
   
   003_AREAS_GERENCIAS {
     uuid id PK
-    text nome_area
     text sigla_area
-    text responsavel_area
-    bool ativa
+    text gerencia
+    text diretoria
     date created_at
     date updated_at
   }
@@ -578,39 +630,66 @@ erDiagram
     text observacoes
     date data_alteracao
     uuid usuario_alteracao FK
+    text anexo
     date created_at
     date updated_at
   }
   
+  021_NOTIFICACOES {
+    uuid id PK
+    uuid id_usuario_destino FK
+    text mensagem
+    enum tipo_notificacao
+    bool lida
+    text url_redirecionamento
+    date created_at
+    date updated_at
+  }
+  
+  %% Relacionamentos principais
   008_INDICADORES }o--|| 006_MATRIZ_RISCOS : id_risco
   008_INDICADORES }o--|| 003_AREAS_GERENCIAS : responsavel_risco
   006_MATRIZ_RISCOS }o--|| 003_AREAS_GERENCIAS : responsavel_risco
-  006_MATRIZ_RISCOS }o--|| 003_AREAS_GERENCIAS : demais_responsaveis
-  015_RISCOS_X_ACOES_PROC_TRAB }o--|| 003_AREAS_GERENCIAS : responsavel_processo
-  015_RISCOS_X_ACOES_PROC_TRAB }o--|| 003_AREAS_GERENCIAS : responsavel_acao
+  006_MATRIZ_RISCOS }o--o| 003_AREAS_GERENCIAS : demais_responsaveis
+  
+  %% Relacionamentos de processos
+  005_PROCESSOS }o--|| 004_MACROPROCESSOS : id_macro
   005_PROCESSOS }o--|| 003_AREAS_GERENCIAS : responsavel_processo
-  016_REL_ACOES_RISCOS }o--|| 009_ACOES : id_acao
-  016_REL_ACOES_RISCOS }o--|| 006_MATRIZ_RISCOS : id_risco
+  013_SUBPROCESSOS }o--|| 005_PROCESSOS : id_processo
+  
+  %% Relacionamentos de riscos x processos x ações
   015_RISCOS_X_ACOES_PROC_TRAB }o--|| 007_RISCOS_TRABALHO : id_risco
   015_RISCOS_X_ACOES_PROC_TRAB }o--|| 014_ACOES_CONTROLE_PROC_TRAB : id_acao
   015_RISCOS_X_ACOES_PROC_TRAB }o--|| 005_PROCESSOS : id_processo
-  005_PROCESSOS }o--|| 004_MACROPROCESSOS : id_macro
-  013_SUBPROCESSOS }o--|| 005_PROCESSOS : id_processo
+  015_RISCOS_X_ACOES_PROC_TRAB }o--|| 003_AREAS_GERENCIAS : id_resp_processo
+  015_RISCOS_X_ACOES_PROC_TRAB }o--|| 003_AREAS_GERENCIAS : responsavel_acao
+  
+  %% Relacionamentos de categorização
   011_CATEGORIA }o--|| 010_NATUREZA : id_natureza
   012_SUBCATEGORIA }o--|| 011_CATEGORIA : id_categoria
+  
+  %% Relacionamentos N:N através de tabelas de relacionamento
+  016_REL_ACOES_RISCOS }o--|| 009_ACOES : id_acao
+  016_REL_ACOES_RISCOS }o--|| 006_MATRIZ_RISCOS : id_risco
   018_REL_RISCO }o--|| 006_MATRIZ_RISCOS : id_risco
   018_REL_RISCO }o--|| 010_NATUREZA : id_natureza
   018_REL_RISCO }o--|| 011_CATEGORIA : id_categoria
   018_REL_RISCO }o--|| 012_SUBCATEGORIA : id_subcategoria
   017_REL_RISCO_PROCESSO }o--|| 006_MATRIZ_RISCOS : id_risco
   017_REL_RISCO_PROCESSO }o--|| 004_MACROPROCESSOS : id_macro
+  
+  %% Relacionamentos de usuários e perfis
   001_PERFIS }o--|| 003_AREAS_GERENCIAS : area_id
   002_USUARIOS }o--|| 001_PERFIS : perfil_id
   002_USUARIOS }o--|| 003_AREAS_GERENCIAS : area_gerencia_id
+  
+  %% Relacionamentos de auditoria e notificações
   019_HISTORICO_INDICADORES }o--|| 008_INDICADORES : id_indicador
   019_HISTORICO_INDICADORES }o--|| 002_USUARIOS : usuario_alteracao
-
-  009_ACOES }o--|| 009_ACOES : id_ref
+  021_NOTIFICACOES }o--|| 002_USUARIOS : id_usuario_destino
+  
+  %% Relacionamento recursivo de ações
+  009_ACOES }o--o| 009_ACOES : id_ref
 ```
 
 #### 6.4.2 Data Definition Language
@@ -619,7 +698,7 @@ erDiagram
 -- Tabela de áreas/gerências
 CREATE TABLE 003_areas_gerencias (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nome_area TEXT NOT NULL,
+    gerencia TEXT NOT NULL,
     sigla_area TEXT NOT NULL,
     responsavel_area TEXT NOT NULL,
     ativa BOOLEAN DEFAULT TRUE,
@@ -655,11 +734,23 @@ CREATE TABLE 002_usuarios (
 -- Tabela de relacionamento entre riscos, ações e processos
 CREATE TABLE 015_riscos_x_acoes_proc_trab (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sigla_processo TEXT,
+    id_resp_processo UUID REFERENCES 003_areas_gerencias(id),
+    responsavel_processo TEXT,
+    situacao_risco TEXT,
     id_risco UUID REFERENCES 007_riscos_trabalho(id),
+    nivel_risco TEXT,
+    nivel_risco_tratado TEXT,
+    resposta_risco TEXT,
     id_acao UUID REFERENCES 014_acoes_controle_proc_trab(id),
     id_processo UUID REFERENCES 005_processos(id),
-    responsavel_processo UUID REFERENCES 003_areas_gerencias(id),
     responsavel_acao UUID REFERENCES 003_areas_gerencias(id),
+    inicio_planejado DATE,
+    fim_planejado DATE,
+    inicio_realizado DATE,
+    fim_realizado DATE,
+    plano_resposta_risco TEXT,
+    obs TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -674,30 +765,31 @@ CREATE TABLE 016_rel_acoes_riscos (
 );
 ```
 
-\-- Tabela principal de riscos
-CREATE TABLE 006_matriz\_riscos (
-id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
-eventos\_riscos TEXT NOT NULL,
-probabilidade INTEGER CHECK (probabilidade BETWEEN 1 AND 5),
-impacto INTEGER CHECK (impacto BETWEEN 1 AND 5),
-severidade INTEGER GENERATED ALWAYS AS (probabilidade \* impacto) STORED,
-classificacao TEXT,
-priorizado TEXT,
-vulnerabilidade\_imagem BOOLEAN DEFAULT FALSE,
-afeta\_geracao\_valor BOOLEAN DEFAULT FALSE,
-responsavel\_risco UUID REFERENCES 003_areas\_gerencias(id),
-responsabilidade\_compartilhada BOOLEAN DEFAULT FALSE,
-demais\_responsaveis UUID REFERENCES 003_areas\_gerencias(id),
-created\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-deleted\_at TIMESTAMP WITH TIME ZONE
+-- Tabela principal de riscos
+CREATE TABLE 006_matriz_riscos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sigla TEXT,
+    eventos_riscos TEXT NOT NULL,
+    probabilidade INTEGER CHECK (probabilidade BETWEEN 1 AND 5),
+    impacto INTEGER CHECK (impacto BETWEEN 1 AND 5),
+    severidade INTEGER GENERATED ALWAYS AS (probabilidade * impacto) STORED,
+    classificacao TEXT,
+    priorizado TEXT,
+    vulnerabilidade_imagem BOOLEAN DEFAULT FALSE,
+    afeta_geracao_valor BOOLEAN DEFAULT FALSE,
+    responsavel_risco UUID REFERENCES 003_areas_gerencias(id),
+    responsabilidade_compartilhada BOOLEAN DEFAULT FALSE,
+    demais_responsaveis UUID REFERENCES 003_areas_gerencias(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 \-- Tabela de indicadores de risco
-CREATE TABLE 008_indicadores (
+CREATE TABLE 008\_indicadores (
 id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
-id\_risco UUID REFERENCES 006_matriz\_riscos(id) ON DELETE CASCADE,
-responsavel\_risco UUID REFERENCES 003_areas\_gerencias(id),
+id\_risco UUID REFERENCES 006\_matriz\_riscos(id) ON DELETE CASCADE,
+responsavel\_risco UUID REFERENCES 003\_areas\_gerencias(id),
 indicador\_risco TEXT NOT NULL,
 situacao\_indicador TEXT CHECK (situacao\_indicador IN ('Em implementação', 'Implementado', 'Não Iniciado')),
 justificativa\_observacao TEXT,
@@ -715,7 +807,7 @@ updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 \-- Tabela de macroprocessos
 CREATE TYPE tipo\_macroprocesso\_enum AS ENUM ('Finalístico', 'Gestão', 'Suporte');
 
-CREATE TABLE 004_macroprocessos (
+CREATE TABLE 004\_macroprocessos (
 id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
 tipo\_macroprocesso tipo\_macroprocesso\_enum NOT NULL,
 macroprocesso TEXT NOT NULL,
@@ -733,33 +825,34 @@ created\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-\-- Tabela de processos
+-- Tabela de processos
 CREATE TABLE 005_processos (
-id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
-processo TEXT NOT NULL,
-id\_macro UUID REFERENCES 004_macroprocessos(id),
-publicado BOOLEAN DEFAULT FALSE,
-link\_processo TEXT,
-responsavel\_processo UUID REFERENCES 003_areas\_gerencias(id),
-objetivo\_processo TEXT,
-entregas\_processo TEXT,
-data\_ultima\_atualizacao DATE,
-data\_inicio DATE,
-data\_termino\_prevista DATE,
-situacao TEXT,
-planejamento\_inicial TEXT,
-mapeamento\_situacao\_atual TEXT,
-desenho\_situacao\_futura TEXT,
-monitoramento TEXT,
-encerramento TEXT,
-created\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sigla_processo TEXT,
+    processo TEXT NOT NULL,
+    id_macro UUID REFERENCES 004_macroprocessos(id),
+    publicado BOOLEAN DEFAULT FALSE,
+    link_processo TEXT,
+    responsavel_processo UUID REFERENCES 003_areas_gerencias(id),
+    objetivo_processo TEXT,
+    entregas_processo TEXT,
+    data_ultima_atualizacao DATE,
+    data_inicio DATE,
+    data_termino_prevista DATE,
+    situacao TEXT,
+    planejamento_inicial TEXT,
+    mapeamento_situacao_atual TEXT,
+    desenho_situacao_futura TEXT,
+    monitoramento TEXT,
+    encerramento TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 \-- Tabela de ações de mitigação
-CREATE TABLE 009_acoes (
+CREATE TABLE 009\_acoes (
 id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
-id\_ref UUID REFERENCES 009_acoes(id),
+id\_ref UUID REFERENCES 009\_acoes(id),
 desc\_acao TEXT NOT NULL,
 area\_executora JSONB NOT NULL,
 acao\_transversal BOOLEAN DEFAULT FALSE,
@@ -780,38 +873,80 @@ updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 \-- Índices para performance
-CREATE INDEX idx\_008_indicadores\_risco ON 008_indicadores(id\_risco);
-CREATE INDEX idx\_008_indicadores\_responsavel ON 008_indicadores(responsavel\_risco);
-CREATE INDEX idx\_008_indicadores\_situacao ON 008_indicadores(situacao\_indicador);
-CREATE INDEX idx\_009_acoes\_status ON 009_acoes(status);
-CREATE INDEX idx\_009_acoes\_prazo ON 009_acoes(prazo\_implementacao);
-CREATE INDEX idx\_006_matriz\_riscos\_severidade ON 006_matriz\_riscos(severidade DESC);
-CREATE INDEX idx\_006_matriz\_riscos\_responsavel ON 006_matriz\_riscos(responsavel\_risco);
-CREATE INDEX idx\_001_perfis\_area ON 001_perfis(area\_id);
-CREATE INDEX idx\_001_perfis\_ativo ON 001_perfis(ativo);
-CREATE INDEX idx\_002_usuarios\_email ON 002_usuarios(email);
-CREATE INDEX idx\_002_usuarios\_perfil ON 002_usuarios(perfil\_id);
-CREATE INDEX idx\_002_usuarios\_area ON 002_usuarios(area\_gerencia\_id);
-CREATE INDEX idx\_002_usuarios\_ativo ON 002_usuarios(ativo);
+CREATE INDEX idx\_008\_indicadores\_risco ON 008\_indicadores(id\_risco);
+CREATE INDEX idx\_008\_indicadores\_responsavel ON 008\_indicadores(responsavel\_risco);
+CREATE INDEX idx\_008\_indicadores\_situacao ON 008\_indicadores(situacao\_indicador);
+CREATE INDEX idx\_009\_acoes\_status ON 009\_acoes(status);
+CREATE INDEX idx\_009\_acoes\_prazo ON 009\_acoes(prazo\_implementacao);
+CREATE INDEX idx\_006\_matriz\_riscos\_severidade ON 006\_matriz\_riscos(severidade DESC);
+CREATE INDEX idx\_006\_matriz\_riscos\_responsavel ON 006\_matriz\_riscos(responsavel\_risco);
+CREATE INDEX idx\_001\_perfis\_area ON 001\_perfis(area\_id);
+CREATE INDEX idx\_001\_perfis\_ativo ON 001\_perfis(ativo);
+CREATE INDEX idx\_002\_usuarios\_email ON 002\_usuarios(email);
+CREATE INDEX idx\_002\_usuarios\_perfil ON 002\_usuarios(perfil\_id);
+CREATE INDEX idx\_002\_usuarios\_area ON 002\_usuarios(area\_gerencia\_id);
+CREATE INDEX idx\_002\_usuarios\_ativo ON 002\_usuarios(ativo);
 
 \-- Permissões Supabase
-GRANT SELECT ON 006_matriz\_riscos TO anon;
-GRANT ALL PRIVILEGES ON 006_matriz\_riscos TO authenticated;
-GRANT SELECT ON 008_indicadores TO anon;
-GRANT ALL PRIVILEGES ON 008_indicadores TO authenticated;
-GRANT SELECT ON 009_acoes TO anon;
-GRANT ALL PRIVILEGES ON 009_acoes TO authenticated;
-GRANT SELECT ON 001_perfis TO anon;
-GRANT ALL PRIVILEGES ON 001_perfis TO authenticated;
-GRANT SELECT ON 002_usuarios TO anon;
-GRANT ALL PRIVILEGES ON 002_usuarios TO authenticated;
+GRANT SELECT ON 006\_matriz\_riscos TO anon;
+GRANT ALL PRIVILEGES ON 006\_matriz\_riscos TO authenticated;
+GRANT SELECT ON 008\_indicadores TO anon;
+GRANT ALL PRIVILEGES ON 008\_indicadores TO authenticated;
+GRANT SELECT ON 009\_acoes TO anon;
+GRANT ALL PRIVILEGES ON 009\_acoes TO authenticated;
+GRANT SELECT ON 001\_perfis TO anon;
+GRANT ALL PRIVILEGES ON 001\_perfis TO authenticated;
+GRANT SELECT ON 002\_usuarios TO anon;
+GRANT ALL PRIVILEGES ON 002\_usuarios TO authenticated;
+
+\-- Tabela de conceitos fundamentais
+CREATE TABLE 020\_conceitos (
+id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
+conceitos TEXT NOT NULL,
+descricao TEXT NOT NULL,
+created\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+\-- Tabela de notificações do sistema
+CREATE TYPE tipo\_notificacao\_enum AS ENUM ('ALERTA', 'INFORMATIVO', 'SUCESSO', 'URGENTE');
+
+CREATE TABLE 021\_notificacoes (
+id UUID PRIMARY KEY DEFAULT gen\_random\_uuid(),
+id\_usuario\_destino UUID NOT NULL REFERENCES 002\_usuarios(id),
+mensagem TEXT NOT NULL,
+tipo\_notificacao tipo\_notificacao\_enum NOT NULL DEFAULT 'INFORMATIVO',
+lida BOOLEAN NOT NULL DEFAULT false,
+url\_redirecionamento TEXT,
+created\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+updated\_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+\-- Índices adicionais
+CREATE INDEX idx\_020\_conceitos\_conceitos ON 020\_conceitos(conceitos);
+CREATE INDEX idx\_021\_notificacoes\_usuario\_destino ON 021\_notificacoes(id\_usuario\_destino);
+CREATE INDEX idx\_021\_notificacoes\_lida ON 021\_notificacoes(lida);
+CREATE INDEX idx\_021\_notificacoes\_tipo ON 021\_notificacoes(tipo\_notificacao);
+
+\-- Permissões adicionais
+GRANT SELECT ON 020\_conceitos TO anon;
+GRANT ALL PRIVILEGES ON 020\_conceitos TO authenticated;
+GRANT SELECT ON 021\_notificacoes TO anon;
+GRANT ALL PRIVILEGES ON 021\_notificacoes TO authenticated;
 
 \-- Dados iniciais para testes
-INSERT INTO 006_matriz\_riscos (eventos\_riscos, probabilidade, impacto, classificacao, responsavel\_risco) VALUES
+INSERT INTO 006\_matriz\_riscos (eventos\_riscos, probabilidade, impacto, classificacao, responsavel\_risco) VALUES
 ('Falha no sistema de monitoramento de recursos hídricos', 3, 4, 'Operacional', 'Gerência de Operações'),
 ('Não conformidade com regulamentações ambientais', 2, 5, 'Regulatório', 'Gerência de Meio Ambiente'),
 ('Interrupção no fornecimento de energia elétrica', 4, 3, 'Operacional', 'Gerência de Infraestrutura');
 
+\-- Dados iniciais de conceitos
+INSERT INTO 020\_conceitos (conceitos, descricao) VALUES
+('Risco', 'Efeito da incerteza nos objetivos organizacionais, podendo ser positivo ou negativo.'),
+('Probabilidade', 'Chance de um evento de risco ocorrer, medida em uma escala de 1 a 5.'),
+('Impacto', 'Consequência de um evento de risco nos objetivos da organização, medido em uma escala de 1 a 5.'),
+('Severidade', 'Resultado da multiplicação entre probabilidade e impacto, indicando a criticidade do risco.'),
+('Tolerância', 'Nível aceitável de variação em relação ao cumprimento de um objetivo.');
 
 ## 7. Plano de Migração do Power BI
 
@@ -1072,4 +1207,3 @@ INSERT INTO 006_matriz\_riscos (eventos\_riscos, probabilidade, impacto, classif
 **Data:** Setembro 2025\
 **Versão:** 1.0\
 **Status:** Aprovado para desenvolvimento
-

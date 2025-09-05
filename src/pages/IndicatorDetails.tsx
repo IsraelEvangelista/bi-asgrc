@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,6 +12,7 @@ import {
   FileText,
   BarChart3
 } from 'lucide-react';
+import Layout from '../components/Layout';
 import {
   Indicator,
   SituacaoIndicador,
@@ -44,7 +45,7 @@ const IndicatorDetails: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'analysis'>('overview');
 
   // Mock data - será substituído pela integração com Supabase
-  const mockIndicatorWithHistory: IndicatorWithHistory = {
+  const mockIndicatorWithHistory: IndicatorWithHistory = useMemo(() => ({
     indicator: {
       id: '1',
       id_risco: 'RISK-001',
@@ -123,7 +124,7 @@ const IndicatorDetails: React.FC = () => {
       worst_result: 88.5,
       improvement_rate: 10.2
     }
-  };
+  }), []);
 
   useEffect(() => {
     const loadIndicator = async () => {
@@ -148,7 +149,7 @@ const IndicatorDetails: React.FC = () => {
     };
 
     loadIndicator();
-  }, [id, navigate]);
+  }, [id, navigate, mockIndicatorWithHistory]);
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -192,7 +193,9 @@ const IndicatorDetails: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="p-6">
+        <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -295,7 +298,7 @@ const IndicatorDetails: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'overview' | 'history' | 'analysis')}
                   className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
@@ -520,6 +523,8 @@ const IndicatorDetails: React.FC = () => {
         </div>
       </div>
     </div>
+  </div>
+    </Layout>
   );
 };
 

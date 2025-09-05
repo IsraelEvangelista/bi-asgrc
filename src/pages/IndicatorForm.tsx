@@ -1,16 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Save,
-  AlertTriangle,
-  Info,
-  Target,
-  User,
-  FileText,
-  Calendar,
-  TrendingUp
-} from 'lucide-react';
+import { ArrowLeft, Save, Info, Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import Layout from '../components/Layout';
 import {
   Indicator,
   CreateIndicatorInput,
@@ -71,13 +62,7 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
     updated_at: '2024-01-15T10:00:00Z'
   };
 
-  useEffect(() => {
-    if (mode === 'edit' && id) {
-      loadIndicator();
-    }
-  }, [mode, id]);
-
-  const loadIndicator = async () => {
+  const loadIndicator = useCallback(async () => {
     if (!id) return;
     
     setLoading(true);
@@ -102,7 +87,13 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
     }
     
     setLoading(false);
-  };
+  }, [id, mockIndicator.id_risco, mockIndicator.responsavel_risco, mockIndicator.indicador_risco, mockIndicator.situacao_indicador, mockIndicator.justificativa_observacao, mockIndicator.impacto_n_implementacao, mockIndicator.meta_desc, mockIndicator.tolerancia, mockIndicator.limite_tolerancia, mockIndicator.tipo_acompanhamento, mockIndicator.resultado_mes, mockIndicator.apuracao]);
+
+  useEffect(() => {
+    if (mode === 'edit' && id) {
+      loadIndicator();
+    }
+  }, [mode, id, loadIndicator]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -206,7 +197,7 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
     }
   };
 
-  const handleInputChange = (field: keyof IndicatorFormData, value: any) => {
+  const handleInputChange = (field: keyof IndicatorFormData, value: string | number | SituacaoIndicador | Tolerancia) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Limpar erro do campo quando o usuário começar a digitar
@@ -234,7 +225,8 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -552,7 +544,8 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

@@ -4,6 +4,7 @@ import { Plus, Search, Filter, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import { useRisks, useDeleteRisk } from '../hooks/useRisks';
 import { RiskClassification, RiskFilters } from '../types';
 import { formatRiskClassification, getSeverityColor, getSeverityText } from '../utils/riskUtils';
+import Layout from '../components/Layout';
 
 const RiskList: React.FC = () => {
   const [filters, setFilters] = useState<RiskFilters>({});
@@ -52,7 +53,8 @@ const RiskList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -266,7 +268,8 @@ const RiskList: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

@@ -6,6 +6,7 @@ import { UpdateRiskInput } from '@/types';
 import RiskForm from '@/components/RiskForm';
 import { toast } from 'sonner';
 import { formatRiskClassification, getClassificationColor, getSeverityColor, getSeverityText } from '@/utils/riskUtils';
+import Layout from '@/components/Layout';
 
 const RiskDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,55 +60,62 @@ const RiskDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2 text-lg">Carregando risco...</span>
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2 text-lg">Carregando risco...</span>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-800">
-                Erro ao carregar o risco: {error}
-              </p>
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">
+                  Erro ao carregar o risco: {error}
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (!risk) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="rounded-md bg-yellow-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-yellow-400" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-800">
-                Risco não encontrado.
-              </p>
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="rounded-md bg-yellow-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-800">
+                  Risco não encontrado.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -219,7 +227,8 @@ const RiskDetail: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 };
 

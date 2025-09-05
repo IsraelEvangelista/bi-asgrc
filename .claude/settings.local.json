@@ -7,7 +7,10 @@
       "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
       "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
       "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
-      "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)"
+      "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
+      "Bash(npm run client:dev -- --port 8080)",
+      "Bash(taskkill /PID 33060 /F)",
+      "Bash(cmd /c \"taskkill /F /PID 33060\")"
     ],
     "deny": [],
     "ask": []

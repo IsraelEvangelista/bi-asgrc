@@ -4,7 +4,12 @@ dotenv.config();
 
 // Configuração do Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFodHltYXFpaXpmZXJ1bXhnaHlqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjcyNzE4MiwiZXhwIjoyMDcyMzAzMTgyfQ.YO4KBnwulf4Bom_J9cASnBsX6SXvtNVpK8P4YD_Dm6I';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ ERRO: Variáveis de ambiente VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

@@ -14,6 +14,32 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  build: {
+    // Otimizações de performance
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Code splitting manual para otimizar chunks
+          manualChunks: {
+            // Vendor chunks
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'ui-vendor': ['lucide-react', 'sonner'],
+            'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+            'date-vendor': ['date-fns'],
+            'supabase-vendor': ['@supabase/supabase-js'],
+            'utils-vendor': ['zustand', 'clsx', 'tailwind-merge']
+          }
+      }
+    },
+    // Otimizações adicionais
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.log em produção
+        drop_debugger: true
+      }
+    }
+  },
   server: {
     port: 8080,
     proxy: {

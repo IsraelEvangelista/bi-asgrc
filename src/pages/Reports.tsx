@@ -19,6 +19,7 @@ import {
   ReportWizardState,
   ExportOptions,
   ReportFormat,
+  FilterPeriod,
   DEFAULT_TEMPLATES
 } from '../types/report';
 import { useReports } from '../hooks/useReports';
@@ -77,7 +78,6 @@ const Reports: React.FC = () => {
     generateReport,
     exportReport,
     getAvailableColumns,
-    getSampleData,
     clearError
   } = useReports();
 
@@ -106,7 +106,7 @@ const Reports: React.FC = () => {
     errors: {}
   });
 
-  const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([]);
+
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'pdf',
     includeCharts: true,
@@ -139,13 +139,6 @@ const Reports: React.FC = () => {
 
     setWizardState(prev => ({ ...prev, steps: updatedSteps }));
   }, [wizardState.config, reportData]);
-
-  // Load sample data when type changes
-  useEffect(() => {
-    if (wizardState.config.type) {
-      getSampleData(wizardState.config.type, 3).then(setPreviewData);
-    }
-  }, [wizardState.config.type, getSampleData]);
 
   const updateConfig = (updates: Partial<ReportConfig>) => {
     setWizardState(prev => ({
@@ -360,7 +353,7 @@ const Reports: React.FC = () => {
                           period: {
                             startDate: startDate.toISOString().split('T')[0],
                             endDate: today.toISOString().split('T')[0],
-                            preset: preset.value as any
+                            preset: preset.value as FilterPeriod['preset']
                           }
                         }
                       });
@@ -379,7 +372,7 @@ const Reports: React.FC = () => {
           </div>
         );
 
-      case 'columns':
+      case 'columns': {
         const availableColumns = wizardState.config.type ? getAvailableColumns(wizardState.config.type) : [];
         return (
           <div className="space-y-6">
@@ -428,6 +421,7 @@ const Reports: React.FC = () => {
             </div>
           </div>
         );
+      }
 
       case 'preview':
         return (
@@ -670,7 +664,7 @@ const Reports: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h3 className="font-medium text-gray-900 mb-4">Etapas</h3>
               <div className="space-y-2">
-                {wizardState.steps.map((step, index) => (
+                {wizardState.steps.map((step) => (
                   <div
                     key={step.id}
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${

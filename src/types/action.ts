@@ -11,7 +11,8 @@ export enum TipoAcao {
 export enum StatusAcao {
   NAO_INICIADA = 'Não iniciada',
   EM_IMPLEMENTACAO = 'Em implementação',
-  ACOES_IMPLEMENTADAS = 'Ações implementadas'
+  IMPLEMENTADA = 'Implementada',
+  ACOES_IMPLEMENTADAS = 'Ações Implementadas'
 }
 
 export enum SituacaoAcao {

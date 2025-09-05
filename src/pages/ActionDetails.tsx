@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit,
@@ -12,12 +12,12 @@ import {
   User,
   FileText,
   TrendingUp,
-  MessageSquare,
   Upload,
   Activity
 } from 'lucide-react';
 import { Action, ActionTimeline, ActionEvidence, StatusAcao, SituacaoAcao, TipoAcao } from '../types/action';
 import { isActionOverdue, getActionStatusColor } from "../types/action";
+import Layout from '../components/Layout';
 
 const mockAction: Action = {
   id: '1',
@@ -118,9 +118,8 @@ const mockEvidences: ActionEvidence[] = [
 ];
 
 const ActionDetails: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'evidences'>('overview');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   // Simular carregamento
   const action = mockAction;
@@ -177,7 +176,8 @@ const ActionDetails: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <Layout>
+      <div className="p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link
@@ -526,7 +526,8 @@ const ActionDetails: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

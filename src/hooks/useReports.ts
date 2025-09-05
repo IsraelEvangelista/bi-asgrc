@@ -276,7 +276,7 @@ export const useReports = () => {
   }, [exportToCSV]);
 
   // Export to PDF (simplified - would need a PDF library like jsPDF)
-  const exportToPDF = useCallback(async (reportData: ReportData, filename: string, _options: ExportOptions) => {
+  const exportToPDF = useCallback(async (reportData: ReportData, filename: string) => {
     // This is a simplified implementation
     // In a real app, you'd use jsPDF or similar library
     
@@ -319,7 +319,7 @@ export const useReports = () => {
           await exportToExcel(reportData, filename);
           break;
         case 'pdf':
-          await exportToPDF(reportData, filename, options);
+          await exportToPDF(reportData, filename);
           break;
         default:
           throw new Error('Formato de exportação não suportado');

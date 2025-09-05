@@ -19,6 +19,8 @@ Este é um arquivo de memória da nossa sessão de trabalho para que possamos co
 
 6.  **Criação dos Épicos de Desenvolvimento:** Todos os épicos, do 1 ao 9, foram criados e detalhados com base no PRD, cobrindo todo o escopo do projeto. Os arquivos estão em `.claude/EPICS/`.
 
+7.  **Hotfix de Nomenclatura:** Realizado ajuste técnico para renomear a tabela de notificações para `021_notificacoes`, alinhando-a com o padrão de nomenclatura do projeto. A correção foi aplicada no PRD, no `EPIC 9`, e em todo o código-fonte do frontend.
+
 ## Instruções e Fluxo de Trabalho
 
 - **Uso de Agentes BMAD:** Estamos no **Ciclo de Planejamento**. Minha atuação corrente é a de **PM (Project Manager)** e **Arquiteto de Soluções**.
@@ -29,6 +31,7 @@ Este é um arquivo de memória da nossa sessão de trabalho para que possamos co
 
 ## Ponto de Parada / Próximo Passo:
 
-Concluímos a fase de **Planejamento** com a criação de todos os Épicos de desenvolvimento. A próxima etapa é a **Execução**, que será realizada integralmente pelo agente **TRAE SOLO**.
+A fase de **Planejamento** está concluída. A fase de **Execução** foi seguida por um hotfix para ajustar a nomenclatura da tabela de notificações.
 
-- **Instrução:** O agente TRAE SOLO deve iniciar a implementação sequencial de todos os épicos, começando pelo **Epic 1: Configuração e Fundação do Banco de Dados (Supabase)** e seguindo a ordem numérica até o **Epic 9**.
+- **Status Atual:** O servidor de desenvolvimento está em execução na porta `8080`.
+- **Instrução:** O sistema está aguardando **validação e testes manuais** para garantir que a funcionalidade de notificações opera corretamente. O próximo ciclo é o de **Revisão**.

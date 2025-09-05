@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import {
@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { useToleranceAlerts } from '../hooks/useAlerts';
 import AlertBanner from '../components/AlertBanner';
+import Layout from '../components/Layout';
 
 const Indicators: React.FC = () => {
   const [indicators, setIndicators] = useState<Indicator[]>([]);
@@ -25,7 +26,7 @@ const Indicators: React.FC = () => {
   });
 
   // Mock data - será substituído pela integração com Supabase
-  const mockIndicators: Indicator[] = [
+  const mockIndicators: Indicator[] = useMemo(() => [
     {
       id: '1',
       id_risco: 'RISK-001',
@@ -77,20 +78,19 @@ const Indicators: React.FC = () => {
       created_at: '2024-01-05T16:45:00Z',
       updated_at: '2024-01-12T11:20:00Z'
     }
-  ];
+  ], []);
+
+  const loadIndicators = useCallback(async () => {
+    setLoading(true);
+    // Aqui será implementada a integração com Supabase
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIndicators(mockIndicators);
+    setLoading(false);
+  }, [mockIndicators]);
 
   useEffect(() => {
-    // Simular carregamento de dados
-    const loadIndicators = async () => {
-      setLoading(true);
-      // Aqui será implementada a integração com Supabase
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIndicators(mockIndicators);
-      setLoading(false);
-    };
-
     loadIndicators();
-  }, []);
+  }, [loadIndicators]);
 
   const filteredIndicators = indicators.filter(indicator => {
     const matchesSearch = !searchTerm || 
@@ -110,7 +110,7 @@ const Indicators: React.FC = () => {
   // Alertas de tolerância
   const toleranceAlerts = useToleranceAlerts(filteredIndicators);
 
-  const handleFilterChange = (key: keyof IndicatorFilters, value: any) => {
+  const handleFilterChange = (key: keyof IndicatorFilters, value: string | undefined) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
@@ -138,7 +138,8 @@ const Indicators: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -375,7 +376,8 @@ const Indicators: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

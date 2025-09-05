@@ -1,6 +1,6 @@
 import { useState, memo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, Settings } from 'lucide-react';
+import { ChevronDown, Settings, BarChart3, BookOpen, Shield, Workflow, Target, FileText, ClipboardList, UserPlus } from 'lucide-react';
 import { usePermissions } from '../hooks/usePermissions';
 import { ProtectedComponent } from './ProtectedComponent';
 
@@ -68,6 +68,27 @@ const Navbar = () => {
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
   const { canManageProfiles, canManageUsers } = usePermissions();
 
+  const getIconForNavItem = (label: string) => {
+    switch (label) {
+      case 'Conceitos':
+        return <BookOpen className="h-4 w-4" />;
+      case 'Gestão de Riscos':
+        return <Shield className="h-4 w-4" />;
+      case 'Processos':
+        return <Workflow className="h-4 w-4" />;
+      case 'Riscos Estratégicos':
+        return <Target className="h-4 w-4" />;
+      case 'Formulários':
+        return <ClipboardList className="h-4 w-4" />;
+      case 'Relatórios':
+        return <FileText className="h-4 w-4" />;
+      case 'Cadastro':
+        return <UserPlus className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
+
   const toggleDropdown = useCallback((label: string) => {
     setOpenDropdowns(prev => 
       prev.includes(label) 
@@ -95,12 +116,13 @@ const Navbar = () => {
         <div key={item.label} className="relative group">
           <button
             onClick={() => toggleDropdown(item.label)}
-            className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 transform ${
               active
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-gradient-to-b from-blue-200 to-blue-300 text-blue-800 shadow-inner border border-blue-400'
+                : 'bg-gradient-to-b from-gray-50 to-gray-100 text-gray-700 shadow-md border border-gray-300 hover:from-blue-100 hover:to-blue-200 hover:text-blue-800 hover:shadow-lg hover:scale-105 active:shadow-inner active:scale-95'
             }`}
           >
+            {getIconForNavItem(item.label)}
             <span>{item.label}</span>
             <ChevronDown 
               className={`h-4 w-4 transition-transform duration-200 ${
@@ -110,13 +132,17 @@ const Navbar = () => {
           </button>
           
           {isOpen && (
-            <div className="absolute left-0 mt-1 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+            <div className="absolute left-0 mt-1 w-64 bg-white rounded-md shadow-lg border-2 border-blue-400 z-50" style={{boxShadow: '0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)'}}>
               <div className="py-1">
                 {item.children?.map(child => (
                   <div key={child.label}>
                     {child.children ? (
                       <div>
-                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider ${
+                          child.label === 'Portfólio de Riscos' || child.label === 'Monitoramento'
+                            ? 'bg-blue-900 text-white'
+                            : 'bg-gray-50 text-gray-500'
+                        }`}>
                           {child.label}
                         </div>
                         {child.children.map(grandchild => (
@@ -127,7 +153,7 @@ const Navbar = () => {
                             className={`block px-6 py-2 text-sm transition-colors duration-200 ${
                               isActive(grandchild.path)
                                 ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                             }`}
                           >
                             {grandchild.label}
@@ -141,7 +167,7 @@ const Navbar = () => {
                         className={`block px-4 py-2 text-sm transition-colors duration-200 ${
                           isActive(child.path)
                             ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                         }`}
                       >
                         {child.label}
@@ -160,31 +186,33 @@ const Navbar = () => {
       <Link
         key={item.label}
         to={item.path!}
-        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+        className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 transform ${
           active
-            ? 'bg-blue-100 text-blue-700'
-            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            ? 'bg-gradient-to-b from-blue-200 to-blue-300 text-blue-800 shadow-inner border border-blue-400'
+            : 'bg-gradient-to-b from-gray-50 to-gray-100 text-gray-700 shadow-md border border-gray-300 hover:from-blue-100 hover:to-blue-200 hover:text-blue-800 hover:shadow-lg hover:scale-105 active:shadow-inner active:scale-95'
         }`}
       >
-        {item.label}
+        {getIconForNavItem(item.label)}
+        <span>{item.label}</span>
       </Link>
     );
   };
 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center space-x-1 h-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-evenly h-12 w-full">
           {/* Link para Dashboard */}
           <Link
             to="/dashboard"
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 transform ${
               location.pathname === '/dashboard'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-gradient-to-b from-blue-200 to-blue-300 text-blue-800 shadow-inner border border-blue-400'
+                : 'bg-gradient-to-b from-gray-50 to-gray-100 text-gray-700 shadow-md border border-gray-300 hover:from-blue-100 hover:to-blue-200 hover:text-blue-800 hover:shadow-lg hover:scale-105 active:shadow-inner active:scale-95'
             }`}
           >
-            Dashboard
+            <BarChart3 className="h-4 w-4" />
+            <span>Dashboard</span>
           </Link>
           
           {/* Itens de Navegação */}
@@ -197,10 +225,10 @@ const Navbar = () => {
             <div className="relative group">
               <button
                 onClick={() => toggleDropdown('Configurações')}
-                className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 transform ${
                   location.pathname.startsWith('/configuracoes')
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-gradient-to-b from-blue-200 to-blue-300 text-blue-800 shadow-inner border border-blue-400'
+                    : 'bg-gradient-to-b from-gray-50 to-gray-100 text-gray-700 shadow-md border border-gray-300 hover:from-blue-100 hover:to-blue-200 hover:text-blue-800 hover:shadow-lg hover:scale-105 active:shadow-inner active:scale-95'
                 }`}
               >
                 <Settings className="h-4 w-4" />
@@ -213,7 +241,7 @@ const Navbar = () => {
               </button>
               
               {openDropdowns.includes('Configurações') && (
-                <div className="absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg border-2 border-blue-400 z-50" style={{boxShadow: '0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)'}}>
                   <div className="py-1">
                     <ProtectedComponent customCheck={canManageProfiles}>
                       <Link
@@ -222,7 +250,7 @@ const Navbar = () => {
                         className={`block px-4 py-2 text-sm transition-colors duration-200 ${
                           location.pathname === '/configuracoes/perfis'
                             ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                         }`}
                       >
                         Perfis de Acesso
@@ -236,7 +264,7 @@ const Navbar = () => {
                         className={`block px-4 py-2 text-sm transition-colors duration-200 ${
                           location.pathname === '/configuracoes/usuarios'
                             ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                         }`}
                       >
                         Usuários

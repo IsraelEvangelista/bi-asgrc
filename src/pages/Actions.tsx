@@ -13,9 +13,10 @@ import {
   Eye,
   Edit,
   Download,
-  Play,
-  Pause
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import Layout from '../components/Layout';
 import {
   Action,
   ActionFilters,
@@ -23,11 +24,9 @@ import {
   StatusAcao,
   SituacaoAcao,
   getActionStatusColor,
-  isActionOverdue,
-  getActionPriority
+  isActionOverdue
 } from '../types/action';
 import { useOverdueActionAlerts } from '../hooks/useAlerts';
-import Layout from '../components/Layout';
 import AlertBanner from '../components/AlertBanner';
 
 // Mock data para demonstração
@@ -78,15 +77,13 @@ const mockActions: Action[] = [
 
 const Actions: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<ActionFilters>({
-    tipo_acao: undefined,
-    status: undefined,
-    situacao: undefined,
-    area_executora: undefined,
-    prazo_inicio: undefined,
-    prazo_fim: undefined
-  });
   const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<{
+    tipo_acao?: TipoAcao;
+    status?: StatusAcao;
+    situacao?: SituacaoAcao;
+    area_executora?: string;
+  }>({});
 
   const filteredActions = useMemo(() => {
     return mockActions.filter(action => {
@@ -130,7 +127,8 @@ const Actions: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
+    <Layout>
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -495,7 +493,8 @@ const Actions: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 };
 

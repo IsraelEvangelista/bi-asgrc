@@ -1,0 +1,1 @@
+-- Migração para corrigir o campo severidade da tabela 006_matriz_ris

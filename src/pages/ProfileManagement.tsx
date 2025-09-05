@@ -5,6 +5,7 @@ import { useProfiles } from '../hooks/useProfiles';
 import { usePermissions } from '../hooks/usePermissions';
 import { ProfileForm } from '../components/ProfileForm';
 import { toast } from 'sonner';
+import Layout from '../components/Layout';
 
 export const ProfileManagement: React.FC = () => {
   const {
@@ -150,21 +151,24 @@ export const ProfileManagement: React.FC = () => {
 
   if (!canManageProfiles()) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-          <h2 className="mt-4 text-lg font-medium text-gray-900">Acesso Negado</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Você não tem permissão para acessar o gerenciamento de perfis.
-          </p>
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+            <h2 className="mt-4 text-lg font-medium text-gray-900">Acesso Negado</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Você não tem permissão para acessar o gerenciamento de perfis.
+            </p>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Layout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -354,8 +358,9 @@ export const ProfileManagement: React.FC = () => {
           )}
         </div>
       </div>
+      </div>
 
-      {/* Profile Form Modal */}
+        {/* Profile Form Modal */}
       {showForm && (
         <ProfileForm
           profile={selectedProfile}
@@ -393,6 +398,6 @@ export const ProfileManagement: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 };

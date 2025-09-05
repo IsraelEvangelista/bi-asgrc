@@ -5,6 +5,7 @@ import { useCreateRisk } from '@/hooks/useRisks';
 import { RiskFormData } from '@/types';
 import RiskForm from '@/components/RiskForm';
 import { toast } from 'sonner';
+import Layout from '../components/Layout';
 
 const RiskFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +26,8 @@ const RiskFormPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
         <button
           onClick={() => navigate('/riscos')}
@@ -41,7 +43,8 @@ const RiskFormPage: React.FC = () => {
         onSubmit={handleSubmit}
         onCancel={() => navigate('/riscos')}
       />
-    </div>
+      </div>
+    </Layout>
   );
 };
 
