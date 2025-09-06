@@ -149,7 +149,7 @@ const Login: React.FC = () => {
 
   // Redirecionamento se usuário já estiver logado
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/indicadores" replace />;
   }
 
   const handleLogin = async (data: LoginFormData) => {

@@ -150,7 +150,7 @@ export const useProcesses = () => {
       const { data: linkedProcessos, error: checkError } = await supabase
         .from('005_processos')
         .select('id')
-        .eq('id_macro', id)
+        .eq('id_macroprocesso', id)
         .limit(1);
 
       if (checkError) throw checkError;
@@ -180,10 +180,12 @@ export const useProcesses = () => {
 
   // PROCESSOS CRUD
   const fetchProcessos = useCallback(async (filters?: ProcessFilters) => {
+    console.log('🔍 fetchProcessos iniciado com filtros:', filters);
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('📊 Construindo query para 005_processos...');
       let query = supabase
         .from('005_processos')
         .select(`
@@ -197,31 +199,42 @@ export const useProcesses = () => {
         `);
 
       if (filters?.search) {
+        console.log('🔎 Aplicando filtro de busca:', filters.search);
         query = query.ilike('processo', `%${filters.search}%`);
       }
 
       if (filters?.macroprocesso_id) {
-        query = query.eq('id_macro', filters.macroprocesso_id);
+        console.log('🎯 Aplicando filtro de macroprocesso_id:', filters.macroprocesso_id);
+        // Corrigindo o nome da coluna de id_macro para id_macroprocesso
+        query = query.eq('id_macroprocesso', filters.macroprocesso_id);
       }
 
       if (filters?.situacao && filters.situacao !== 'Todos') {
+        console.log('📋 Aplicando filtro de situação:', filters.situacao);
         query = query.eq('situacao', filters.situacao);
       }
 
       query = query.order('processo', { ascending: true });
 
+      console.log('🚀 Executando query no Supabase...');
       const { data, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('❌ Erro na query do Supabase:', fetchError);
+        throw fetchError;
+      }
 
+      console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'processos');
       setProcessos(data || []);
       return data || [];
     } catch (err) {
+      console.error('💥 Erro em fetchProcessos:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar processos';
       setError(errorMessage);
       return [];
     } finally {
       setIsLoading(false);
+      console.log('🏁 fetchProcessos finalizado');
     }
   }, []);
 
@@ -319,10 +332,12 @@ export const useProcesses = () => {
 
   // SUBPROCESSOS CRUD
   const fetchSubprocessos = useCallback(async (filters?: ProcessFilters) => {
+    console.log('🔍 fetchSubprocessos iniciado com filtros:', filters);
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('📊 Construindo query para 013_subprocessos...');
       let query = supabase
         .from('013_subprocessos')
         .select(`
@@ -341,31 +356,42 @@ export const useProcesses = () => {
         `);
 
       if (filters?.search) {
+        console.log('🔎 Aplicando filtro de busca:', filters.search);
         query = query.ilike('subprocesso', `%${filters.search}%`);
       }
 
       if (filters?.processo_id) {
+        console.log('🎯 Aplicando filtro de processo_id:', filters.processo_id);
         query = query.eq('id_processo', filters.processo_id);
       }
 
       if (filters?.situacao && filters.situacao !== 'Todos') {
+        console.log('📋 Aplicando filtro de situação:', filters.situacao);
         query = query.eq('situacao', filters.situacao);
       }
 
       query = query.order('subprocesso', { ascending: true });
 
+      console.log('🚀 Executando query no Supabase...');
       const { data, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('❌ Erro na query do Supabase:', fetchError);
+        throw fetchError;
+      }
 
+      console.log('✅ Dados recebidos do Supabase:', data?.length || 0, 'subprocessos');
+      console.log('📋 Subprocessos encontrados:', data);
       setSubprocessos(data || []);
       return data || [];
     } catch (err) {
+      console.error('💥 Erro em fetchSubprocessos:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar subprocessos';
       setError(errorMessage);
       return [];
     } finally {
       setIsLoading(false);
+      console.log('🏁 fetchSubprocessos finalizado');
     }
   }, []);
 

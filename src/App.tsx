@@ -1,21 +1,16 @@
-import { useEffect, memo, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy, memo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
+import { supabase } from './lib/supabase';
 import ProtectedRoute from './components/ProtectedRoute';
-import NotificationInitializer from './components/NotificationInitializer';
-import RealtimeStatus from './components/RealtimeStatus';
 import LoadingSpinner, { FullScreenLoader } from './components/LoadingSpinner';
 
 // Lazy loading para componentes de páginas
 const Login = lazy(() => import('./pages/Login'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const RiskList = lazy(() => import('./pages/RiskList'));
-const RiskDetail = lazy(() => import('./pages/RiskDetail'));
-const RiskFormPage = lazy(() => import('./pages/RiskFormPage'));
 const ProfileManagement = lazy(() => import('./pages/ProfileManagement').then(module => ({ default: module.ProfileManagement })));
 const UserManagement = lazy(() => import('./pages/UserManagement').then(module => ({ default: module.UserManagement })));
-const Reports = lazy(() => import('./pages/Reports'));
-const ProcessHierarchy = lazy(() => import('./pages/ProcessHierarchy'));
+const Conceitos = lazy(() => import('./pages/Conceitos'));
 const MacroprocessManagement = lazy(() => import('./pages/MacroprocessManagement'));
 const ProcessManagement = lazy(() => import('./pages/ProcessManagement'));
 const SubprocessManagement = lazy(() => import('./pages/SubprocessManagement'));
@@ -32,71 +27,117 @@ const AreasManagement = lazy(() => import('./pages/AreasManagement'));
 const NaturezaManagement = lazy(() => import('./pages/NaturezaManagement'));
 const CategoriaManagement = lazy(() => import('./pages/CategoriaManagement'));
 const SubcategoriaManagement = lazy(() => import('./pages/SubcategoriaManagement'));
-const Conceitos = lazy(() => import('./pages/Conceitos'));
+const CadeiaValor = lazy(() => import('./pages/CadeiaValor'));
+const ProcessDetail = lazy(() => import('./pages/ProcessDetail'));
+const ArquiteturaProcessos = lazy(() => import('./pages/ArquiteturaProcessos'));
+const RiscosProcessosTrabalho = lazy(() => import('./pages/RiscosProcessosTrabalho'));
 
 function App() {
-  const authStore = useAuthStore();
-  const { initialize } = authStore;
+  const { 
+    user, 
+    userProfile, 
+    loading, 
+    error, 
+    authCheckCompleted, 
+    isFullyInitialized,
+    initialize 
+  } = useAuthStore();
+
+  console.log('🔄 App: Renderizando com estado:', {
+    loading,
+    authCheckCompleted,
+    hasUser: !!user,
+    hasUserProfile: !!userProfile,
+    isFullyInitialized,
+    error
+  });
 
   useEffect(() => {
+    let initTimer: NodeJS.Timeout;
+    let visibilityTimer: NodeJS.Timeout;
+    let isInitializing = false;
+
     const initializeAuth = async () => {
       try {
-        await initialize();
+        // Only initialize if not already initialized or in progress
+        if (!isFullyInitialized && !isInitializing) {
+          isInitializing = true;
+          await initialize();
+        }
       } catch (error) {
         console.error('Erro na inicialização da autenticação:', error);
+      } finally {
+        isInitializing = false;
       }
     };
     
-    initializeAuth();
-  }, [initialize]);
+    // Small delay to ensure DOM is ready
+    initTimer = setTimeout(initializeAuth, 100);
+
+    // Listener para mudanças de visibilidade da página com debouncing
+     const handleVisibilityChange = () => {
+       // Quando a página fica visível novamente, verifica se precisa revalidar a sessão
+       // IMPORTANTE: Só executa se estiver totalmente inicializado E não há usuário
+       if (!document.hidden && authCheckCompleted && !isInitializing) {
+         // Limpar timer anterior se existir
+         if (visibilityTimer) {
+           clearTimeout(visibilityTimer);
+         }
+         
+         // Debounce de 1000ms para evitar múltiplas execuções
+         visibilityTimer = setTimeout(async () => {
+           try {
+             const { data: { session } } = await supabase.auth.getSession();
+             // Só reinicializa se há sessão válida MAS não há usuário carregado
+             // E se não estamos em processo de carregamento
+             if (session && !user && !isInitializing) {
+               console.log('🔄 Visibilidade: Sessão válida detectada, reinicializando...');
+               isInitializing = true;
+               await initialize();
+             }
+           } catch (error) {
+             console.error('Erro ao verificar sessão após mudança de visibilidade:', error);
+           } finally {
+             isInitializing = false;
+           }
+         }, 1000); // Aumentado para 1 segundo
+       }
+     };
+ 
+     document.addEventListener('visibilitychange', handleVisibilityChange);
+ 
+     return () => {
+       if (initTimer) clearTimeout(initTimer);
+       if (visibilityTimer) clearTimeout(visibilityTimer);
+       document.removeEventListener('visibilitychange', handleVisibilityChange);
+     };
+   }, []); // Executar apenas uma vez na montagem do componente
+
+  // Show loading only during initial app load
+  if (loading && !authCheckCompleted) {
+    return <FullScreenLoader text="Inicializando aplicação..." />;
+  }
+  
+  // If there's a user but profile is still loading
+  if (user && loading && !userProfile) {
+    return <FullScreenLoader text="Carregando perfil do usuário..." />;
+  }
+  
+  console.log('🔍 App render state:', {
+    loading,
+    authCheckCompleted,
+    user: !!user,
+    userProfile: !!userProfile,
+    isFullyInitialized
+  });
 
   return (
     <Router>
-      <NotificationInitializer />
-      <RealtimeStatus />
-      <Suspense fallback={<FullScreenLoader text="Carregando página..." />}>
-        <Routes>
+        <Suspense fallback={<FullScreenLoader text="Carregando página..." />}>
+          <Routes>
           {/* Rota pública - Login */}
           <Route path="/login" element={<Login />} />
-          
-          {/* Rotas protegidas */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
         
-          {/* Rotas do módulo de riscos */}
-          <Route 
-            path="/riscos" 
-            element={
-              <ProtectedRoute>
-                <RiskList />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/riscos/novo" 
-            element={
-              <ProtectedRoute>
-                <RiskFormPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/riscos/:id" 
-            element={
-              <ProtectedRoute>
-                <RiskDetail />
-              </ProtectedRoute>
-            } 
-          />
-          
           {/* Rotas do módulo de indicadores */}
           <Route 
             path="/indicadores" 
@@ -171,15 +212,7 @@ function App() {
             } 
           />
           
-          {/* Rota de Relatórios */}
-          <Route 
-            path="/relatorios" 
-            element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            } 
-          />
+
           
           {/* Rota de Conceitos */}
           <Route 
@@ -191,12 +224,38 @@ function App() {
             } 
           />
           
-          {/* Rotas de Processos */}
           <Route 
-            path="/processos" 
+            path="/processos/cadeia-valor" 
             element={
               <ProtectedRoute>
-                <ProcessHierarchy />
+                <CadeiaValor />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processo/:macroprocessoId" 
+            element={
+              <ProtectedRoute>
+                <ProcessDetail />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processos/arquitetura" 
+            element={
+              <ProtectedRoute>
+                <ArquiteturaProcessos />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/processos/riscos-trabalho" 
+            element={
+              <ProtectedRoute>
+                <RiscosProcessosTrabalho />
               </ProtectedRoute>
             } 
           />
@@ -292,13 +351,27 @@ function App() {
             } 
           />
           
-          {/* Rota raiz redireciona para dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Rota raiz */}
+          <Route
+            path="/"
+            element={<Navigate to="/login" replace />}
+          />
           
-          {/* Rota catch-all redireciona para dashboard */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Suspense>
+          {/* Catch-all route */}
+          <Route
+            path="*"
+            element={<Navigate to="/login" replace />}
+          />
+          </Routes>
+        </Suspense>
+        
+        {/* Toast notifications */}
+        <Toaster 
+          position="top-right" 
+          richColors 
+          closeButton 
+          duration={4000}
+        />
     </Router>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Risk, CreateRiskInput, UpdateRiskInput, RiskFilters } from '../types';
 
@@ -6,6 +6,22 @@ export function useRisks(filters?: RiskFilters) {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Memoizar filters para estabilizar dependências
+  const stableFilters = useMemo(() => {
+    if (!filters) return undefined;
+    return {
+      classificacao: filters.classificacao,
+      responsavel_risco: filters.responsavel_risco,
+      severidade_min: filters.severidade_min,
+      severidade_max: filters.severidade_max
+    };
+  }, [
+    filters?.classificacao,
+    filters?.responsavel_risco, 
+    filters?.severidade_min,
+    filters?.severidade_max
+  ]);
 
   const fetchRisks = useCallback(async () => {
     try {
@@ -19,17 +35,17 @@ export function useRisks(filters?: RiskFilters) {
         .order('created_at', { ascending: false });
 
       // Aplicar filtros se fornecidos
-      if (filters?.classificacao) {
-        query = query.eq('classificacao', filters.classificacao);
+      if (stableFilters?.classificacao) {
+        query = query.eq('classificacao', stableFilters.classificacao);
       }
-      if (filters?.responsavel_risco) {
-        query = query.ilike('responsavel_risco', `%${filters.responsavel_risco}%`);
+      if (stableFilters?.responsavel_risco) {
+        query = query.ilike('responsavel_risco', `%${stableFilters.responsavel_risco}%`);
       }
-      if (filters?.severidade_min) {
-        query = query.gte('severidade', filters.severidade_min);
+      if (stableFilters?.severidade_min) {
+        query = query.gte('severidade', stableFilters.severidade_min);
       }
-      if (filters?.severidade_max) {
-        query = query.lte('severidade', filters.severidade_max);
+      if (stableFilters?.severidade_max) {
+        query = query.lte('severidade', stableFilters.severidade_max);
       }
 
       const { data, error } = await query;
@@ -42,11 +58,12 @@ export function useRisks(filters?: RiskFilters) {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [stableFilters]);
 
+  // Execute fetchRisks when filters change - fixed to prevent infinite loop
   useEffect(() => {
     fetchRisks();
-  }, [filters, fetchRisks]);
+  }, [stableFilters]); // Use stableFilters directly instead of fetchRisks
 
   return {
     risks,
@@ -83,11 +100,12 @@ export function useRisk(id: string) {
     }
   }, [id]);
 
+  // Execute fetchRisk when id changes - fixed to prevent infinite loop
   useEffect(() => {
     if (id) {
       fetchRisk();
     }
-  }, [id, fetchRisk]);
+  }, [id]); // Removed fetchRisk dependency to prevent infinite loop
 
   return {
     risk,

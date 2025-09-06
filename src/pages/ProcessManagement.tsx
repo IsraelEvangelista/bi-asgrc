@@ -43,7 +43,7 @@ const ProcessManagement: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const [formData, setFormData] = useState<ProcessoFormData>({
-    id_macro: '',
+    id_macroprocesso: '',
     processo: '',
     responsavel_processo: '',
     situacao: 'Ativo'
@@ -51,10 +51,11 @@ const ProcessManagement: React.FC = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Fixed to prevent infinite loops - removed function dependencies
   useEffect(() => {
     fetchProcessos(filters);
     fetchMacroprocessos(); // Para popular o select de macroprocessos
-  }, [fetchProcessos, fetchMacroprocessos, filters]);
+  }, [filters.search, filters.situacao]); // Only depend on filter values, not functions
 
   const handleSearch = (searchTerm: string) => {
     setFilters(prev => ({ ...prev, search: searchTerm }));
@@ -67,8 +68,8 @@ const ProcessManagement: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.id_macro) {
-      errors.id_macro = 'Macroprocesso é obrigatório';
+    if (!formData.id_macroprocesso) {
+      errors.id_macroprocesso = 'Macroprocesso é obrigatório';
     }
 
     if (!formData.processo.trim()) {
@@ -103,7 +104,7 @@ const ProcessManagement: React.FC = () => {
   const handleEdit = (processo: Processo) => {
     setEditingProcesso(processo);
     setFormData({
-      id_macro: processo.id_macro,
+      id_macroprocesso: processo.id_macroprocesso,
       processo: processo.processo,
       responsavel_processo: processo.responsavel_processo || '',
       situacao: processo.situacao
@@ -119,7 +120,7 @@ const ProcessManagement: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      id_macro: '',
+      id_macroprocesso: '',
       processo: '',
       responsavel_processo: '',
       situacao: 'Ativo'
@@ -305,7 +306,7 @@ const ProcessManagement: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Building className="w-4 h-4 text-gray-400" />
                           <span className="text-sm text-gray-900">
-                            {processo.macroprocesso?.macroprocesso || getMacroprocessoName(processo.id_macro)}
+                            {processo.macroprocesso?.macroprocesso || getMacroprocessoName(processo.id_macroprocesso)}
                           </span>
                         </div>
                         <div className="text-xs text-gray-500">
@@ -363,8 +364,8 @@ const ProcessManagement: React.FC = () => {
                     Macroprocesso *
                   </label>
                   <select
-                    value={formData.id_macro}
-                    onChange={(e) => setFormData(prev => ({ ...prev, id_macro: e.target.value }))}
+                    value={formData.id_macroprocesso}
+                  onChange={(e) => setFormData(prev => ({ ...prev, id_macroprocesso: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Selecione o macroprocesso</option>
@@ -374,8 +375,8 @@ const ProcessManagement: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  {formErrors.id_macro && (
-                    <p className="text-red-600 text-sm mt-1">{formErrors.id_macro}</p>
+                  {formErrors.id_macroprocesso && (
+                  <p className="text-red-600 text-sm mt-1">{formErrors.id_macroprocesso}</p>
                   )}
                 </div>
 

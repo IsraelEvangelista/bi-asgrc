@@ -17,9 +17,10 @@ const AreasManagement: React.FC<AreasManagementProps> = ({ onAreaSelect }) => {
   const [editingArea, setEditingArea] = useState<AreaGerencia | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  // Fixed to prevent infinite loops - removed function dependencies
   useEffect(() => {
     fetchAreas();
-  }, [fetchAreas]);
+  }, []); // Empty dependency array - only run on mount
 
   const filteredAreas = areas.filter(area =>
     area.gerencia.toLowerCase().includes(searchTerm.toLowerCase()) ||

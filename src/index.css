@@ -29,20 +29,78 @@
   animation: slide-in-left 0.5s ease-out forwards;
 }
 
-/* Transições suaves para navegação */
-* {
-  transition: opacity 0.2s ease-in-out;
+/* Animação específica para o nome do conceito selecionado */
+@keyframes slide-in-name {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
+
+.animate-slide-in-name {
+  animation: slide-in-name 0.6s ease-out forwards;
+}
+
+/* Animação específica para o texto da descrição do conceito */
+@keyframes slide-in-description {
+  0% {
+    opacity: 0;
+    transform: translateX(-80px);
+  }
+  30% {
+    opacity: 0.3;
+    transform: translateX(-40px);
+  }
+  60% {
+    opacity: 0.6;
+    transform: translateX(-15px);
+  }
+  80% {
+    opacity: 0.8;
+    transform: translateX(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-description {
+  animation: slide-in-description 0.8s ease-out forwards;
+}
+
+/* Transições suaves para navegação - removida transição global */
+/* Aplicar transições apenas onde necessário para evitar flash */
 
 /* Transições específicas para elementos principais */
 main {
-  transition: all 0.3s ease-in-out;
+  transition: opacity 0.15s ease-in-out;
 }
 
 /* Evita flash de conteúdo não estilizado */
 body {
   background-color: #f8fafc;
   transition: background-color 0.2s ease-in-out;
+}
+
+/* Prevenção de FOUC (Flash of Unstyled Content) */
+.page-content {
+  opacity: 0;
+  animation: fadeInContent 0.2s ease-in-out forwards;
+}
+
+@keyframes fadeInContent {
+  to {
+    opacity: 1;
+  }
 }
 
 /* Transições para componentes de carregamento */

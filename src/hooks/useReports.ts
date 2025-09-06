@@ -94,7 +94,7 @@ export const useReports = () => {
             .select(`
               id,
               processo,
-              macroprocessos:id_macro(macroprocesso),
+              macroprocessos:id_macroprocesso(macroprocesso),
               responsavel_processo,
               situacao,
               created_at,

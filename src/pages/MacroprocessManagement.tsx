@@ -50,9 +50,10 @@ const MacroprocessManagement: React.FC = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Fixed to prevent infinite loops - removed function dependencies
   useEffect(() => {
     fetchMacroprocessos(filters);
-  }, [fetchMacroprocessos, filters]);
+  }, [filters.search, filters.situacao]); // Only depend on filter values, not functions
 
   const handleSearch = (searchTerm: string) => {
     setFilters(prev => ({ ...prev, search: searchTerm }));

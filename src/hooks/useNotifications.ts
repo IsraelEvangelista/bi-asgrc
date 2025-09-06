@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import {
@@ -7,7 +7,6 @@ import {
   NotificacaoStats,
   TipoNotificacao
 } from '../types/notification';
-import { useRealtimeNotifications } from './useRealtimeNotifications';
 import { toast } from 'sonner';
 
 export function useNotifications() {
@@ -17,16 +16,19 @@ export function useNotifications() {
   const [stats, setStats] = useState<NotificacaoStats | null>(null);
 
 
-  // Buscar notificações do usuário logado
+  // Memoizar user ID para estabilizar dependências
+  const userId = useMemo(() => user?.id, [user?.id]);
+
+  // Buscar notificações do usuário logado - memoizado com userId estável
   const fetchNotificacoes = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
 
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('021_notificacoes')
         .select('*')
-        .eq('id_usuario_destino', user.id)
+        .eq('id_usuario_destino', userId)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -38,17 +40,17 @@ export function useNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [userId]);
 
-  // Buscar estatísticas das notificações
+  // Buscar estatísticas das notificações - memoizado com userId estável
   const fetchStats = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
 
     try {
       const { data, error } = await supabase
         .from('021_notificacoes')
         .select('id, lida, tipo_notificacao')
-        .eq('id_usuario_destino', user.id);
+        .eq('id_usuario_destino', userId);
 
       if (error) throw error;
 
@@ -74,7 +76,7 @@ export function useNotifications() {
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
     }
-  }, [user?.id]);
+  }, [userId]);
 
   // Criar nova notificação (para administradores)
   const createNotificacao = useCallback(async (input: CreateNotificacaoInput) => {
@@ -102,16 +104,16 @@ export function useNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [fetchNotificacoes, fetchStats]);
+  }, []);
 
-  // Marcar notificação como lida
+  // Marcar notificação como lida - memoizado com userId estável
   const markAsRead = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
         .from('021_notificacoes')
         .update({ lida: true })
         .eq('id', id)
-        .eq('id_usuario_destino', user?.id);
+        .eq('id_usuario_destino', userId);
 
       if (error) throw error;
 
@@ -127,17 +129,17 @@ export function useNotifications() {
       console.error('Erro ao marcar como lida:', error);
       toast.error('Erro ao marcar notificação como lida');
     }
-  }, [user?.id, fetchStats]);
+  }, [userId]);
 
-  // Marcar todas como lidas
+  // Marcar todas como lidas - memoizado com userId estável
   const markAllAsRead = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
 
     try {
       const { error } = await supabase
         .from('021_notificacoes')
         .update({ lida: true })
-        .eq('id_usuario_destino', user.id)
+        .eq('id_usuario_destino', userId)
         .eq('lida', false);
 
       if (error) throw error;
@@ -153,16 +155,16 @@ export function useNotifications() {
       console.error('Erro ao marcar todas como lidas:', error);
       toast.error('Erro ao marcar todas as notificações como lidas');
     }
-  }, [user?.id, fetchStats]);
+  }, [userId]);
 
-  // Deletar notificação
+  // Deletar notificação - memoizado com userId estável
   const deleteNotificacao = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
         .from('021_notificacoes')
         .delete()
         .eq('id', id)
-        .eq('id_usuario_destino', user?.id);
+        .eq('id_usuario_destino', userId);
 
       if (error) throw error;
 
@@ -173,55 +175,30 @@ export function useNotifications() {
       console.error('Erro ao deletar notificação:', error);
       toast.error('Erro ao remover notificação');
     }
-  }, [user?.id, fetchStats]);
+  }, [userId]);
 
 
 
-  // Real-time Subscriptions
-  const { isConnected } = useRealtimeNotifications({
-    onNewNotification: (notification) => {
-      // Adicionar nova notificação ao estado
-      setNotificacoes(prev => [notification, ...prev]);
-      
-      // Atualizar estatísticas
-      setStats(prev => prev ? {
-        ...prev,
-        total_notificacoes: prev.total_notificacoes + 1,
-        nao_lidas: prev.nao_lidas + (notification.lida ? 0 : 1)
-      } : null);
-    },
-    onNotificationUpdate: (notification) => {
-      // Atualizar notificação no estado
-      setNotificacoes(prev => 
-        prev.map(n => n.id === notification.id ? notification : n)
-      );
-      
-      // Recarregar estatísticas para garantir consistência
-      fetchStats();
-    },
-    onNotificationDelete: (notificationId) => {
-      // Remover notificação do estado
-      setNotificacoes(prev => prev.filter(n => n.id !== notificationId));
-      
-      // Recarregar estatísticas
-      fetchStats();
-    }
-  });
 
-  // Efeitos
+
+
+  
+
+
+  // Efeitos - usando userId memoizado
   useEffect(() => {
-    if (user?.id) {
+    if (userId) {
       fetchNotificacoes();
       fetchStats();
     } else {
       setNotificacoes([]);
       setStats(null);
     }
-  }, [user?.id, fetchNotificacoes, fetchStats]);
+  }, [userId]); // Removido fetchNotificacoes e fetchStats para evitar loop infinito
 
-  // Computed values
-  const notificacoesNaoLidas = notificacoes.filter(n => !n.lida);
-  const countNaoLidas = notificacoesNaoLidas.length;
+  // Computed values - memoizados para evitar re-cálculos desnecessários
+  const notificacoesNaoLidas = useMemo(() => notificacoes.filter(n => !n.lida), [notificacoes]);
+  const countNaoLidas = useMemo(() => notificacoesNaoLidas.length, [notificacoesNaoLidas]);
 
   return {
     // Estado
@@ -237,9 +214,6 @@ export function useNotifications() {
     createNotificacao,
     markAsRead,
     markAllAsRead,
-    deleteNotificacao,
-    
-    // Real-time
-    isConnected
+    deleteNotificacao
   };
 }

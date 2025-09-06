@@ -54,11 +54,12 @@ const SubprocessManagement: React.FC = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Fixed to prevent infinite loops - removed function dependencies
   useEffect(() => {
     fetchSubprocessos(filters);
     fetchProcessos(); // Para popular o select de processos
     fetchMacroprocessos(); // Para mostrar a hierarquia completa
-  }, [fetchSubprocessos, fetchProcessos, fetchMacroprocessos, filters]);
+  }, [filters.search, filters.situacao]); // Only depend on filter values, not functions
 
   const handleSearch = (searchTerm: string) => {
     setFilters(prev => ({ ...prev, search: searchTerm }));
@@ -146,7 +147,7 @@ const SubprocessManagement: React.FC = () => {
     const processo = processos.find(p => p.id === processoId);
     if (!processo) return 'N/A';
     
-    const macro = macroprocessos.find(m => m.id === processo.id_macro);
+    const macro = macroprocessos.find(m => m.id === processo.id_macroprocesso);
     return macro ? macro.macroprocesso : 'N/A';
   };
 
@@ -155,7 +156,7 @@ const SubprocessManagement: React.FC = () => {
     const grouped: Record<string, typeof processos> = {};
     
     processos.filter(p => p.situacao === 'Ativo').forEach(processo => {
-      const macroId = processo.id_macro;
+      const macroId = processo.id_macroprocesso;
       if (!grouped[macroId]) {
         grouped[macroId] = [];
       }

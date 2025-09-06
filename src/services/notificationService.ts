@@ -71,7 +71,7 @@ export class NotificationService {
       id_usuario_destino: gestorRiscoId,
       mensagem,
       tipo_notificacao: TipoNotificacao.ALERTA,
-      link_redirecionamento: `/riscos/${riscoId}`
+      link_redirecionamento: `/indicadores`
     });
 
     // Notifica o Responsável (se diferente do gestor)
@@ -80,7 +80,7 @@ export class NotificationService {
         id_usuario_destino: responsavelId,
         mensagem,
         tipo_notificacao: TipoNotificacao.ALERTA,
-        link_redirecionamento: `/riscos/${riscoId}`
+        link_redirecionamento: `/indicadores`
       });
     }
   }
@@ -99,7 +99,7 @@ export class NotificationService {
       id_usuario_destino: responsavelId,
       mensagem: `Novo risco "${riscoDescricao}" foi atribuído a você por ${atribuidoPor}.`,
       tipo_notificacao: TipoNotificacao.INFORMATIVO,
-      link_redirecionamento: `/riscos/${riscoId}`
+      link_redirecionamento: `/indicadores`
     });
   }
 

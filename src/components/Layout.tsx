@@ -8,11 +8,11 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white transition-all duration-300 ease-in-out">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <Header />
       <Navbar />
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 loading-transition opacity-100">
-        <div className="route-transition-enter-active">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="page-content">
           {children}
         </div>
       </main>

@@ -10,8 +10,8 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   -- Prevent modification of admin profiles
-  IF OLD.role = 'admin' AND NEW.role != 'admin' THEN
-    RAISE EXCEPTION 'Cannot modify admin profile role';
+  IF OLD.nome ILIKE '%administrador%' AND NEW.nome NOT ILIKE '%administrador%' THEN
+    RAISE EXCEPTION 'Cannot modify admin profile name';
   END IF;
   
   RETURN NEW;
@@ -26,13 +26,14 @@ SET search_path = public
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  user_role TEXT;
+  profile_name TEXT;
 BEGIN
-  SELECT role INTO user_role
-  FROM public."001_perfis"
-  WHERE id = user_id;
+  SELECT p.nome INTO profile_name
+  FROM public."002_usuarios" u
+  JOIN public."001_perfis" p ON u.perfil_id = p.id
+  WHERE u.id = user_id;
   
-  RETURN COALESCE(user_role = 'admin', FALSE);
+  RETURN COALESCE(profile_name ILIKE '%administrador%', FALSE);
 END;
 $$;
 
@@ -44,25 +45,26 @@ SET search_path = public
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  user_role TEXT;
+  profile_name TEXT;
 BEGIN
-  SELECT role INTO user_role
-  FROM public."001_perfis"
-  WHERE id = user_id;
+  SELECT p.nome INTO profile_name
+  FROM public."002_usuarios" u
+  JOIN public."001_perfis" p ON u.perfil_id = p.id
+  WHERE u.id = user_id;
   
   -- Admin has all permissions
-  IF user_role = 'admin' THEN
+  IF profile_name ILIKE '%administrador%' THEN
     RETURN TRUE;
   END IF;
   
-  -- Check specific permissions based on role
+  -- Check specific permissions based on profile
   CASE permission_name
     WHEN 'read' THEN
-      RETURN user_role IN ('admin', 'user', 'viewer');
+      RETURN profile_name IS NOT NULL;
     WHEN 'write' THEN
-      RETURN user_role IN ('admin', 'user');
+      RETURN profile_name ILIKE '%gestor%' OR profile_name ILIKE '%administrador%';
     WHEN 'delete' THEN
-      RETURN user_role = 'admin';
+      RETURN profile_name ILIKE '%administrador%';
     ELSE
       RETURN FALSE;
   END CASE;

@@ -214,9 +214,10 @@ export const useProfiles = () => {
     return canPerform('update', 'configuracoes') || canPerform('create', 'configuracoes');
   };
 
+  // Fixed: Remove fetch function dependency to prevent infinite loops
   useEffect(() => {
     fetchProfiles();
-  }, [fetchProfiles]);
+  }, []); // Fixed: empty dependency array to prevent infinite loops
 
   return {
     profiles,

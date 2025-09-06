@@ -320,9 +320,10 @@ export const useUsers = () => {
     return canPerform('update', 'configuracoes') || canPerform('create', 'configuracoes');
   };
 
+  // Fixed: Remove fetch function dependency to prevent infinite loops
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, []); // Fixed: empty dependency array to prevent infinite loops
 
   return {
     users,

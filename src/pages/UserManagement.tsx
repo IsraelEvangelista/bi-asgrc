@@ -39,11 +39,12 @@ export const UserManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Fixed to prevent infinite loops - removed function dependencies
   useEffect(() => {
     if (canManageUsers()) {
       fetchUsers(currentPage, itemsPerPage, filters);
     }
-  }, [fetchUsers, canManageUsers, currentPage, itemsPerPage, filters]);
+  }, [currentPage, itemsPerPage, filters.search, filters.perfil_id, filters.area_gerencia_id, filters.ativo]); // Only depend on primitive values
 
   const handleCreateUser = () => {
     if (!canCreateUsers()) {

@@ -89,11 +89,12 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
     setLoading(false);
   }, [id, mockIndicator.id_risco, mockIndicator.responsavel_risco, mockIndicator.indicador_risco, mockIndicator.situacao_indicador, mockIndicator.justificativa_observacao, mockIndicator.impacto_n_implementacao, mockIndicator.meta_desc, mockIndicator.tolerancia, mockIndicator.limite_tolerancia, mockIndicator.tipo_acompanhamento, mockIndicator.resultado_mes, mockIndicator.apuracao]);
 
+  // Fixed: Remove loadIndicator dependency to prevent infinite loops
   useEffect(() => {
     if (mode === 'edit' && id) {
       loadIndicator();
     }
-  }, [mode, id, loadIndicator]);
+  }, [mode, id]); // Removed loadIndicator dependency to prevent infinite loop
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};

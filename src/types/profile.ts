@@ -60,8 +60,6 @@ export interface UpdateProfileData extends Partial<CreateProfileData> {
 
 // Constantes para interfaces disponíveis
 export const AVAILABLE_INTERFACES = [
-  '/dashboard',
-  '/riscos',
   '/processos',
   '/indicadores',
   '/acoes',

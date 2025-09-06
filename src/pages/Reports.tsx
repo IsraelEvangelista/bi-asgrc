@@ -114,7 +114,7 @@ const Reports: React.FC = () => {
     pageSize: 'A4'
   });
 
-  // Update step validation
+  // Update step validation - Fixed to prevent infinite loops
   useEffect(() => {
     const updatedSteps = wizardState.steps.map(step => {
       switch (step.id) {
@@ -138,7 +138,14 @@ const Reports: React.FC = () => {
     });
 
     setWizardState(prev => ({ ...prev, steps: updatedSteps }));
-  }, [wizardState.config, reportData]);
+  }, [
+    wizardState.config.type,
+    wizardState.config.name,
+    wizardState.config.filters?.period?.startDate,
+    wizardState.config.filters?.period?.endDate,
+    wizardState.config.columns?.length,
+    reportData
+  ]);
 
   const updateConfig = (updates: Partial<ReportConfig>) => {
     setWizardState(prev => ({
@@ -632,10 +639,10 @@ const Reports: React.FC = () => {
             <p className="text-gray-600 mt-1">Crie relatórios personalizados para análise e apresentação</p>
           </div>
           <Link
-            to="/dashboard"
+            to="/riscos"
             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
           >
-            Voltar ao Dashboard
+            Voltar
           </Link>
         </div>
 

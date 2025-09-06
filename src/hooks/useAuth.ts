@@ -29,24 +29,36 @@ export const useAuth = (): UseAuthReturn => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log('🎯 useAuth.login: Iniciando processo de login para:', email);
     setIsLoading(true);
     setError(null);
     
     try {
+      console.log('🎯 useAuth.login: Chamando signIn do authStore...');
       const { error: loginError } = await signIn(email, password);
       
+      console.log('🎯 useAuth.login: Resposta do signIn:', {
+        hasError: !!loginError,
+        errorMessage: loginError?.message
+      });
+      
       if (loginError) {
-        setError(loginError.message || 'Erro ao fazer login');
+        const errorMessage = loginError.message || 'Erro ao fazer login';
+        console.error('❌ useAuth.login: Erro de login:', errorMessage);
+        setError(errorMessage);
         return false;
       }
       
+      console.log('✅ useAuth.login: Login realizado com sucesso');
       return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao fazer login';
+      console.error('💥 useAuth.login: Erro inesperado:', error);
       setError(message);
       throw new Error(message);
     } finally {
       setIsLoading(false);
+      console.log('🎯 useAuth.login: Processo finalizado');
     }
   };
 

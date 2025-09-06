@@ -9,7 +9,7 @@ export * from './useNotifications';
 export * from './usePermissions';
 export * from './useProcesses';
 export * from './useProfiles';
-export * from './useRealtimeNotifications';
+
 export * from './useReportPermissions';
 export * from './useReports';
 export * from './useRisks';

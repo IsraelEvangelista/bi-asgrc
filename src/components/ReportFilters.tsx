@@ -53,7 +53,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
           .select(`
             id,
             processo,
-            macroprocessos:id_macro(macroprocesso)
+            macroprocessos:id_macroprocesso(macroprocesso)
           `)
           .order('processo');
 

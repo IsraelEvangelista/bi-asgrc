@@ -10,7 +10,16 @@
       "Read(d:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.trae\\documents/**)",
       "Bash(npm run client:dev -- --port 8080)",
       "Bash(taskkill /PID 33060 /F)",
-      "Bash(cmd /c \"taskkill /F /PID 33060\")"
+      "Bash(cmd /c \"taskkill /F /PID 33060\")",
+      "Bash(npm install:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(timeout 60 npx playwright install chromium)",
+      "Bash(npx playwright:*)",
+      "Bash(curl:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:localhost)"
     ],
     "deny": [],
     "ask": []

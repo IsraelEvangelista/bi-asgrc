@@ -1,6 +1,6 @@
 import { useState, memo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, Settings, BarChart3, BookOpen, Shield, Workflow, Target, FileText, ClipboardList, UserPlus } from 'lucide-react';
+import { ChevronDown, Settings, Workflow, Target, BookOpen } from 'lucide-react';
 import { usePermissions } from '../hooks/usePermissions';
 import { ProtectedComponent } from './ProtectedComponent';
 
@@ -16,16 +16,11 @@ const navigationItems: NavItem[] = [
     path: '/conceitos',
   },
   {
-    label: 'Gestão de Riscos',
-    path: '/riscos',
-  },
-  {
     label: 'Processos',
     children: [
-      { label: 'Hierarquia de Processos', path: '/processos' },
-      { label: 'Gerenciar Macroprocessos', path: '/configuracoes/macroprocessos' },
-      { label: 'Gerenciar Processos', path: '/configuracoes/processos' },
-      { label: 'Gerenciar Subprocessos', path: '/configuracoes/subprocessos' },
+      { label: 'Cadeia de Valor', path: '/processos/cadeia-valor' },
+      { label: 'Arquitetura de Processos', path: '/processos/arquitetura' },
+      { label: 'Riscos de Processos de Trabalho', path: '/processos/riscos-trabalho' },
     ],
   },
   {
@@ -47,18 +42,6 @@ const navigationItems: NavItem[] = [
       },
     ],
   },
-  {
-    label: 'Formulários',
-    path: '/formularios',
-  },
-  {
-    label: 'Relatórios',
-    path: '/relatorios',
-  },
-  {
-    label: 'Cadastro',
-    path: '/cadastro',
-  },
 ];
 
 
@@ -72,18 +55,10 @@ const Navbar = () => {
     switch (label) {
       case 'Conceitos':
         return <BookOpen className="h-4 w-4" />;
-      case 'Gestão de Riscos':
-        return <Shield className="h-4 w-4" />;
       case 'Processos':
         return <Workflow className="h-4 w-4" />;
       case 'Riscos Estratégicos':
         return <Target className="h-4 w-4" />;
-      case 'Formulários':
-        return <ClipboardList className="h-4 w-4" />;
-      case 'Relatórios':
-        return <FileText className="h-4 w-4" />;
-      case 'Cadastro':
-        return <UserPlus className="h-4 w-4" />;
       default:
         return null;
     }
@@ -106,10 +81,26 @@ const Navbar = () => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  const isDropdownActive = (item: NavItem): boolean => {
+    if (item.path && isActive(item.path)) return true;
+    if (item.children) {
+      return item.children.some(child => {
+        if (child.path && isActive(child.path)) return true;
+        if (child.children) {
+          return child.children.some(grandchild => 
+            grandchild.path && isActive(grandchild.path)
+          );
+        }
+        return false;
+      });
+    }
+    return false;
+  };
+
   const renderNavItem = (item: NavItem) => {
     const hasChildren = item.children && item.children.length > 0;
     const isOpen = openDropdowns.includes(item.label);
-    const active = isActive(item.path);
+    const active = hasChildren ? isDropdownActive(item) : isActive(item.path);
 
     if (hasChildren) {
       return (
@@ -202,18 +193,7 @@ const Navbar = () => {
     <nav className="bg-white border-b border-gray-200 shadow-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-evenly h-12 w-full">
-          {/* Link para Dashboard */}
-          <Link
-            to="/dashboard"
-            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 transform ${
-              location.pathname === '/dashboard'
-                ? 'bg-gradient-to-b from-blue-200 to-blue-300 text-blue-800 shadow-inner border border-blue-400'
-                : 'bg-gradient-to-b from-gray-50 to-gray-100 text-gray-700 shadow-md border border-gray-300 hover:from-blue-100 hover:to-blue-200 hover:text-blue-800 hover:shadow-lg hover:scale-105 active:shadow-inner active:scale-95'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4" />
-            <span>Dashboard</span>
-          </Link>
+
           
           {/* Itens de Navegação */}
           {navigationItems.map(item => renderNavItem(item))}

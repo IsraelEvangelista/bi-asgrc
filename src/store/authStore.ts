@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Profile, PermissionRules, ADMIN_PROFILE_NAME } from '../types/profile';
 import { User, UserProfile, RegisterData, RegisterResponse } from '../types/user';
@@ -20,7 +20,18 @@ interface AuthState {
   // Internal state flags
   isInitializing: boolean;
   isLoadingProfile: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  // Enhanced loading states
+  isFullyInitialized: boolean;
+  authCheckCompleted: boolean;
+  
+  // Flags para controle do listener de autenticação
+  authListenerSetup: boolean;
+  authListenerActive: boolean;
+  
+  // Guards para prevenir execuções múltiplas
+  initializationPromise: Promise<void> | null;
+  sessionCheckInProgress: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | Error | null }>;
   signUp: (userData: RegisterData) => Promise<RegisterResponse>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
@@ -40,6 +51,7 @@ interface AuthState {
 
 // Flag to track if auth listener is already set up
 let authListenerSetup = false;
+let authSubscription: { data: { subscription: { unsubscribe: () => void } } } | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -57,20 +69,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Internal state flags
   isInitializing: false,
   isLoadingProfile: false,
+  // Enhanced loading states
+  isFullyInitialized: false,
+  authCheckCompleted: false,
+  
+  // Flags para controle do listener de autenticação
+  authListenerSetup: false,
+  authListenerActive: false,
+  
+  // Guards para prevenir execuções múltiplas
+  initializationPromise: null as Promise<void> | null,
+  sessionCheckInProgress: false,
 
   signIn: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      console.log('🔐 signIn: Iniciando processo de login para:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (data.user && data.session) {
-      set({ user: data.user, session: data.session });
-      // Load user profile after successful login
-      await get().loadUserProfile();
+      console.log('🔐 signIn: Resposta do Supabase:', {
+        hasUser: !!data.user,
+        hasSession: !!data.session,
+        error: error?.message
+      });
+
+      if (error) {
+        console.error('❌ signIn: Erro de autenticação:', error);
+        return { error };
+      }
+
+      if (data.user && data.session) {
+        console.log('✅ signIn: Login bem-sucedido, atualizando estado...');
+        set({ user: data.user, session: data.session });
+        
+        console.log('👤 signIn: Carregando perfil do usuário...');
+        // Load user profile after successful login
+        await get().loadUserProfile();
+        console.log('✅ signIn: Processo de login concluído com sucesso');
+      } else {
+        console.warn('⚠️ signIn: Login sem dados de usuário ou sessão');
+      }
+
+      return { error };
+    } catch (err) {
+      console.error('💥 signIn: Erro inesperado durante o login:', err);
+      return { error: new Error('Erro interno durante o login') };
     }
-
-    return { error };
   },
 
   signUp: async (userData: RegisterData): Promise<RegisterResponse> => {
@@ -169,194 +216,345 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initialize: async () => {
-    const { loading, isInitializing } = get();
+    const state = get();
     
-    // Prevent multiple simultaneous initializations
-    if (loading || isInitializing) {
-
+    // Prevent multiple concurrent initializations
+    if (state.initializationPromise) {
+      console.log('⏳ initialize: Aguardando inicialização em progresso...');
+      return state.initializationPromise;
+    }
+    
+    if (state.isInitializing) {
+      console.log('⏳ initialize: Inicialização já em progresso, abortando...');
       return;
     }
-
-    set({ isInitializing: true, loading: true, error: null });
     
-    try {
-  
-      
-      // Get current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Erro ao obter sessão:', sessionError);
-        set({ error: sessionError.message, loading: false, isInitializing: false });
-        return;
-      }
-
-      if (session?.user) {
-  
-        set({ 
-          user: session.user, 
-          session,
-          loading: true // Keep loading while we fetch profile
-        });
+    console.log('🚀 initialize: Iniciando processo de inicialização...');
+    
+    const initPromise = (async () => {
+      try {
+        set({ isInitializing: true, loading: true, error: null, authCheckCompleted: false });
         
-        // Load user profile
-        await get().loadUserProfile();
-      } else {
-  
-        set({ 
-          user: null, 
-          session: null, 
-          userProfile: null,
-          profile: null,
-          permissions: null,
-          loading: false 
-        });
-      }
-
-      // Set up auth state change listener (only once)
-      if (!authListenerSetup) {
-    
-        supabase.auth.onAuthStateChange(async (event, session) => {
-    
-          
-          if (event === 'SIGNED_IN' && session?.user) {
-            set({ 
-              user: session.user, 
-              session,
-              loading: true
-            });
-            await get().loadUserProfile();
-          } else if (event === 'SIGNED_OUT') {
-            set({ 
-              user: null, 
-              session: null, 
-              userProfile: null,
-              profile: null,
-              permissions: null,
-              loading: false,
-              error: null
-            });
-          } else if (event === 'TOKEN_REFRESHED' && session) {
-            // Only update if it's a different user
-            const currentUser = get().user;
-            if (!currentUser || currentUser.id !== session.user.id) {
-              set({ 
-                user: session.user, 
-                session,
-                loading: true
-              });
-              await get().loadUserProfile();
-            } else {
-              // Just update the session
-              set({ session });
-            }
-          }
-        });
-        authListenerSetup = true;
-      }
-
-  
-    } catch (error) {
-      console.error('Erro durante initialize():', error);
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        loading: false 
-      });
-    } finally {
-      set({ isInitializing: false });
-    }
-  },
-
-  loadUserProfile: async () => {
-    const { user, isLoadingProfile } = get();
-    
-
-    
-    if (!user?.email) {
-
-      set({ loading: false });
-      return;
-    }
-
-    // Prevent multiple simultaneous profile loads
-    if (isLoadingProfile) {
-
-      return;
-    }
-    
-    set({ isLoadingProfile: true });
-
-
-    try {
-  
-      // Query user from database
-      const { data: userData, error: userError } = await supabase
-        .from('002_usuarios')
-        .select(`
-          *,
-          perfil:001_perfis(*)
-        `)
-        .eq('email', user.email)
-        .eq('ativo', true)
-        .single();
-
-      if (userError) {
-        // If user not found, set loading to false and don't call activateUser to avoid infinite loop
-        if (userError.code === 'PGRST116') {
-  
+        console.log('🔍 initialize: Obtendo sessão atual...');
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ initialize: Erro ao obter sessão:', sessionError);
           set({ 
+            error: sessionError.message, 
+            loading: false, 
+            isInitializing: false,
+            authCheckCompleted: true,
+            isFullyInitialized: true
+          });
+          return;
+        }
+
+        console.log('🔍 initialize: Estado da sessão:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id
+        });
+
+        if (session?.user) {
+          console.log('👤 initialize: Usuário encontrado, carregando perfil...');
+          set({ 
+            user: session.user, 
+            session,
+            loading: true // Keep loading while we fetch profile
+          });
+          
+          // Load user profile and wait for completion
+          await get().loadUserProfile();
+        } else {
+          console.log('🚫 initialize: Nenhum usuário encontrado, finalizando inicialização...');
+          set({ 
+            user: null, 
+            session: null, 
             userProfile: null,
             profile: null,
             permissions: null,
             loading: false,
-            error: 'Usuário não encontrado ou inativo',
-            isLoadingProfile: false
+            authCheckCompleted: true,
+            isFullyInitialized: true,
+            isInitializing: false
           });
+        }
+
+        // Set up auth state change listener (only once)
+        if (!authListenerSetup) {
+          // Cleanup any existing subscription first
+          if (authSubscription) {
+            authSubscription.data.subscription.unsubscribe();
+          }
+          
+          authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+            const currentState = get();
+            
+            // Evita processamento durante inicialização para prevenir loops
+            if (currentState.isInitializing) {
+              return;
+            }
+            
+            if (event === 'SIGNED_IN' && session?.user) {
+              // Prevent concurrent profile loading
+              if (!currentState.isLoadingProfile) {
+                set({ 
+                  user: session.user, 
+                  session,
+                  loading: true,
+                  isFullyInitialized: false
+                });
+                await get().loadUserProfile();
+              }
+            } else if (event === 'SIGNED_OUT') {
+              set({ 
+                user: null, 
+                session: null, 
+                userProfile: null,
+                profile: null,
+                permissions: null,
+                loading: false,
+                error: null,
+                authCheckCompleted: true,
+                isFullyInitialized: true
+              });
+            } else if (event === 'TOKEN_REFRESHED' && session) {
+              // Only reload profile if it's a different user or we're not fully initialized
+              const currentUser = get().user;
+              const { isFullyInitialized: currentlyInitialized } = currentState;
+              
+              if (!currentUser || currentUser.id !== session.user.id) {
+                // Different user - need to reload profile
+                if (!currentState.isLoadingProfile) {
+                  set({ 
+                    user: session.user, 
+                    session,
+                    loading: true,
+                    isFullyInitialized: false
+                  });
+                  await get().loadUserProfile();
+                }
+              } else if (!currentlyInitialized) {
+                // Same user but not yet initialized - complete initialization
+                if (!currentState.isLoadingProfile) {
+                  set({ 
+                    user: session.user, 
+                    session,
+                    loading: true
+                  });
+                  await get().loadUserProfile();
+                }
+              } else {
+                // Same user and already initialized - just update the session without resetting state
+                console.log('🔄 Token refreshed for same user - updating session only');
+                set({ session });
+              }
+            }
+          });
+          authListenerSetup = true;
+        }
+      } catch (error) {
+        console.error('❌ initialize: Erro durante inicialização:', error);
+        set({ 
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+          isInitializing: false,
+          loading: false,
+          authCheckCompleted: true,
+          isFullyInitialized: true
+        });
+      } finally {
+        console.log('🏁 initialize: Limpando promise e finalizando...');
+        set({ 
+          initializationPromise: null,
+          isInitializing: false 
+        });
+        console.log('🎯 initialize: Processo completo!');
+      }
+    })();
+    
+    set({ initializationPromise: initPromise });
+    return initPromise;
+  },
+
+  loadUserProfile: async () => {
+    const state = get();
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 loadUserProfile: Iniciando carregamento', {
+        hasUser: !!state.user,
+        userId: state.user?.id,
+        isLoadingProfile: state.isLoadingProfile
+      });
+    }
+    
+    if (!state.user) {
+      console.log('🚫 loadUserProfile: Nenhum usuário logado, abortando');
+      set({ 
+        loading: false, 
+        authCheckCompleted: true, 
+        isFullyInitialized: true,
+        isInitializing: false,
+        isLoadingProfile: false
+      });
+      return;
+    }
+    
+    // Prevent concurrent loading
+    if (state.isLoadingProfile) {
+      console.log('⏳ loadUserProfile: Carregamento já em progresso, abortando');
+      return;
+    }
+
+    console.log('🔍 loadUserProfile: Iniciando carregamento do perfil para usuário:', state.user.id);
+    set({ 
+      isLoadingProfile: true,
+      loading: true, 
+      error: null 
+    });
+
+    try {
+      console.log('🔍 loadUserProfile: Buscando usuário por email:', state.user.email);
+      console.log('🔍 loadUserProfile: ID do usuário logado:', state.user.id);
+      
+      const { data, error } = await supabase
+        .from('002_usuarios')
+        .select(`
+          *,
+          perfil:001_perfis(*),
+          area_gerencia:003_areas_gerencias(*)
+        `)
+        .eq('email', state.user.email)
+        .single();
+
+      if (error) {
+        console.error('❌ loadUserProfile: Erro ao buscar perfil:', error);
+        
+        // Se o erro for PGRST116 (0 rows), significa que o usuário não existe na tabela
+        if (error.code === 'PGRST116') {
+          console.log('⚠️ loadUserProfile: Usuário não encontrado na tabela 002_usuarios, criando perfil básico');
+          
+          // Criar um perfil básico temporário para evitar tela branca
+          const basicProfile = {
+            id: state.user.id,
+            nome: state.user.user_metadata?.nome || state.user.email?.split('@')[0] || 'Usuário',
+            email: state.user.email || '',
+            ativo: true,
+            perfil_id: null,
+            area_gerencia_id: null,
+            perfil: null,
+            area_gerencia: null
+          };
+          
+          set({ 
+            userProfile: basicProfile,
+            profile: null,
+            permissions: { admin: false, all: false },
+            loading: false,
+            isLoadingProfile: false,
+            authCheckCompleted: true,
+            isFullyInitialized: true,
+            isInitializing: false,
+            error: null
+          });
+          
+          console.log('✅ loadUserProfile: Perfil básico criado temporariamente');
           return;
         }
         
-        console.error('Erro ao carregar perfil:', userError);
-        throw userError;
+        throw error;
       }
 
-      if (!userData) {
-  
+      if (!data) {
+        console.log('⚠️ loadUserProfile: Nenhum perfil encontrado para o usuário');
+        
+        // Criar perfil básico como fallback
+        const basicProfile = {
+          id: state.user.id,
+          nome: state.user.user_metadata?.nome || state.user.email?.split('@')[0] || 'Usuário',
+          email: state.user.email || '',
+          ativo: true,
+          perfil_id: null,
+          area_gerencia_id: null,
+          perfil: null,
+          area_gerencia: null
+        };
+        
         set({ 
-          userProfile: null,
+          userProfile: basicProfile,
           profile: null,
-          permissions: null,
+          permissions: { admin: false, all: false },
           loading: false,
-          error: 'Usuário não encontrado',
-          isLoadingProfile: false
+          isLoadingProfile: false,
+          authCheckCompleted: true,
+          isFullyInitialized: true,
+          isInitializing: false,
+          error: null
         });
         return;
       }
 
+      // Extract profile and permissions from the loaded data
+        const profile = data.perfil;
+        const permissions = profile ? {
+          admin: profile.nome === 'Administrador',
+          all: profile.acessos_interfaces?.includes('*') || false,
+          // Add other permission mappings as needed
+        } : { admin: false, all: false };
 
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ loadUserProfile: Perfil carregado com sucesso:', {
+            profileId: data?.id,
+            permissionsCount: permissions ? Object.keys(permissions).length : 0
+          });
+        }
 
-      // Extract permissions from profile
-      const permissions = userData.perfil?.regras_permissoes || {};
-      
-
-      
-      set({
-        userProfile: userData,
-        profile: userData.perfil,
-        permissions,
-        loading: false,
-        error: null,
-        isLoadingProfile: false
-      });
-      
-  
-      
-    } catch (error) {
-      console.error('Erro ao carregar dados do usuário:', error);
       set({ 
-        loading: false, 
-        error: error instanceof Error ? error.message : 'Failed to load user profile',
-        isLoadingProfile: false
+        userProfile: data,
+        profile: profile,
+        permissions: permissions,
+        loading: false,
+        isLoadingProfile: false,
+        authCheckCompleted: true,
+        isFullyInitialized: true,
+        isInitializing: false,
+        error: null
       });
+      
+      console.log('🎉 loadUserProfile: Inicialização completa!');
+    } catch (error: any) {
+      console.error('❌ loadUserProfile: Erro ao carregar perfil:', {
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        userId: state.user?.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Criar perfil básico como fallback para evitar tela branca
+      const basicProfile = {
+        id: state.user?.id || '',
+        nome: state.user?.user_metadata?.nome || state.user?.email?.split('@')[0] || 'Usuário',
+        email: state.user?.email || '',
+        ativo: true,
+        perfil_id: null,
+        area_gerencia_id: null,
+        perfil: null,
+        area_gerencia: null
+      };
+      
+      set({ 
+        userProfile: basicProfile,
+        profile: null,
+        permissions: { admin: false, all: false },
+        loading: false,
+        isLoadingProfile: false,
+        authCheckCompleted: true,
+        isFullyInitialized: true,
+        isInitializing: false,
+        error: null // Não definir erro para evitar tela branca
+      });
+      
+      console.log('⚠️ loadUserProfile: Perfil básico criado como fallback após erro');
     }
   },
 
@@ -402,7 +600,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             email: email,
             nome: user?.user_metadata?.full_name || email.split('@')[0],
             ativo: true,
-            perfil_id: '00000000-0000-0000-0000-000000000001' // Default profile UUID
+            perfil_id: null // No default profile - will be assigned by admin
           });
 
         if (insertError) {
@@ -521,4 +719,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Check specific permission
     return permissions[permission as keyof PermissionRules] === true;
   },
+
+  // Função para cleanup das subscrições
+  cleanup: () => {
+    if (authSubscription) {
+      authSubscription.data.subscription.unsubscribe();
+      authSubscription = null;
+      authListenerSetup = false;
+    }
+  }
 }));

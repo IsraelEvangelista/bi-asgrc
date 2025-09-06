@@ -77,30 +77,7 @@ export const usePermissions = () => {
     return canManageUsers() && canPerform('delete', 'configuracoes');
   }, [canManageUsers, canPerform]);
 
-  // Check if user can access risks module
-  const canAccessRisks = useCallback((): boolean => {
-    return canAccess('/riscos');
-  }, [canAccess]);
 
-  // Check if user can manage risks
-  const canManageRisks = useCallback((): boolean => {
-    return canAccessRisks() && (canPerform('read', 'riscos') || hasPermission('riscos'));
-  }, [canAccessRisks, canPerform, hasPermission]);
-
-  // Check if user can create risks
-  const canCreateRisks = useCallback((): boolean => {
-    return canManageRisks() && (canPerform('create', 'riscos') || permissions?.riscos?.create === true);
-  }, [canManageRisks, canPerform, permissions]);
-
-  // Check if user can edit risks
-  const canEditRisks = useCallback((): boolean => {
-    return canManageRisks() && (canPerform('update', 'riscos') || permissions?.riscos?.edit === true);
-  }, [canManageRisks, canPerform, permissions]);
-
-  // Check if user can delete risks
-  const canDeleteRisks = useCallback((): boolean => {
-    return canManageRisks() && (canPerform('delete', 'riscos') || permissions?.riscos?.delete === true);
-  }, [canManageRisks, canPerform, permissions]);
 
   // Check if user can export data
   const canExportData = useCallback((module?: string): boolean => {
@@ -153,9 +130,9 @@ export const usePermissions = () => {
       canAccessConfigurations: canAccessConfigurations(),
       canManageProfiles: canManageProfiles(),
       canManageUsers: canManageUsers(),
-      canManageRisks: canManageRisks()
+
     };
-  }, [isUserAdmin, profile, getAccessibleRoutes, permissions, canAccessConfigurations, canManageProfiles, canManageUsers, canManageRisks]);
+  }, [isUserAdmin, profile, getAccessibleRoutes, permissions, canAccessConfigurations, canManageProfiles, canManageUsers]);
 
   // Check if user has any administrative permissions
   const hasAdminPermissions = (): boolean => {
@@ -183,13 +160,7 @@ export const usePermissions = () => {
     canEditUsers,
     canDeleteUsers,
     
-    // Risk management permissions
-    canAccessRisks,
-    canManageRisks,
-    canCreateRisks,
-    canEditRisks,
-    canDeleteRisks,
-    
+
     // General permissions
     canExportData,
     canApprove,

@@ -25,9 +25,11 @@ export interface UpdateMacroprocessoInput extends Partial<CreateMacroprocessoInp
 // Tabela 005_PROCESSOS
 export interface Processo {
   id: string;
-  id_macro: string;
+  id_macroprocesso: string;
   processo: string;
   responsavel_processo?: string;
+  objetivo_processo?: string;
+  entregas_processo?: string;
   situacao: 'Ativo' | 'Inativo';
   created_at?: string;
   updated_at?: string;
@@ -40,7 +42,7 @@ export interface ProcessoWithMacro extends Processo {
 }
 
 export interface CreateProcessoInput {
-  id_macro: string;
+  id_macroprocesso: string;
   processo: string;
   responsavel_processo?: string;
   situacao?: 'Ativo' | 'Inativo';
@@ -138,7 +140,7 @@ export interface MacroprocessoFormData {
 }
 
 export interface ProcessoFormData {
-  id_macro: string;
+  id_macroprocesso: string;
   processo: string;
   responsavel_processo: string;
   situacao: 'Ativo' | 'Inativo';
@@ -157,7 +159,7 @@ export interface ProcessFormErrors {
   macroprocesso?: string;
   processo?: string;
   subprocesso?: string;
-  id_macro?: string;
+  id_macroprocesso?: string;
   id_processo?: string;
   situacao?: string;
   general?: string;

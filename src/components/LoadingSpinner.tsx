@@ -76,9 +76,10 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 // Componente para tela cheia de carregamento
 export const FullScreenLoader: React.FC<{ text?: string }> = ({ text = 'Carregando...' }) => {
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-white flex items-center justify-center z-50 loading-transition">
-      <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 shadow-lg">
-        <LoadingSpinner size="xl" text={text} />
+    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center" style={{ opacity: 1 }}>
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+        <p className="text-gray-600 font-medium">{text}</p>
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export const useConfig = () => {
       clearError();
 
       let query = supabase
-        .from('003_AREAS_GERENCIAS')
+        .from('003_areas_gerencias')
         .select('*')
         .order('gerencia', { ascending: true });
 
@@ -87,7 +87,7 @@ export const useConfig = () => {
       clearError();
 
       const { data, error } = await supabase
-        .from('003_AREAS_GERENCIAS')
+        .from('003_areas_gerencias')
         .insert({
           gerencia: input.gerencia,
           sigla_area: input.sigla_area || input.gerencia.substring(0, 3).toUpperCase(),
@@ -120,7 +120,7 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('003_AREAS_GERENCIAS')
+        .from('003_areas_gerencias')
         .update({
           gerencia: input.gerencia,
           responsavel_area: input.responsavel_area,
@@ -153,7 +153,7 @@ export const useConfig = () => {
       clearError();
 
       const { error } = await supabase
-        .from('003_AREAS_GERENCIAS')
+        .from('003_areas_gerencias')
         .delete()
         .eq('id', id);
 
@@ -182,13 +182,13 @@ export const useConfig = () => {
       clearError();
 
       let query = supabase
-        .from('010_NATUREZA')
+        .from('010_natureza')
         .select('*')
-        .order('natureza', { ascending: true });
+        .order('desc_natureza', { ascending: true });
 
       // Aplicar filtros
       if (filters?.search) {
-        query = query.or(`natureza.ilike.%${filters.search}%,descricao.ilike.%${filters.search}%`);
+        query = query.or(`desc_natureza.ilike.%${filters.search}%,sigla_natureza.ilike.%${filters.search}%`);
       }
       
       if (filters?.ativo !== undefined) {
@@ -217,7 +217,7 @@ export const useConfig = () => {
       clearError();
 
       const { data, error } = await supabase
-        .from('010_NATUREZA')
+        .from('010_natureza')
         .insert({
           natureza: input.natureza,
           descricao: input.descricao,
@@ -248,7 +248,7 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('010_NATUREZA')
+        .from('010_natureza')
         .update(input)
         .eq('id', id)
         .select()
@@ -277,7 +277,7 @@ export const useConfig = () => {
 
       // Verificar se existem categorias vinculadas
       const { data: categorias, error: checkError } = await supabase
-        .from('011_CATEGORIA')
+        .from('011_categoria')
         .select('id')
         .eq('id_natureza', id)
         .limit(1);
@@ -289,7 +289,7 @@ export const useConfig = () => {
       }
 
       const { error } = await supabase
-        .from('010_NATUREZA')
+        .from('010_natureza')
         .delete()
         .eq('id', id);
 
@@ -317,11 +317,11 @@ export const useConfig = () => {
       clearError();
 
       const [areasResult, naturezasResult, categoriasResult, subcategoriasResult, conceitosResult] = await Promise.all([
-        supabase.from('003_AREAS_GERENCIAS').select('id, ativa'),
-        supabase.from('010_NATUREZA').select('id, ativa'),
-        supabase.from('011_CATEGORIA').select('id, ativa'),
-        supabase.from('012_SUBCATEGORIA').select('id, ativa'),
-        supabase.from('013_CONCEITO').select('id, ativo')
+        supabase.from('003_areas_gerencias').select('id, ativa'),
+        supabase.from('010_natureza').select('id, ativa'),
+        supabase.from('011_categoria').select('id, ativa'),
+        supabase.from('012_subcategoria').select('id, ativa'),
+        supabase.from('013_conceito').select('id, ativo')
       ]);
 
       if (areasResult.error) throw areasResult.error;
@@ -371,10 +371,10 @@ export const useConfig = () => {
       clearError();
       
       let query = supabase
-        .from('011_CATEGORIA')
+        .from('011_categoria')
         .select(`
           *,
-          natureza:010_NATUREZA(id, natureza, ativa)
+          natureza:010_natureza(id, natureza, ativa)
         `);
       
       if (filters?.search) {
@@ -409,11 +409,11 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('011_CATEGORIA')
+        .from('011_categoria')
         .insert(input)
         .select(`
           *,
-          natureza:010_NATUREZA(id, natureza, ativa)
+          natureza:010_natureza(id, natureza, ativa)
         `)
         .single();
       
@@ -438,12 +438,12 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('011_CATEGORIA')
+        .from('011_categoria')
         .update(input)
         .eq('id', id)
         .select(`
           *,
-          natureza:010_NATUREZA(id, natureza, ativa)
+          natureza:010_natureza(id, natureza, ativa)
         `)
         .single();
       
@@ -471,7 +471,7 @@ export const useConfig = () => {
       
       // Verificar se há subcategorias vinculadas
       const { data: subcategorias, error: checkError } = await supabase
-        .from('012_SUBCATEGORIA')
+        .from('012_subcategoria')
         .select('id')
         .eq('id_categoria', id)
         .limit(1);
@@ -483,7 +483,7 @@ export const useConfig = () => {
       }
       
       const { error } = await supabase
-        .from('011_CATEGORIA')
+        .from('011_categoria')
         .delete()
         .eq('id', id);
       
@@ -513,12 +513,12 @@ export const useConfig = () => {
       clearError();
       
       let query = supabase
-        .from('012_SUBCATEGORIA')
+        .from('012_subcategoria')
         .select(`
           *,
-          categoria:011_CATEGORIA(
+          categoria:011_categoria(
             id, categoria, ativa,
-            natureza:010_NATUREZA(id, natureza, ativa)
+            natureza:010_natureza(id, natureza, ativa)
           )
         `);
       
@@ -563,13 +563,13 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('012_SUBCATEGORIA')
+        .from('012_subcategoria')
         .insert(input)
         .select(`
           *,
-          categoria:011_CATEGORIA(
+          categoria:011_categoria(
             id, categoria, ativa,
-            natureza:010_NATUREZA(id, natureza, ativa)
+            natureza:010_natureza(id, natureza, ativa)
           )
         `)
         .single();
@@ -595,14 +595,14 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('012_SUBCATEGORIA')
+        .from('012_subcategoria')
         .update(input)
         .eq('id', id)
         .select(`
           *,
-          categoria:011_CATEGORIA(
+          categoria:011_categoria(
             id, categoria, ativa,
-            natureza:010_NATUREZA(id, natureza, ativa)
+            natureza:010_natureza(id, natureza, ativa)
           )
         `)
         .single();
@@ -630,7 +630,7 @@ export const useConfig = () => {
       clearError();
       
       const { error } = await supabase
-        .from('012_SUBCATEGORIA')
+        .from('012_subcategoria')
         .delete()
         .eq('id', id);
       
@@ -659,7 +659,7 @@ export const useConfig = () => {
       clearError();
       
       let query = supabase
-        .from('013_CONCEITO')
+        .from('013_conceito')
         .select('*');
       
       if (filters?.search) {
@@ -694,7 +694,7 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('013_CONCEITO')
+        .from('013_conceito')
         .insert(input)
         .select()
         .single();
@@ -720,7 +720,7 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('013_CONCEITO')
+        .from('013_conceito')
         .update(input)
         .eq('id', id)
         .select()
@@ -749,7 +749,7 @@ export const useConfig = () => {
       clearError();
       
       const { error } = await supabase
-        .from('013_CONCEITO')
+        .from('013_conceito')
         .delete()
         .eq('id', id);
       
@@ -766,13 +766,16 @@ export const useConfig = () => {
     }
   };
 
+  // Fixed: Remove fetch function dependencies to prevent infinite loops
+  // The fetch functions are stable due to useCallback, but including them as dependencies
+  // can still cause unnecessary re-renders. Empty dependency array ensures this runs only once.
   useEffect(() => {
     fetchAreas();
     fetchNaturezas();
     fetchCategorias();
     fetchSubcategorias();
     fetchConceitos();
-  }, [fetchAreas, fetchNaturezas, fetchCategorias, fetchSubcategorias, fetchConceitos]);
+  }, []); // Fixed: empty dependency array to prevent infinite loops
 
   return {
     // Estados gerais

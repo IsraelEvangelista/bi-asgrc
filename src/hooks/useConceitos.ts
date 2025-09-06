@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface Conceito {
@@ -16,13 +16,13 @@ export const useConceitos = () => {
 
   const clearError = useCallback(() => {
     setError(null);
-  }, []);
+  }, []); // Estabilizada sem dependências
 
   // Buscar todos os conceitos
   const fetchConceitos = useCallback(async () => {
     try {
       setLoading(true);
-      clearError();
+      setError(null); // Clear error directly instead of using clearError
       
       const { data, error } = await supabase
         .from('020_conceitos')
@@ -39,13 +39,13 @@ export const useConceitos = () => {
     } finally {
       setLoading(false);
     }
-  }, [clearError]);
+  }, []); // Remove clearError dependency to prevent infinite loop
 
   // Buscar conceito por ID
   const fetchConceitoById = useCallback(async (id: string): Promise<Conceito | null> => {
     try {
       setLoading(true);
-      clearError();
+      setError(null); // Clear error directly instead of using clearError
       
       const { data, error } = await supabase
         .from('020_conceitos')
@@ -64,12 +64,13 @@ export const useConceitos = () => {
     } finally {
       setLoading(false);
     }
-  }, [clearError]);
+  }, []); // Remove clearError dependency to prevent infinite loop
 
+  // Fixed: Remove fetch function dependency to prevent infinite loops
   // Carregar conceitos automaticamente
   useEffect(() => {
     fetchConceitos();
-  }, [fetchConceitos]);
+  }, []); // Fixed: empty dependency array to prevent infinite loops
 
   return {
     conceitos,
