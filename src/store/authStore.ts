@@ -218,164 +218,119 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialize: async () => {
     const state = get();
     
-    // Prevent multiple concurrent initializations
-    if (state.initializationPromise) {
-      console.log('⏳ initialize: Aguardando inicialização em progresso...');
-      return state.initializationPromise;
-    }
-    
-    if (state.isInitializing) {
-      console.log('⏳ initialize: Inicialização já em progresso, abortando...');
+    // Prevent concurrent initializations with better guard
+    if (state.isInitializing || state.isFullyInitialized) {
+      console.log('🔄 AuthStore: Inicialização já em andamento ou concluída, ignorando...');
       return;
     }
     
-    console.log('🚀 initialize: Iniciando processo de inicialização...');
+    set({ isInitializing: true, loading: true, error: null });
+    console.log('🔄 AuthStore: Iniciando inicialização...');
     
-    const initPromise = (async () => {
-      try {
-        set({ isInitializing: true, loading: true, error: null, authCheckCompleted: false });
+    try {
+      // Get current session with timeout
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Session timeout')), 10000)
+      );
+      
+      const { data: { session }, error: sessionError } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as any;
+      
+      if (sessionError) {
+        console.error('❌ AuthStore: Erro ao obter sessão:', sessionError);
+        throw sessionError;
+      }
+      
+      console.log('🔍 AuthStore: Sessão obtida:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id
+      });
+      
+      if (session?.user) {
+        // Set user first
+        set({ user: session.user });
         
-        console.log('🔍 initialize: Obtendo sessão atual...');
-        // Get current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('❌ initialize: Erro ao obter sessão:', sessionError);
-          set({ 
-            error: sessionError.message, 
-            loading: false, 
-            isInitializing: false,
-            authCheckCompleted: true,
-            isFullyInitialized: true
-          });
-          return;
+        // Load user profile with error handling
+        try {
+          await get().loadUserProfile();
+        } catch (profileError) {
+          console.error('❌ AuthStore: Erro ao carregar perfil, continuando com perfil básico:', profileError);
+          // Continue with basic profile instead of failing completely
         }
-
-        console.log('🔍 initialize: Estado da sessão:', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id
+      } else {
+        // No session, clear everything
+        set({
+          user: null,
+          userProfile: null,
+          profile: null,
+          permissions: null,
+          authCheckCompleted: true,
+          isFullyInitialized: true,
+          loading: false,
+          isLoadingProfile: false
         });
-
-        if (session?.user) {
-          console.log('👤 initialize: Usuário encontrado, carregando perfil...');
-          set({ 
-            user: session.user, 
-            session,
-            loading: true // Keep loading while we fetch profile
+      }
+      
+      // Setup auth state change listener only once with better guard
+      if (!authListenerSetup && !authSubscription) {
+        console.log('🔄 AuthStore: Configurando listener de mudanças de auth...');
+        
+        authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('🔄 AuthStore: Auth state change:', event, {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            userId: session?.user?.id
           });
           
-          // Load user profile and wait for completion
-          await get().loadUserProfile();
-        } else {
-          console.log('🚫 initialize: Nenhum usuário encontrado, finalizando inicialização...');
-          set({ 
-            user: null, 
-            session: null, 
-            userProfile: null,
-            profile: null,
-            permissions: null,
-            loading: false,
-            authCheckCompleted: true,
-            isFullyInitialized: true,
-            isInitializing: false
-          });
-        }
-
-        // Set up auth state change listener (only once)
-        if (!authListenerSetup) {
-          // Cleanup any existing subscription first
-          if (authSubscription) {
-            authSubscription.data.subscription.unsubscribe();
+          // Prevent processing during initialization
+          const currentState = get();
+          if (currentState.isInitializing) {
+            console.log('🔄 AuthStore: Ignorando mudança de auth durante inicialização');
+            return;
           }
           
-          authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
-            const currentState = get();
-            
-            // Evita processamento durante inicialização para prevenir loops
-            if (currentState.isInitializing) {
-              return;
+          if (event === 'SIGNED_IN' && session?.user) {
+            set({ user: session.user, loading: true });
+            try {
+              await get().loadUserProfile();
+            } catch (error) {
+              console.error('❌ AuthStore: Erro ao carregar perfil após login:', error);
             }
-            
-            if (event === 'SIGNED_IN' && session?.user) {
-              // Prevent concurrent profile loading
-              if (!currentState.isLoadingProfile) {
-                set({ 
-                  user: session.user, 
-                  session,
-                  loading: true,
-                  isFullyInitialized: false
-                });
-                await get().loadUserProfile();
-              }
-            } else if (event === 'SIGNED_OUT') {
-              set({ 
-                user: null, 
-                session: null, 
-                userProfile: null,
-                profile: null,
-                permissions: null,
-                loading: false,
-                error: null,
-                authCheckCompleted: true,
-                isFullyInitialized: true
-              });
-            } else if (event === 'TOKEN_REFRESHED' && session) {
-              // Only reload profile if it's a different user or we're not fully initialized
-              const currentUser = get().user;
-              const { isFullyInitialized: currentlyInitialized } = currentState;
-              
-              if (!currentUser || currentUser.id !== session.user.id) {
-                // Different user - need to reload profile
-                if (!currentState.isLoadingProfile) {
-                  set({ 
-                    user: session.user, 
-                    session,
-                    loading: true,
-                    isFullyInitialized: false
-                  });
-                  await get().loadUserProfile();
-                }
-              } else if (!currentlyInitialized) {
-                // Same user but not yet initialized - complete initialization
-                if (!currentState.isLoadingProfile) {
-                  set({ 
-                    user: session.user, 
-                    session,
-                    loading: true
-                  });
-                  await get().loadUserProfile();
-                }
-              } else {
-                // Same user and already initialized - just update the session without resetting state
-                console.log('🔄 Token refreshed for same user - updating session only');
-                set({ session });
-              }
-            }
-          });
-          authListenerSetup = true;
-        }
-      } catch (error) {
-        console.error('❌ initialize: Erro durante inicialização:', error);
-        set({ 
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
-          isInitializing: false,
-          loading: false,
-          authCheckCompleted: true,
-          isFullyInitialized: true
+          } else if (event === 'SIGNED_OUT') {
+            set({
+              user: null,
+              userProfile: null,
+              profile: null,
+              permissions: null,
+              authCheckCompleted: true,
+              isFullyInitialized: true,
+              loading: false,
+              isLoadingProfile: false,
+              error: null
+            });
+          }
         });
-      } finally {
-        console.log('🏁 initialize: Limpando promise e finalizando...');
-        set({ 
-          initializationPromise: null,
-          isInitializing: false 
-        });
-        console.log('🎯 initialize: Processo completo!');
+        
+        authListenerSetup = true;
       }
-    })();
-    
-    set({ initializationPromise: initPromise });
-    return initPromise;
+      
+      console.log('✅ AuthStore: Inicialização concluída com sucesso');
+    } catch (error) {
+      console.error('❌ AuthStore: Erro na inicialização:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Erro na inicialização',
+        authCheckCompleted: true,
+        isFullyInitialized: false,
+        loading: false,
+        isLoadingProfile: false
+      });
+    } finally {
+      set({ isInitializing: false });
+    }
   },
 
   loadUserProfile: async () => {
@@ -401,9 +356,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
     
-    // Prevent concurrent loading
-    if (state.isLoadingProfile) {
-      console.log('⏳ loadUserProfile: Carregamento já em progresso, abortando');
+    // Prevent concurrent loading with better guard
+    if (state.isLoadingProfile || state.isFullyInitialized) {
+      console.log('⏳ loadUserProfile: Carregamento já em progresso ou perfil já carregado, ignorando...');
       return;
     }
 
@@ -418,7 +373,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('🔍 loadUserProfile: Buscando usuário por email:', state.user.email);
       console.log('🔍 loadUserProfile: ID do usuário logado:', state.user.id);
       
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging requests
+      const profilePromise = supabase
         .from('002_usuarios')
         .select(`
           *,
@@ -427,6 +383,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         `)
         .eq('email', state.user.email)
         .single();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile loading timeout')), 5000)
+      );
+      
+      const { data, error } = await Promise.race([
+        profilePromise,
+        timeoutPromise
+      ]) as any;
 
       if (error) {
         console.error('❌ loadUserProfile: Erro ao buscar perfil:', error);
@@ -510,6 +475,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           });
         }
 
+      // Final check to prevent race conditions
+      const currentState = get();
+      if (!currentState.isLoadingProfile) {
+        console.log('⚠️ loadUserProfile: Estado mudou durante carregamento, ignorando resultado');
+        return;
+      }
+
       set({ 
         userProfile: data,
         profile: profile,
@@ -530,31 +502,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         timestamp: new Date().toISOString()
       });
       
-      // Criar perfil básico como fallback para evitar tela branca
-      const basicProfile = {
-        id: state.user?.id || '',
-        nome: state.user?.user_metadata?.nome || state.user?.email?.split('@')[0] || 'Usuário',
-        email: state.user?.email || '',
-        ativo: true,
-        perfil_id: null,
-        area_gerencia_id: null,
-        perfil: null,
-        area_gerencia: null
-      };
-      
-      set({ 
-        userProfile: basicProfile,
-        profile: null,
-        permissions: { admin: false, all: false },
-        loading: false,
-        isLoadingProfile: false,
-        authCheckCompleted: true,
-        isFullyInitialized: true,
-        isInitializing: false,
-        error: null // Não definir erro para evitar tela branca
-      });
-      
-      console.log('⚠️ loadUserProfile: Perfil básico criado como fallback após erro');
+      // Only update state if we're still in loading state
+      const currentState = get();
+      if (currentState.isLoadingProfile) {
+        // Criar perfil básico como fallback para evitar tela branca
+        const basicProfile = {
+          id: state.user?.id || '',
+          nome: state.user?.user_metadata?.nome || state.user?.email?.split('@')[0] || 'Usuário',
+          email: state.user?.email || '',
+          ativo: true,
+          perfil_id: null,
+          area_gerencia_id: null,
+          perfil: null,
+          area_gerencia: null
+        };
+        
+        set({ 
+          userProfile: basicProfile,
+          profile: null,
+          permissions: { admin: false, all: false },
+          loading: false,
+          isLoadingProfile: false,
+          authCheckCompleted: true,
+          isFullyInitialized: true,
+          isInitializing: false,
+          error: null // Não definir erro para evitar tela branca
+        });
+        
+        console.log('⚠️ loadUserProfile: Perfil básico criado como fallback após erro');
+      }
     }
   },
 

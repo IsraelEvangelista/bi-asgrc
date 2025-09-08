@@ -1,0 +1,49 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - img "Logo COGERH" [ref=e85]
+          - generic [ref=e86]:
+            - heading "COGERH" [level=2] [ref=e88]
+            - img "Onda COGERH" [ref=e89]
+        - heading "BI ASGRC" [level=1] [ref=e90]
+        - paragraph [ref=e91]: Sistema de Gestão de Riscos e Compliance
+      - generic [ref=e93]:
+        - img [ref=e95]
+        - paragraph [ref=e98]: Invalid login credentials
+      - generic [ref=e99]:
+        - button "Login" [ref=e100] [cursor=pointer]:
+          - img [ref=e101] [cursor=pointer]
+          - text: Login
+        - button "Cadastro" [ref=e104] [cursor=pointer]:
+          - img [ref=e105] [cursor=pointer]
+          - text: Cadastro
+      - generic [ref=e108]:
+        - generic [ref=e109]:
+          - generic [ref=e110]: E-mail
+          - textbox "E-mail" [ref=e111]: admin@cogerh.gov.br
+        - generic [ref=e112]:
+          - generic [ref=e113]: Senha
+          - generic [ref=e114]:
+            - textbox "Senha" [ref=e115]: admin123
+            - button [ref=e116] [cursor=pointer]:
+              - img [ref=e117] [cursor=pointer]
+        - button "Entrar" [ref=e120] [cursor=pointer]:
+          - img [ref=e121] [cursor=pointer]
+          - text: Entrar
+    - generic [ref=e125]:
+      - generic [ref=e126]:
+        - img [ref=e128]
+        - heading "Gestão por Processos com Foco em Riscos" [level=1] [ref=e130]
+        - heading "Assessoria de Governança, Riscos e Conformidade - ASGRC" [level=2] [ref=e131]
+      - generic [ref=e132]:
+        - generic [ref=e136]: Conceitos
+        - generic [ref=e140]: Processos
+        - generic [ref=e144]: Riscos
+      - generic [ref=e146]: Níveis de Risco - Tempo Real
+  - region "Notifications alt+T"
+```

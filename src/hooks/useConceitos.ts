@@ -1,83 +1,94 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-
-export interface Conceito {
-  id: string;
-  conceitos: string;
-  descricao: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Conceito } from '../types/config';
 
 export const useConceitos = () => {
   const [conceitos, setConceitos] = useState<Conceito[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []); // Estabilizada sem dependências
+  const clearError = useCallback(() => setError(null), []);
 
-  // Buscar todos os conceitos
   const fetchConceitos = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null); // Clear error directly instead of using clearError
+      setError(null);
       
       const { data, error } = await supabase
         .from('020_conceitos')
         .select('*')
         .order('conceitos', { ascending: true });
-      
+
       if (error) throw error;
       
-      setConceitos(data || []);
+      // Mapear os dados da tabela para o tipo Conceito
+      const conceitosFormatados = (data || []).map(item => ({
+        id: item.id,
+        termo: item.conceitos,
+        definicao: item.descricao,
+        fonte: '', // Campo não existe na tabela atual
+        categoria_conceito: '', // Campo não existe na tabela atual
+        ativo: true, // Campo não existe na tabela atual, assumir ativo
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+      
+      setConceitos(conceitosFormatados);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar conceitos';
-      setError(errorMessage);
       console.error('Erro ao buscar conceitos:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar conceitos');
     } finally {
       setLoading(false);
     }
-  }, []); // Remove clearError dependency to prevent infinite loop
+  }, []);
 
-  // Buscar conceito por ID
   const fetchConceitoById = useCallback(async (id: string): Promise<Conceito | null> => {
     try {
-      setLoading(true);
-      setError(null); // Clear error directly instead of using clearError
+      setError(null);
       
       const { data, error } = await supabase
         .from('020_conceitos')
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (error) throw error;
       
-      return data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar conceito';
-      setError(errorMessage);
-      console.error('Erro ao buscar conceito:', err);
+      // Mapear os dados da tabela para o tipo Conceito
+      if (data) {
+        return {
+          id: data.id,
+          termo: data.conceitos,
+          definicao: data.descricao,
+          fonte: '', // Campo não existe na tabela atual
+          categoria_conceito: '', // Campo não existe na tabela atual
+          ativo: true, // Campo não existe na tabela atual, assumir ativo
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+      }
+      
       return null;
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Erro ao buscar conceito:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar conceito');
+      return null;
     }
-  }, []); // Remove clearError dependency to prevent infinite loop
+  }, []);
 
-  // Fixed: Remove fetch function dependency to prevent infinite loops
-  // Carregar conceitos automaticamente
   useEffect(() => {
     fetchConceitos();
-  }, []); // Fixed: empty dependency array to prevent infinite loops
+  }, [fetchConceitos]);
 
-  return {
+  // Memoize the return object to prevent unnecessary re-renders
+  const memoizedReturn = useMemo(() => ({
     conceitos,
     loading,
     error,
     fetchConceitos,
     fetchConceitoById,
     clearError
-  };
+  }), [conceitos, loading, error, fetchConceitos, fetchConceitoById, clearError]);
+
+  return memoizedReturn;
 };

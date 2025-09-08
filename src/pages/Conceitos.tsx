@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useConceitos, Conceito } from '../hooks/useConceitos';
+import { useConceitos } from '../hooks/useConceitos';
+import { Conceito } from '../types/config';
 import { BookOpen, ChevronRight, Sparkles } from 'lucide-react';
 import Layout from '../components/Layout';
 
@@ -62,7 +63,7 @@ const Conceitos: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         <div className="w-full space-y-8">
           {/* Hero Section */}
           <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 rounded-2xl shadow-2xl">
@@ -136,7 +137,7 @@ const Conceitos: React.FC = () => {
                             : 'text-gray-700 group-hover:text-blue-600'
                         }
                       `}>
-                        {conceito.conceitos}
+                        {conceito.termo}
                       </span>
                     </button>
                   ))}
@@ -161,7 +162,7 @@ const Conceitos: React.FC = () => {
                       <div className="w-1 h-12 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
                       <div>
                         <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1">
-                          {conceitoSelecionado.conceitos}
+                          {conceitoSelecionado.termo}
                         </h3>
                         <div className="flex items-center space-x-2 text-blue-600/70">
                           <Sparkles className="h-4 w-4" />
@@ -173,7 +174,7 @@ const Conceitos: React.FC = () => {
                     <div className="bg-gradient-to-br from-gray-50/50 to-blue-50/30 rounded-xl p-6 backdrop-blur-sm">
                       <div className="prose max-w-none">
                         <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base animate-slide-in-description">
-                          {conceitoSelecionado.descricao}
+                          {conceitoSelecionado.definicao}
                         </p>
                       </div>
                     </div>

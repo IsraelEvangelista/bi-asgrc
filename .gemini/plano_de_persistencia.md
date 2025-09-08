@@ -8,7 +8,7 @@ A ordem de prioridade recomendada é a seguinte:
 Estas tabelas não dependem de outras e servem como base para o restante do sistema.
 
 1.  **`003_areas_gerencias`**: Contém a estrutura organizacional. (check)
-2.  **`004_macroprocessos`**: Define os macroprocessos.
+2.  **`004_macroprocessos`**: Define os macroprocessos. 
 3.  **`010_natureza`**: Define a natureza dos riscos.
 4.  **`007_riscos_trabalho`**: Lista de riscos de trabalho.
 5.  **`014_acoes_controle_proc_trab`**: Lista de ações de controle.

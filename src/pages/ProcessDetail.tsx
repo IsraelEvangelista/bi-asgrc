@@ -110,8 +110,44 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner />
+        <div className="p-6 space-y-6 animate-fade-in">
+          {/* Skeleton Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-48"></div>
+          </div>
+          
+          {/* Skeleton Content */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="lg:w-1/3">
+              <div className="bg-gray-100 rounded-lg p-6 shadow-lg">
+                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="border-2 border-gray-200 rounded-lg p-4">
+                      <div className="h-5 w-full bg-gray-200 rounded animate-pulse mb-2"></div>
+                      <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="lg:w-2/3">
+              <div className="bg-gray-100 rounded-lg p-6 shadow-lg">
+                <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="border-2 border-gray-200 rounded-lg p-4">
+                      <div className="h-5 w-full bg-gray-200 rounded animate-pulse mb-2"></div>
+                      <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </Layout>
     );
@@ -135,7 +171,7 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 animate-smooth-slide-in page-transition">
         {/* Header com botão voltar e nome do processo */}
         <div className="flex items-center justify-between mb-6">
           <button
@@ -154,36 +190,36 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
         </div>
 
         {/* Layout principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch">
           {/* Coluna esquerda - Processos */}
-          <div className="lg:col-span-1">
-            <div className="bg-blue-600 rounded-lg border border-gray-200 p-6">
+          <div className="lg:w-1/3 flex flex-col">
+            <div className="bg-blue-600 rounded-lg border border-gray-200 p-6 flex-1 shadow-lg drop-shadow-xl">
               <div className="flex items-center space-x-2 mb-4">
                   <Settings className="h-5 w-5 text-white" />
                   <h3 className="font-bold text-white">Processos</h3>
                 </div>
               {processos.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-3 overflow-y-auto flex-1">
                   {processos.map((processo) => (
                     <div 
                       key={processo.id} 
                       onClick={() => handleProcessoSelect(processo)}
-                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all group ${
                         selectedProcesso?.id === processo.id 
                           ? 'border-blue-500 bg-blue-50 shadow-md text-gray-800' 
-                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-100 text-white hover:text-black'
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-200 text-white'
                       }`}
                     >
                       <h4 className={`font-semibold mb-1 ${
                         selectedProcesso?.id === processo.id 
                           ? 'text-gray-800' 
-                          : 'text-white'
+                          : 'text-white group-hover:text-black'
                       }`}>{processo.processo}</h4>
                       {processo.responsavel_processo && (
                         <p className={`text-sm ${
                           selectedProcesso?.id === processo.id 
                             ? 'text-gray-600' 
-                            : 'text-white hover:text-black'
+                            : 'text-white group-hover:text-black'
                         }`}>Responsável: {getResponsavelNome(processo.responsavel_processo)}</p>
                       )}
                       {selectedProcesso?.id === processo.id && (
@@ -205,11 +241,11 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
           </div>
 
           {/* Coluna direita - Resultados e Objetivos */}
-          <div className="lg:col-span-2">
+          <div className="lg:w-2/3 flex flex-col">
             {/* Grid de Resultados e Objetivos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 h-48">
               {/* Resultados */}
-              <div className="bg-blue-600 text-white rounded-lg p-6">
+              <div className="bg-blue-600 text-white rounded-lg p-6 shadow-lg drop-shadow-xl">
                 <div className="flex items-center space-x-2 mb-4">
                   <CheckCircle className="h-5 w-5" />
                   <h3 className="text-lg font-bold">Resultados</h3>
@@ -222,7 +258,7 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
               </div>
 
               {/* Objetivos */}
-              <div className="bg-blue-600 text-white rounded-lg p-6">
+              <div className="bg-blue-600 text-white rounded-lg p-6 shadow-lg drop-shadow-xl">
                 <div className="flex items-center space-x-2 mb-4">
                   <Target className="h-5 w-5" />
                   <h3 className="text-lg font-bold">Objetivos</h3>
@@ -235,18 +271,11 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
               </div>
             </div>
 
-            {/* Responsável do Processo */}
-            <div className="bg-gray-100 rounded-lg p-4 mb-6">
-              <div className="flex items-center space-x-2 mb-2">
-                <User className="h-5 w-5 text-gray-600" />
-                <h3 className="font-bold text-gray-800">Responsável do Processo</h3>
-              </div>
-              <p className="text-gray-700">{selectedProcesso ? getResponsavelNome(selectedProcesso.responsavel_processo) : 'Responsável não definido'}</p>
-            </div>
+
 
             {/* Subprocessos */}
             {selectedProcesso && (
-              <div className="bg-blue-600 rounded-lg border border-gray-200 p-6">
+              <div className="bg-blue-600 rounded-lg border border-gray-200 p-6 flex-1 shadow-lg drop-shadow-xl">
                 <div className="flex items-center mb-4">
                   <div className="w-3 h-3 bg-white rounded-full mr-3"></div>
                   <h3 className="text-lg font-semibold text-white">
@@ -255,15 +284,16 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
                 </div>
                 
                 {subprocessos.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="overflow-y-auto h-80">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 content-start">
                     {subprocessos.map((subprocesso) => (
                       <div 
                         key={subprocesso.id}
-                        className="border-2 rounded-lg p-4 transition-all border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                        className="border-2 rounded-lg p-3 transition-all border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 h-20 flex flex-col justify-between"
                       >
-                        <h4 className="font-medium text-gray-900 mb-2">{subprocesso.subprocesso}</h4>
-                        <div className="mt-2 flex items-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <h4 className="font-medium text-gray-900 text-sm leading-tight">{subprocesso.subprocesso}</h4>
+                        <div className="flex items-center">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             subprocesso.situacao === 'Ativo' 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-gray-100 text-gray-800'
@@ -273,6 +303,7 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
                         </div>
                       </div>
                     ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">

@@ -73,13 +73,32 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   );
 };
 
-// Componente para tela cheia de carregamento
+// Componente para tela cheia de carregamento com transição suave
 export const FullScreenLoader: React.FC<{ text?: string }> = ({ text = 'Carregando...' }) => {
   return (
-    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center" style={{ opacity: 1 }}>
-      <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-        <p className="text-gray-600 font-medium">{text}</p>
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-white z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out animate-fade-in">
+      <div className="text-center animate-pulse">
+        <div className="bg-white rounded-full p-4 shadow-lg mb-4 inline-block">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+        <p className="text-gray-700 font-medium text-lg">{text}</p>
+        <div className="mt-2 flex justify-center space-x-1">
+          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de transição suave para navegação
+export const SmoothTransitionLoader: React.FC<{ text?: string }> = ({ text = 'Carregando...' }) => {
+  return (
+    <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 flex items-center justify-center transition-all duration-200 ease-out">
+      <div className="bg-white rounded-lg shadow-xl p-6 text-center border border-gray-100">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600 mx-auto mb-3" />
+        <p className="text-gray-600 font-medium text-sm">{text}</p>
       </div>
     </div>
   );

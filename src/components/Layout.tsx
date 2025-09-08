@@ -1,6 +1,4 @@
 import { ReactNode, memo } from 'react';
-import Header from './Header';
-import Navbar from './Navbar';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,9 +7,8 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
-      <Header />
-      <Navbar />
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
+      {/* Conteúdo principal - o header e navbar agora são gerenciados pelo FixedLayout */}
+      <main className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="page-content">
           {children}
         </div>

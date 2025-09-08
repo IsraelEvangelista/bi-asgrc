@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { SmoothTransitionLoader } from '../components/LoadingSpinner';
 import { Users } from 'lucide-react';
 
 const CadeiaValor: React.FC = () => {
   const navigate = useNavigate();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Mapeamento dos botões com os IDs dos macroprocessos
   const macroprocessoIds: { [key: string]: string } = {
@@ -22,16 +24,24 @@ const CadeiaValor: React.FC = () => {
     'Financeiro': 'afb6fca6-31cb-4c48-b095-03d21f4e3695'
   };
 
-  const handleProcessClick = (tipo: string, nome: string) => {
+  const handleProcessClick = async (tipo: string, nome: string) => {
     const macroprocessoId = macroprocessoIds[nome];
     if (macroprocessoId) {
-      navigate(`/processo/${macroprocessoId}`);
+      setIsNavigating(true);
+      
+      // Pequeno delay para mostrar a transição suave
+      setTimeout(() => {
+        navigate(`/processo/${macroprocessoId}`);
+      }, 150);
     }
   };
 
   return (
-    <Layout>
-      <div className="p-6 space-y-8 border-4 border-blue-300 rounded-2xl animated-border bg-white">
+    <>
+      {isNavigating && <SmoothTransitionLoader text="Carregando processo..." />}
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 page-transition">
+          <div className="p-6 space-y-8 border-4 border-blue-300 rounded-2xl animated-border bg-white">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -42,19 +52,19 @@ const CadeiaValor: React.FC = () => {
         {/* Missão, Visão e Valores */}
         <div className="grid grid-cols-3 gap-6 mb-8">
           {/* Missão */}
-          <div className="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-200 hover:text-black transition-all duration-300 group cursor-pointer">
+          <div className="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-200 hover:text-black transition-all duration-300 group cursor-pointer h-32 flex flex-col justify-center">
             <h2 className="text-xl font-bold mb-4 group-hover:hidden">Missão</h2>
             <p className="text-sm hidden group-hover:block">Contribuir para o desenvolvimento sustentável e a qualidade de vida no Ceará, promovendo o acesso à água, por meio de gestão participativa e eficaz dos recursos hidrícos.</p>
           </div>
 
           {/* Visão */}
-          <div className="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-200 hover:text-black transition-all duration-300 group cursor-pointer">
+          <div className="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-200 hover:text-black transition-all duration-300 group cursor-pointer h-32 flex flex-col justify-center">
             <h2 className="text-xl font-bold mb-4 group-hover:hidden">Visão</h2>
             <p className="text-sm hidden group-hover:block">A Cogerh pretende ser reconhecida até 2050 como referência internacional no gerenciamento dos recursos hídricos e em inovação nas práticas de gestão e diversificação da matriz hídrica.</p>
           </div>
 
           {/* Valores */}
-          <div className="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-200 hover:text-black transition-all duration-300 group cursor-pointer">
+          <div className="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-200 hover:text-black transition-all duration-300 group cursor-pointer h-32 flex flex-col justify-center">
             <h2 className="text-xl font-bold mb-4 group-hover:hidden">Valores</h2>
             <p className="text-sm hidden group-hover:block">Atitude inovadora, Proatividade, Compromisso, Trabalho em equipe e cooperativo, Excelência técnica, Foco nos resultados.</p>
           </div>
@@ -78,18 +88,21 @@ const CadeiaValor: React.FC = () => {
                 <div className="grid grid-cols-3 gap-3 w-full">
                   <button 
                     onClick={() => handleProcessClick('Macroprocessos de Gestão', 'Estratégia')}
-                    className="bg-blue-500 text-white p-3 text-center text-sm font-medium flex items-center justify-center h-16 hover:bg-blue-600 transition-colors cursor-pointer" 
+                    className="bg-blue-500 text-white p-3 text-center text-sm font-medium flex items-center justify-center h-16 hover:bg-blue-600 transition-colors cursor-pointer transform hover:scale-105 active:scale-95" 
                     style={{clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)'}}
+                    disabled={isNavigating}
                   >Estratégia</button>
                   <button 
                     onClick={() => handleProcessClick('Macroprocessos de Gestão', 'Governança')}
-                    className="bg-blue-500 text-white p-3 text-center text-sm font-medium flex items-center justify-center h-16 hover:bg-blue-600 transition-colors cursor-pointer" 
+                    className="bg-blue-500 text-white p-3 text-center text-sm font-medium flex items-center justify-center h-16 hover:bg-blue-600 transition-colors cursor-pointer transform hover:scale-105 active:scale-95" 
                     style={{clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)'}}
+                    disabled={isNavigating}
                   >Governança</button>
                   <button 
                     onClick={() => handleProcessClick('Macroprocessos de Gestão', 'Suporte ao Negócio')}
-                    className="bg-blue-500 text-white p-3 text-center text-sm font-medium flex items-center justify-center h-16 hover:bg-blue-600 transition-colors cursor-pointer" 
+                    className="bg-blue-500 text-white p-3 text-center text-sm font-medium flex items-center justify-center h-16 hover:bg-blue-600 transition-colors cursor-pointer transform hover:scale-105 active:scale-95" 
                     style={{clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)'}}
+                    disabled={isNavigating}
                   >Suporte ao Negócio</button>
                 </div>
               </div>
@@ -233,8 +246,10 @@ const CadeiaValor: React.FC = () => {
         <div className="flex flex-col items-center mt-4">
 
         </div>
-      </div>
-    </Layout>
+          </div>
+        </div>
+      </Layout>
+    </>
   );
 };
 

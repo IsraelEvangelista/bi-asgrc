@@ -1,12 +1,18 @@
-import React, { useEffect, Suspense, lazy, memo } from 'react';
+import React, { useEffect, Suspense, lazy, memo, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner, { FullScreenLoader } from './components/LoadingSpinner';
+import FixedLayout from './components/FixedLayout';
 
-// Lazy loading para componentes de páginas
+// Preload dos componentes mais críticos para evitar tela branca
+import CadeiaValor from './pages/CadeiaValor';
+import ProcessDetail from './pages/ProcessDetail';
+import Dashboard from './pages/Dashboard';
+
+// Lazy loading apenas para componentes menos utilizados
 const Login = lazy(() => import('./pages/Login'));
 const ProfileManagement = lazy(() => import('./pages/ProfileManagement').then(module => ({ default: module.ProfileManagement })));
 const UserManagement = lazy(() => import('./pages/UserManagement').then(module => ({ default: module.UserManagement })));
@@ -27,10 +33,12 @@ const AreasManagement = lazy(() => import('./pages/AreasManagement'));
 const NaturezaManagement = lazy(() => import('./pages/NaturezaManagement'));
 const CategoriaManagement = lazy(() => import('./pages/CategoriaManagement'));
 const SubcategoriaManagement = lazy(() => import('./pages/SubcategoriaManagement'));
-const CadeiaValor = lazy(() => import('./pages/CadeiaValor'));
-const ProcessDetail = lazy(() => import('./pages/ProcessDetail'));
 const ArquiteturaProcessos = lazy(() => import('./pages/ArquiteturaProcessos'));
 const RiscosProcessosTrabalho = lazy(() => import('./pages/RiscosProcessosTrabalho'));
+const MatrizRisco = lazy(() => import('./pages/MatrizRisco'));
+const PortfolioAcoes = lazy(() => import('./pages/PortfolioAcoes'));
+const MonitoramentoRiscos = lazy(() => import('./pages/MonitoramentoRiscos'));
+
 
 function App() {
   const { 
@@ -40,8 +48,13 @@ function App() {
     error, 
     authCheckCompleted, 
     isFullyInitialized,
+    isInitializing,
     initialize 
   } = useAuthStore();
+
+  const initializeRef = useRef(false);
+  const visibilityTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastVisibilityChangeRef = useRef<number>(0);
 
   console.log('🔄 App: Renderizando com estado:', {
     loading,
@@ -52,66 +65,62 @@ function App() {
     error
   });
 
-  useEffect(() => {
-    let initTimer: NodeJS.Timeout;
-    let visibilityTimer: NodeJS.Timeout;
-    let isInitializing = false;
+  const handleVisibilityChange = useCallback(() => {
+    const now = Date.now();
+    
+    // Prevent rapid visibility changes (debounce)
+    if (now - lastVisibilityChangeRef.current < 1000) {
+      return;
+    }
+    
+    lastVisibilityChangeRef.current = now;
+    
+    if (document.visibilityState === 'visible') {
+      // Clear any existing timeout
+      if (visibilityTimeoutRef.current) {
+        clearTimeout(visibilityTimeoutRef.current);
+      }
+      
+      // Only reinitialize if not already initialized and not currently initializing
+      if (!isFullyInitialized && !isInitializing) {
+        console.log('🔄 App: Página visível, verificando necessidade de reinicialização...');
+        
+        visibilityTimeoutRef.current = setTimeout(() => {
+          const currentState = useAuthStore.getState();
+          if (!currentState.isFullyInitialized && !currentState.isInitializing) {
+            console.log('🔄 App: Reinicializando auth após mudança de visibilidade...');
+            initialize();
+          }
+        }, 500);
+      }
+    }
+  }, [isFullyInitialized, isInitializing, initialize]);
 
-    const initializeAuth = async () => {
-      try {
-        // Only initialize if not already initialized or in progress
-        if (!isFullyInitialized && !isInitializing) {
-          isInitializing = true;
-          await initialize();
-        }
-      } catch (error) {
-        console.error('Erro na inicialização da autenticação:', error);
-      } finally {
-        isInitializing = false;
+  useEffect(() => {
+    // Prevent multiple initializations
+    if (initializeRef.current) {
+      return;
+    }
+    
+    // Only initialize once on mount
+    if (!isFullyInitialized && !isInitializing) {
+      console.log('🚀 App: Inicializando aplicação...');
+      initializeRef.current = true;
+      initialize();
+    }
+  }, []); // Empty dependency array - only run on mount
+
+  useEffect(() => {
+    // Setup visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (visibilityTimeoutRef.current) {
+        clearTimeout(visibilityTimeoutRef.current);
       }
     };
-    
-    // Small delay to ensure DOM is ready
-    initTimer = setTimeout(initializeAuth, 100);
-
-    // Listener para mudanças de visibilidade da página com debouncing
-     const handleVisibilityChange = () => {
-       // Quando a página fica visível novamente, verifica se precisa revalidar a sessão
-       // IMPORTANTE: Só executa se estiver totalmente inicializado E não há usuário
-       if (!document.hidden && authCheckCompleted && !isInitializing) {
-         // Limpar timer anterior se existir
-         if (visibilityTimer) {
-           clearTimeout(visibilityTimer);
-         }
-         
-         // Debounce de 1000ms para evitar múltiplas execuções
-         visibilityTimer = setTimeout(async () => {
-           try {
-             const { data: { session } } = await supabase.auth.getSession();
-             // Só reinicializa se há sessão válida MAS não há usuário carregado
-             // E se não estamos em processo de carregamento
-             if (session && !user && !isInitializing) {
-               console.log('🔄 Visibilidade: Sessão válida detectada, reinicializando...');
-               isInitializing = true;
-               await initialize();
-             }
-           } catch (error) {
-             console.error('Erro ao verificar sessão após mudança de visibilidade:', error);
-           } finally {
-             isInitializing = false;
-           }
-         }, 1000); // Aumentado para 1 segundo
-       }
-     };
- 
-     document.addEventListener('visibilitychange', handleVisibilityChange);
- 
-     return () => {
-       if (initTimer) clearTimeout(initTimer);
-       if (visibilityTimer) clearTimeout(visibilityTimer);
-       document.removeEventListener('visibilitychange', handleVisibilityChange);
-     };
-   }, []); // Executar apenas uma vez na montagem do componente
+  }, [handleVisibilityChange]);
 
   // Show loading only during initial app load
   if (loading && !authCheckCompleted) {
@@ -133,6 +142,7 @@ function App() {
 
   return (
     <Router>
+      <FixedLayout>
         <Suspense fallback={<FullScreenLoader text="Carregando página..." />}>
           <Routes>
           {/* Rota pública - Login */}
@@ -259,6 +269,32 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/riscos-estrategicos/matriz-risco" 
+            element={
+              <ProtectedRoute>
+                <MatrizRisco />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/riscos-estrategicos/portfolio-acoes" 
+            element={
+              <ProtectedRoute>
+                <PortfolioAcoes />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/riscos-estrategicos/monitoramento" 
+            element={
+              <ProtectedRoute>
+                <MonitoramentoRiscos />
+              </ProtectedRoute>
+            } 
+          />
+          
+
           
           {/* Rota principal de Configurações */}
           <Route 
@@ -354,7 +390,13 @@ function App() {
           {/* Rota raiz */}
           <Route
             path="/"
-            element={<Navigate to="/login" replace />}
+            element={
+              user && userProfile ? (
+                <Navigate to="/conceitos" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
           />
           
           {/* Catch-all route */}
@@ -364,6 +406,7 @@ function App() {
           />
           </Routes>
         </Suspense>
+      </FixedLayout>
         
         {/* Toast notifications */}
         <Toaster 

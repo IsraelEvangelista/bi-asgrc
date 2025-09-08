@@ -1,45 +1,39 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Risk, CreateRiskInput, UpdateRiskInput, RiskFilters } from '../types';
+import { toast } from 'sonner';
 
 export function useRisks(filters?: RiskFilters) {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Memoizar filters para estabilizar dependências
-  const stableFilters = useMemo(() => {
-    if (!filters) return undefined;
-    return {
-      classificacao: filters.classificacao,
-      responsavel_risco: filters.responsavel_risco,
-      severidade_min: filters.severidade_min,
-      severidade_max: filters.severidade_max
-    };
-  }, [
-    filters?.classificacao,
-    filters?.responsavel_risco, 
-    filters?.severidade_min,
-    filters?.severidade_max
-  ]);
+  // Memoize filters to prevent unnecessary re-renders
+  const stableFilters = useMemo(() => filters, [JSON.stringify(filters)]);
 
   const fetchRisks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
+      
       let query = supabase
-        .from('006_matriz_riscos')
-        .select('*')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+        .from('risks')
+        .select(`
+          *,
+          macroprocess:macroprocesses(id, name),
+          process:processes(id, name),
+          subprocess:subprocesses(id, name),
+          category:risk_categories(id, name),
+          subcategory:risk_subcategories(id, name),
+          nature:risk_natures(id, name)
+        `);
 
-      // Aplicar filtros se fornecidos
+      // Apply filters
       if (stableFilters?.classificacao) {
         query = query.eq('classificacao', stableFilters.classificacao);
       }
       if (stableFilters?.responsavel_risco) {
-        query = query.ilike('responsavel_risco', `%${stableFilters.responsavel_risco}%`);
+        query = query.eq('responsavel_risco', stableFilters.responsavel_risco);
       }
       if (stableFilters?.severidade_min) {
         query = query.gte('severidade', stableFilters.severidade_min);
@@ -48,22 +42,21 @@ export function useRisks(filters?: RiskFilters) {
         query = query.lte('severidade', stableFilters.severidade_max);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setRisks(data || []);
     } catch (err) {
+      console.error('Error fetching risks:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar riscos');
     } finally {
       setLoading(false);
     }
   }, [stableFilters]);
 
-  // Execute fetchRisks when filters change - fixed to prevent infinite loop
   useEffect(() => {
     fetchRisks();
-  }, [stableFilters]); // Use stableFilters directly instead of fetchRisks
+  }, [fetchRisks]);
 
   return {
     risks,
@@ -79,33 +72,39 @@ export function useRisk(id: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchRisk = useCallback(async () => {
+    if (!id) return;
+    
     try {
       setLoading(true);
       setError(null);
-
+      
       const { data, error } = await supabase
-        .from('006_matriz_riscos')
-        .select('*')
+        .from('risks')
+        .select(`
+          *,
+          macroprocess:macroprocesses(id, name),
+          process:processes(id, name),
+          subprocess:subprocesses(id, name),
+          category:risk_categories(id, name),
+          subcategory:risk_subcategories(id, name),
+          nature:risk_natures(id, name)
+        `)
         .eq('id', id)
-        .is('deleted_at', null)
         .single();
 
       if (error) throw error;
-
       setRisk(data);
     } catch (err) {
+      console.error('Error fetching risk:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar risco');
     } finally {
       setLoading(false);
     }
   }, [id]);
 
-  // Execute fetchRisk when id changes - fixed to prevent infinite loop
   useEffect(() => {
-    if (id) {
-      fetchRisk();
-    }
-  }, [id]); // Removed fetchRisk dependency to prevent infinite loop
+    fetchRisk();
+  }, [fetchRisk]);
 
   return {
     risk,
@@ -119,33 +118,30 @@ export function useCreateRisk() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createRisk = async (input: CreateRiskInput): Promise<Risk | null> => {
+  const createRisk = useCallback(async (riskData: CreateRiskInput) => {
     try {
       setLoading(true);
       setError(null);
-
+      
       const { data, error } = await supabase
-        .from('006_matriz_riscos')
-        .insert({
-          eventos_riscos: input.eventos_riscos,
-          probabilidade: input.probabilidade,
-          impacto: input.impacto,
-          classificacao: input.classificacao,
-          responsavel_risco: input.responsavel_risco
-        })
+        .from('risks')
+        .insert([riskData])
         .select()
         .single();
 
       if (error) throw error;
-
+      toast.success('Risco criado com sucesso!');
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar risco');
-      return null;
+      console.error('Error creating risk:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar risco';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     createRisk,
@@ -158,33 +154,31 @@ export function useUpdateRisk() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateRisk = async (id: string, input: UpdateRiskInput): Promise<Risk | null> => {
+  const updateRisk = useCallback(async (id: string, riskData: UpdateRiskInput) => {
     try {
       setLoading(true);
       setError(null);
-
-      const updateData: Partial<Risk> = {
-        ...input,
-        updated_at: new Date().toISOString()
-      };
-
+      
       const { data, error } = await supabase
-        .from('006_matriz_riscos')
-        .update(updateData)
+        .from('risks')
+        .update(riskData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-
+      toast.success('Risco atualizado com sucesso!');
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar risco');
-      return null;
+      console.error('Error updating risk:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar risco';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     updateRisk,
@@ -197,30 +191,28 @@ export function useDeleteRisk() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const deleteRisk = async (id: string): Promise<boolean> => {
+  const deleteRisk = useCallback(async (id: string) => {
     try {
       setLoading(true);
       setError(null);
-
-      // Soft delete - atualiza deleted_at em vez de remover
+      
       const { error } = await supabase
-        .from('006_matriz_riscos')
-        .update({ 
-          deleted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .from('risks')
+        .delete()
         .eq('id', id);
 
       if (error) throw error;
-
-      return true;
+      toast.success('Risco excluído com sucesso!');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir risco');
-      return false;
+      console.error('Error deleting risk:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir risco';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     deleteRisk,

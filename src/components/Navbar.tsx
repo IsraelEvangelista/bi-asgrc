@@ -29,15 +29,14 @@ const navigationItems: NavItem[] = [
       {
         label: 'Portfólio de Riscos',
         children: [
-          { label: 'Matriz de Risco', path: '/riscos/matriz' },
-          { label: 'Portfólio de Ações', path: '/riscos/portfolio-acoes' },
+          { label: 'Matriz de Risco', path: '/riscos-estrategicos/matriz-risco' },
+          { label: 'Portfólio de Ações', path: '/riscos-estrategicos/portfolio-acoes' },
         ],
       },
       {
         label: 'Monitoramento',
         children: [
-          { label: 'Plano de Ações', path: '/riscos/plano-acoes' },
-          { label: 'Indicadores', path: '/riscos/indicadores' },
+          { label: 'Monitoramento de Riscos', path: '/riscos-estrategicos/monitoramento' },
         ],
       },
     ],
@@ -190,7 +189,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm">
+    <nav className="fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-evenly h-12 w-full">
 
@@ -261,7 +260,7 @@ const Navbar = () => {
       {/* Overlay para fechar dropdowns */}
       {openDropdowns.length > 0 && (
         <div 
-          className="fixed inset-0 z-40" 
+          className="fixed inset-0 z-20" 
           onClick={closeAllDropdowns}
         />
       )}

@@ -11,7 +11,7 @@ const Header = () => {
   }, [signOut]);
 
   return (
-    <header className="bg-blue-600 text-white shadow-lg">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white shadow-lg">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo e Título */}

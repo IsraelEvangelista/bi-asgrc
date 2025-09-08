@@ -97,6 +97,88 @@ body {
   animation: fadeInContent 0.2s ease-in-out forwards;
 }
 
+/* Garantir que elementos fixos funcionem corretamente */
+html {
+  scroll-behavior: smooth;
+  overflow: hidden; /* Remove barra de rolagem do html */
+  height: 100%;
+}
+
+body {
+  overflow: hidden; /* Remove barra de rolagem do body */
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Garantir que o header e navbar permaneçam fixos */
+.fixed {
+  position: fixed !important;
+}
+
+/* Fixed header and navbar styles */
+.fixed-header-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  width: 100% !important;
+}
+
+.fixed-navbar-container {
+  position: fixed !important;
+  top: 64px !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9998 !important;
+  width: 100% !important;
+}
+
+.main-content-wrapper {
+  padding-top: 112px !important;
+  height: 100vh !important; /* Altura total da viewport */
+  box-sizing: border-box !important; /* Inclui padding no cálculo da altura */
+  overflow-y: auto !important; /* Barra de rolagem apenas na área de conteúdo */
+  overflow-x: hidden !important;
+}
+
+/* Prevent layout shift when header is fixed */
+.fixed-header-spacer {
+  height: 64px; /* Adjust based on header height */
+}
+
+/* Ensure fixed elements don't interfere with scroll */
+.fixed-element {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Garantir que o body não interfira */
+body {
+  position: relative;
+  transform: none !important;
+  overflow: hidden !important; /* Reforça que body não deve ter scroll */
+}
+
+/* Reset de transforms que podem interferir */
+.fixed-header,
+.fixed-header * {
+  transform: none !important;
+  will-change: auto !important;
+  backface-visibility: visible !important;
+}
+
+/* Garantir scroll suave sem interferir no fixed */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevenir qualquer transform que possa afetar positioning context */
+.min-h-screen {
+  transform: none !important;
+}
+
 @keyframes fadeInContent {
   to {
     opacity: 1;
@@ -123,6 +205,63 @@ body {
 .route-transition-exit {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Animações para componentes de loading otimizados */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-in-out;
+}
+
+/* Transição suave para navegação entre páginas */
+@keyframes smooth-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-smooth-slide-in {
+  animation: smooth-slide-in 0.4s ease-out;
+}
+
+/* Prevenção de flash branco durante transições */
+.page-transition {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.page-transition-enter {
+  opacity: 0;
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+}
+
+/* Backdrop blur para loaders */
+.backdrop-blur-smooth {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .route-transition-exit-active {

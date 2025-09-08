@@ -28,7 +28,7 @@ export const useAuth = (): UseAuthReturn => {
     setError(null);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     console.log('🎯 useAuth.login: Iniciando processo de login para:', email);
     setIsLoading(true);
     setError(null);
@@ -60,9 +60,9 @@ export const useAuth = (): UseAuthReturn => {
       setIsLoading(false);
       console.log('🎯 useAuth.login: Processo finalizado');
     }
-  };
+  }, [signIn]);
 
-  const register = async (userData: RegisterData): Promise<RegisterResponse> => {
+  const register = useCallback(async (userData: RegisterData): Promise<RegisterResponse> => {
     setIsLoading(true);
     setError(null);
     
@@ -81,9 +81,9 @@ export const useAuth = (): UseAuthReturn => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [signUp]);
 
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
     
@@ -96,7 +96,7 @@ export const useAuth = (): UseAuthReturn => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [signOut]);
 
   return {
     isLoading,

@@ -321,7 +321,7 @@ export const useConfig = () => {
         supabase.from('010_natureza').select('id, ativa'),
         supabase.from('011_categoria').select('id, ativa'),
         supabase.from('012_subcategoria').select('id, ativa'),
-        supabase.from('013_conceito').select('id, ativo')
+        supabase.from('020_conceitos').select('id, ativo')
       ]);
 
       if (areasResult.error) throw areasResult.error;
@@ -659,7 +659,7 @@ export const useConfig = () => {
       clearError();
       
       let query = supabase
-        .from('013_conceito')
+        .from('020_conceitos')
         .select('*');
       
       if (filters?.search) {
@@ -694,7 +694,7 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('013_conceito')
+        .from('020_conceitos')
         .insert(input)
         .select()
         .single();
@@ -720,7 +720,7 @@ export const useConfig = () => {
       clearError();
       
       const { data, error } = await supabase
-        .from('013_conceito')
+        .from('020_conceitos')
         .update(input)
         .eq('id', id)
         .select()
@@ -749,7 +749,7 @@ export const useConfig = () => {
       clearError();
       
       const { error } = await supabase
-        .from('013_conceito')
+        .from('020_conceitos')
         .delete()
         .eq('id', id);
       
