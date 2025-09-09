@@ -8,7 +8,9 @@ import { Macroprocesso, Processo, Subprocesso } from '../types/process';
 import { AreaGerencia } from '../types/config';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-interface ProcessDetailProps {}
+interface ProcessDetailProps {
+  // Componente não recebe props, mas interface mantida para consistência
+}
 
 const ProcessDetail: React.FC<ProcessDetailProps> = () => {
   const { macroprocessoId } = useParams<{ macroprocessoId: string }>();
@@ -93,7 +95,7 @@ const ProcessDetail: React.FC<ProcessDetailProps> = () => {
     }
   }, [selectedProcesso, fetchSubprocessos]);
   
-  const handleProcessoSelect = (processo: any) => {
+  const handleProcessoSelect = (processo: Processo) => {
     console.log('🎯 Processo selecionado:', processo);
     setSelectedProcesso(processo);
   };

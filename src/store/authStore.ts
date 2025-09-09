@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (email: string, password: string) => {
     try {
-      console.log('🔐 signIn: Iniciando processo de login para:', email);
+      console.log('🔐 signIn: Iniciando processo de login para:', email.replace(/(.{2}).*(@.*)/, '$1***$2'));
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -239,7 +239,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { data: { session }, error: sessionError } = await Promise.race([
         sessionPromise,
         timeoutPromise
-      ]) as { data: { session: any }, error: any };
+      ]) as { data: { session: import('@supabase/supabase-js').Session | null }, error: import('@supabase/supabase-js').AuthError | null };
       
       if (sessionError) {
         console.error('❌ AuthStore: Erro ao obter sessão:', sessionError);

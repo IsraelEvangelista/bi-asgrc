@@ -1,21 +1,76 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { AlertTriangle, Filter, Workflow, Users, TrendingUp, PieChart, Plus, Edit, Trash2, ChevronUp, ChevronDown, Settings, CheckCircle, FileText, Shield } from 'lucide-react';
+
+import { FilterProvider, useFilter, filterData } from '../contexts/FilterContext';
 import { useRiscosCards } from '../hooks/useRiscosCards';
 import { useRiscosPorCategoria } from '../hooks/useRiscosPorCategoria';
 import { useRiscosPorSituacao } from '../hooks/useRiscosPorSituacao';
 import { useRiscosPorPlanoResposta } from '../hooks/useRiscosPorPlanoResposta';
+import { useRiscosPorStatusAcao } from '../hooks/useRiscosPorStatusAcao';
+import { useRiscosProcessosTrabalhoData } from '../hooks/useRiscosProcessosTrabalhoData';
 
-const RiscosProcessosTrabalho: React.FC = () => {
+// Componente interno que usa o contexto de filtros
+const RiscosProcessosTrabalhoContent: React.FC = () => {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const { state: filterState, toggleFilter, clearFilter, isFiltered, isFilterActive } = useFilter();
+
+  // Dados simulados para os gráficos
+  const dadosNivelRiscoOriginal = [
+    { label: 'Alto', value: 15, color: '#ef4444' },
+    { label: 'Médio', value: 25, color: '#f59e0b' },
+    { label: 'Baixo', value: 10, color: '#10b981' }
+  ];
+
+  const dadosSituacaoRiscoOriginal = [
+    { label: 'Identificado', value: 20, color: '#3b82f6' },
+    { label: 'Em Análise', value: 15, color: '#f59e0b' },
+    { label: 'Tratado', value: 15, color: '#10b981' }
+  ];
+
+  const dadosPlanoRespostaOriginal = [
+    { label: 'Aceitar', value: 8, color: '#10b981' },
+    { label: 'Mitigar', value: 30, color: '#f59e0b' },
+    { label: 'Transferir', value: 7, color: '#3b82f6' },
+    { label: 'Evitar', value: 5, color: '#ef4444' }
+  ];
+
+  // Aplicar filtragem cruzada nos dados dos gráficos
+  const dadosNivelRisco = filterData(dadosNivelRiscoOriginal, 'grafico-nivel-risco', filterState);
+  const dadosSituacaoRisco = filterData(dadosSituacaoRiscoOriginal, 'grafico-situacao-risco', filterState);
   const { quantidadeProcessos, quantidadeRiscos, quantidadeAcoes, loading, error } = useRiscosCards();
+
+  // Função para lidar com cliques fora dos elementos interativos
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Verificar se o clique foi em um elemento interativo (gráfico ou tabela)
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('[data-interactive="true"]') || 
+                                target.closest('path') || 
+                                target.closest('tr[data-interactive="true"]');
+    
+    // Se não foi em um elemento interativo e há filtro ativo, limpar filtro
+    if (!isInteractiveElement && isFilterActive()) {
+      clearFilter();
+    }
+  };
   const { dados: dadosCategoria, total: totalCategoria, loading: loadingCategoria } = useRiscosPorCategoria();
   const { dados: dadosSituacao, total: totalSituacao, loading: loadingSituacao } = useRiscosPorSituacao();
   const { dados: dadosPlanoResposta, total: totalPlanoResposta, loading: loadingPlanoResposta } = useRiscosPorPlanoResposta();
+  const { dados: dadosStatusAcao, total: totalStatusAcao, loading: loadingStatusAcao } = useRiscosPorStatusAcao();
+  const { dados: dadosTabela, loading: loadingTabela, error: errorTabela } = useRiscosProcessosTrabalhoData();
+  
+  // Aplicar filtragem nos dados após sua declaração
+  const dadosStatusAcaoFiltrados = filterData(dadosStatusAcao, 'grafico-status-acao', filterState);
+  const dadosCategoriaFiltrados = filterData(dadosCategoria, 'grafico-nivel-risco', filterState);
+  const dadosSituacaoFiltrados = filterData(dadosSituacao, 'grafico-situacao-risco', filterState);
+  const dadosPlanoRespostaFiltrados = filterData(dadosPlanoResposta, 'grafico-plano-resposta', filterState);
 
   return (
     <Layout>
-      <div className="p-6 space-y-8">
+      <div 
+        className="p-6 space-y-8"
+        onClick={handleContainerClick}
+      >
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
@@ -106,7 +161,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                             'Baixo': '#77DD77'
                           };
                           
-                          return dadosCategoria.map((item, index) => {
+                          return dadosCategoriaFiltrados.map((item, index) => {
                             const percentage = item.percentual;
                             const startAngle = (cumulativePercentage / 100) * 360;
                             const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
@@ -141,6 +196,9 @@ const RiscosProcessosTrabalho: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
+                            const isCurrentFiltered = isFiltered('nivel_risco', item.nivel_risco);
+                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-nivel-risco';
+                            
                             return (
                               <path
                                 key={item.nivel_risco}
@@ -148,7 +206,14 @@ const RiscosProcessosTrabalho: React.FC = () => {
                                 fill={coresPorNivel[item.nivel_risco] || '#9CA3AF'}
                                 stroke="white"
                                 strokeWidth="2"
-                                className="drop-shadow-lg"
+                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
+                                  isOtherFiltered ? 'opacity-50' : 'opacity-100'
+                                } hover:opacity-80`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFilter('chart', 'nivel_risco', item.nivel_risco, 'grafico-nivel-risco');
+                                }}
+                                data-interactive="true"
                               />
                             );
                           });
@@ -159,7 +224,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                         {(() => {
                           let cumulativePercentage = 0;
                           
-                          return dadosCategoria.map((item, index) => {
+                          return dadosCategoriaFiltrados.map((item, index) => {
                             const percentage = item.percentual;
                             const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
                             const midAngleRad = (midAngle - 90) * (Math.PI / 180);
@@ -193,7 +258,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                       {/* Centro com somatório */}
                       <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{totalCategoria}</p>
+                          <p className="text-2xl font-bold text-gray-900">{dadosCategoriaFiltrados.reduce((acc, item) => acc + item.quantidade, 0)}</p>
                           <p className="text-sm text-gray-600">Total</p>
                         </div>
                       </div>
@@ -211,8 +276,8 @@ const RiscosProcessosTrabalho: React.FC = () => {
               <div className="space-y-2 mt-4">
                 {loadingCategoria ? (
                   <div className="text-center text-gray-500">Carregando...</div>
-                ) : dadosCategoria.length > 0 ? (
-                  dadosCategoria.map((item, index) => {
+                ) : dadosCategoriaFiltrados.length > 0 ? (
+                  dadosCategoriaFiltrados.map((item, index) => {
                     // Cores específicas por nível de risco
                     const coresPorNivel: { [key: string]: string } = {
                       'Muito Alto': '#FF6961',
@@ -243,7 +308,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Situação do Risco</h3>
               <div className="flex items-center justify-center h-64 overflow-visible">
                 <div className="relative w-72 h-72 overflow-visible">
-                  {!loadingSituacao && dadosSituacao.length > 0 ? (
+                  {!loadingSituacao && dadosSituacaoFiltrados.length > 0 ? (
                     <>
                       {/* Gráfico de pizza dinâmico baseado nos dados reais */}
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
@@ -258,10 +323,13 @@ const RiscosProcessosTrabalho: React.FC = () => {
                           };
                           
                           // Se há apenas um item (100%), renderizar um círculo completo
-                          if (dadosSituacao.length === 1) {
-                            const item = dadosSituacao[0];
+                          if (dadosSituacaoFiltrados.length === 1) {
+                            const item = dadosSituacaoFiltrados[0];
                             const outerRadius = 90;
                             const innerRadius = 30;
+                            
+                            const isCurrentFiltered = isFiltered('situacao_risco', item.situacao_risco);
+                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-situacao-risco';
                             
                             return (
                               <g key={item.situacao_risco}>
@@ -273,7 +341,14 @@ const RiscosProcessosTrabalho: React.FC = () => {
                                   fill={coresPorSituacao[item.situacao_risco] || '#3B82F6'}
                                   stroke="white"
                                   strokeWidth="2"
-                                  className="drop-shadow-lg"
+                                  className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
+                                    isOtherFiltered ? 'opacity-50' : 'opacity-100'
+                                  } hover:opacity-80`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
+                                  }}
+                                  data-interactive="true"
                                 />
                                 {/* Círculo interno (buraco) */}
                                 <circle
@@ -289,7 +364,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosSituacao.map((item, index) => {
+                          return dadosSituacaoFiltrados.map((item, index) => {
                             const percentage = item.percentual;
                             const startAngle = (cumulativePercentage / 100) * 360;
                             const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
@@ -323,6 +398,9 @@ const RiscosProcessosTrabalho: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
+                            const isCurrentFiltered = isFiltered('situacao_risco', item.situacao_risco);
+                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-situacao-risco';
+                            
                             return (
                               <path
                                 key={item.situacao_risco}
@@ -330,7 +408,14 @@ const RiscosProcessosTrabalho: React.FC = () => {
                                 fill={coresPorSituacao[item.situacao_risco] || '#9CA3AF'}
                                 stroke="white"
                                 strokeWidth="2"
-                                className="drop-shadow-lg"
+                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
+                                  isOtherFiltered ? 'opacity-50' : 'opacity-100'
+                                } hover:opacity-80`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
+                                }}
+                                data-interactive="true"
                               />
                             );
                           });
@@ -361,7 +446,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosSituacao.map((item, index) => {
+                          return dadosSituacaoFiltrados.map((item, index) => {
                             const percentage = item.percentual;
                             const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
                             const midAngleRad = (midAngle - 90) * (Math.PI / 180);
@@ -394,7 +479,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                       {/* Centro com somatório */}
                       <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{totalSituacao}</p>
+                          <p className="text-2xl font-bold text-gray-900">{dadosSituacaoFiltrados.reduce((acc, item) => acc + item.quantidade, 0)}</p>
                           <p className="text-sm text-gray-600">Total</p>
                         </div>
                       </div>
@@ -412,8 +497,8 @@ const RiscosProcessosTrabalho: React.FC = () => {
               <div className="space-y-2 mt-4">
                 {loadingSituacao ? (
                   <div className="text-center text-gray-500">Carregando...</div>
-                ) : dadosSituacao.length > 0 ? (
-                  dadosSituacao.map((item, index) => {
+                ) : dadosSituacaoFiltrados.length > 0 ? (
+                  dadosSituacaoFiltrados.map((item, index) => {
                     const coresPorSituacao: { [key: string]: string } = {
                       'Em Análise': 'bg-blue-800',
                       'Aprovado': 'bg-blue-600', 
@@ -445,37 +530,45 @@ const RiscosProcessosTrabalho: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Plano de Resposta do Risco</h3>
               <div className="flex items-center justify-center h-64 overflow-visible">
                 <div className="relative w-72 h-72 overflow-visible">
-                  {!loadingPlanoResposta && dadosPlanoResposta.length > 0 ? (
+                  {!loadingStatusAcao && dadosStatusAcaoFiltrados.length > 0 ? (
                     <>
                       {/* Gráfico de pizza dinâmico baseado nos dados reais */}
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
                         {(() => {
-                          const coresPorPlano: { [key: string]: string } = {
-                            'Aceitar': '#10B981',
-                            'Mitigar': '#EAB308', 
-                            'Transferir': '#84CC16',
-                            'Evitar': '#059669',
-                            'Monitorar': '#F59E0B',
-                            'Reduzir': '#0D9488'
+                          const coresPorStatus: { [key: string]: string } = {
+                            'Não iniciada': '#60A5FA',
+                            'Concluído': '#10B981', 
+                            'Em andamento': '#FDE047',
+                            'Atrasado': '#EF4444'
                           };
                           
                           // Se há apenas um item (100%), renderizar um círculo completo
-                          if (dadosPlanoResposta.length === 1) {
-                            const item = dadosPlanoResposta[0];
+                          if (dadosStatusAcaoFiltrados.length === 1) {
+                            const item = dadosStatusAcaoFiltrados[0];
                             const outerRadius = 90;
                             const innerRadius = 30;
                             
+                            const isCurrentFiltered = isFiltered('status_acao', item.status_acao);
+                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-status-acao';
+                            
                             return (
-                              <g key={item.plano_resposta_risco}>
+                              <g key={item.status_acao}>
                                 {/* Círculo externo */}
                                 <circle
                                   cx="140"
                                   cy="140"
                                   r={outerRadius}
-                                  fill={coresPorPlano[item.plano_resposta_risco] || '#10B981'}
+                                  fill={coresPorStatus[item.status_acao] || '#60A5FA'}
                                   stroke="white"
                                   strokeWidth="2"
-                                  className="drop-shadow-lg"
+                                  className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
+                                    isOtherFiltered ? 'opacity-50' : 'opacity-100'
+                                  } hover:opacity-80`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
+                                  }}
+                                  data-interactive="true"
                                 />
                                 {/* Círculo interno (buraco) */}
                                 <circle
@@ -491,8 +584,9 @@ const RiscosProcessosTrabalho: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosPlanoResposta.map((item, index) => {
-                            const percentage = (item.total_acoes / totalPlanoResposta) * 100;
+                          return dadosStatusAcaoFiltrados.map((item, index) => {
+                            const totalFiltrado = dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0);
+                            const percentage = totalFiltrado > 0 ? (item.total_acoes / totalFiltrado) * 100 : 0;
                             const startAngle = (cumulativePercentage / 100) * 360;
                             const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
                             
@@ -525,14 +619,24 @@ const RiscosProcessosTrabalho: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
+                            const isCurrentFiltered = isFiltered('status_acao', item.status_acao);
+                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-status-acao';
+                            
                             return (
                               <path
-                                key={item.plano_resposta_risco}
+                                key={item.status_acao}
                                 d={pathData}
-                                fill={coresPorPlano[item.plano_resposta_risco] || '#10B981'}
+                                fill={coresPorStatus[item.status_acao] || '#60A5FA'}
                                 stroke="white"
                                 strokeWidth="2"
-                                className="drop-shadow-lg"
+                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
+                                  isOtherFiltered ? 'opacity-50' : 'opacity-100'
+                                } hover:opacity-80`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
+                                }}
+                                data-interactive="true"
                               />
                             );
                           });
@@ -542,12 +646,13 @@ const RiscosProcessosTrabalho: React.FC = () => {
                         {/* Rótulos percentuais externos às seções */}
                         {(() => {
                           // Para um único item, posicionar o rótulo no topo
-                          if (dadosPlanoResposta.length === 1) {
-                            const item = dadosPlanoResposta[0];
-                            const percentage = (item.total_acoes / totalPlanoResposta) * 100;
+                          if (dadosStatusAcaoFiltrados.length === 1) {
+                            const item = dadosStatusAcaoFiltrados[0];
+                            const totalFiltrado = dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0);
+                            const percentage = totalFiltrado > 0 ? (item.total_acoes / totalFiltrado) * 100 : 0;
                             return (
                               <text
-                                key={`label-${item.plano_resposta_risco}`}
+                                key={`label-${item.status_acao}`}
                                 x="140"
                                 y="15"
                                 textAnchor="middle"
@@ -564,8 +669,9 @@ const RiscosProcessosTrabalho: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosPlanoResposta.map((item, index) => {
-                            const percentage = (item.total_acoes / totalPlanoResposta) * 100;
+                          return dadosStatusAcaoFiltrados.map((item, index) => {
+                            const totalFiltrado = dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0);
+                            const percentage = totalFiltrado > 0 ? (item.total_acoes / totalFiltrado) * 100 : 0;
                             const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
                             const midAngleRad = (midAngle - 90) * (Math.PI / 180);
                             
@@ -577,7 +683,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                             
                             return (
                               <text
-                                key={`label-${item.plano_resposta_risco}`}
+                                key={`label-${item.status_acao}`}
                                 x={labelX}
                                 y={labelY}
                                 textAnchor="middle"
@@ -597,7 +703,7 @@ const RiscosProcessosTrabalho: React.FC = () => {
                       {/* Centro com somatório */}
                       <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{totalPlanoResposta}</p>
+                          <p className="text-2xl font-bold text-gray-900">{dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0)}</p>
                           <p className="text-sm text-gray-600">Total</p>
                         </div>
                       </div>
@@ -613,26 +719,24 @@ const RiscosProcessosTrabalho: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-2 mt-4">
-                {loadingPlanoResposta ? (
+                {loadingStatusAcao ? (
                   <div className="text-center text-gray-500">Carregando...</div>
-                ) : dadosPlanoResposta.length > 0 ? (
-                  dadosPlanoResposta.map((item, index) => {
-                    const coresPorPlano: { [key: string]: string } = {
-                      'Aceitar': '#10B981',
-                      'Mitigar': '#EAB308', 
-                      'Transferir': '#84CC16',
-                      'Evitar': '#059669',
-                      'Monitorar': '#F59E0B',
-                      'Reduzir': '#0D9488'
+                ) : dadosStatusAcaoFiltrados.length > 0 ? (
+                  dadosStatusAcaoFiltrados.map((item, index) => {
+                    const coresPorStatus: { [key: string]: string } = {
+                      'Não iniciada': '#60A5FA',
+                      'Concluído': '#10B981', 
+                      'Em andamento': '#FDE047',
+                      'Atrasado': '#EF4444'
                     };
-                    const corClasse = coresPorPlano[item.plano_resposta_risco] || '#10B981';
-                    const percentage = Math.round((item.total_acoes / totalPlanoResposta) * 100);
+                    const corClasse = coresPorStatus[item.status_acao] || '#60A5FA';
+                    const percentage = totalStatusAcao > 0 ? Math.round((item.total_acoes / totalStatusAcao) * 100) : 0;
                     
                     return (
-                      <div key={item.plano_resposta_risco} className="flex items-center justify-between">
+                      <div key={item.status_acao} className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className={`w-3 h-3 ${corClasse} rounded-full shadow-sm`}></div>
-                          <span className="text-sm text-gray-700">{item.plano_resposta_risco}</span>
+                          <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: corClasse}}></div>
+                          <span className="text-sm text-gray-700">{item.status_acao}</span>
                         </div>
                         <span className="text-sm font-medium text-gray-900">{item.total_acoes} ({percentage}%)</span>
                       </div>
@@ -643,6 +747,10 @@ const RiscosProcessosTrabalho: React.FC = () => {
                 )}
               </div>
             </div>
+
+
+
+
         </div>
 
         {/* Linha 3 - Tabela */}
@@ -651,165 +759,155 @@ const RiscosProcessosTrabalho: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">Detalhamento de Riscos</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 text-xs">
               <thead className="bg-gradient-to-r from-blue-600 to-blue-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
                     <div className="flex items-center space-x-1">
-                      <span>Risco</span>
+                      <span className="break-words">Processo</span>
                       <ChevronUp className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
                     <div className="flex items-center space-x-1">
-                      <span>Categoria</span>
+                      <span className="break-words">Risco</span>
                       <ChevronDown className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
                     <div className="flex items-center space-x-1">
-                      <span>Setor</span>
+                      <span className="break-words">Ação</span>
                       <ChevronUp className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
                     <div className="flex items-center space-x-1">
-                      <span>Probabilidade</span>
+                      <span className="break-words">Responsável pelo Risco</span>
+                      <ChevronUp className="h-3 w-3" />
+                    </div>
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                    <div className="flex items-center space-x-1">
+                      <span className="break-words">Nível do Risco</span>
+                      <ChevronUp className="h-3 w-3" />
+                    </div>
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                    <div className="flex items-center space-x-1">
+                      <span className="break-words">Nível do Risco Tratado</span>
                       <ChevronDown className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
                     <div className="flex items-center space-x-1">
-                      <span>Impacto</span>
+                      <span className="break-words">Resposta ao Risco</span>
                       <ChevronUp className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
-                    <div className="flex items-center space-x-1">
-                      <span>Nível</span>
-                      <ChevronDown className="h-3 w-3" />
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-blue-800 transition-colors duration-200">
-                    <div className="flex items-center space-x-1">
-                      <span>Status</span>
-                      <ChevronUp className="h-3 w-3" />
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Ações
-                  </th>
+
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr className="hover:bg-gray-50 transition-colors duration-200 transform hover:scale-[1.01] hover:shadow-md">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Falha em Equipamento</div>
-                    <div className="text-sm text-gray-500">Parada não programada</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 shadow-sm">
-                      Operacional
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Produção</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Alta</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Crítico</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 shadow-sm">
-                      Crítico
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 shadow-sm">
-                      Em Análise
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 transform hover:scale-110 transition-transform duration-200">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 transform hover:scale-110 transition-transform duration-200">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors duration-200 transform hover:scale-[1.01] hover:shadow-md">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Atraso na Entrega</div>
-                    <div className="text-sm text-gray-500">Fornecedor externo</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 shadow-sm">
-                      Logístico
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Logística</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Média</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Moderado</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 shadow-sm">
-                      Moderado
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 shadow-sm">
-                      Monitorado
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 transform hover:scale-110 transition-transform duration-200">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 transform hover:scale-110 transition-transform duration-200">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors duration-200 transform hover:scale-[1.01] hover:shadow-md">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Não Conformidade</div>
-                    <div className="text-sm text-gray-500">Auditoria interna</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 shadow-sm">
-                      Compliance
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Administrativo</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Baixa</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Baixo</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 shadow-sm">
-                      Baixo
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 shadow-sm">
-                      Controlado
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 transform hover:scale-110 transition-transform duration-200">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 transform hover:scale-110 transition-transform duration-200">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                {loadingTabela ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      Carregando dados...
+                    </td>
+                  </tr>
+                ) : errorTabela ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-red-500">
+                      Erro ao carregar dados: {errorTabela}
+                    </td>
+                  </tr>
+                ) : dadosTabela && dadosTabela.length > 0 ? (
+                  filterData(dadosTabela, 'tabela-riscos', filterState).map((item, index) => {
+                    // Função para determinar a cor do badge baseado no nível de risco
+                    const getCorNivelRisco = (nivel: string) => {
+                      switch (nivel?.toLowerCase()) {
+                        case 'muito alto':
+                          return 'bg-red-100 text-red-800';
+                        case 'alto':
+                          return 'bg-orange-100 text-orange-800';
+                        case 'moderado':
+                        case 'médio':
+                          return 'bg-yellow-100 text-yellow-800';
+                        case 'baixo':
+                          return 'bg-green-100 text-green-800';
+                        default:
+                          return 'bg-gray-100 text-gray-800';
+                      }
+                    };
+
+                    // Encontrar o índice original do item na tabela completa
+                    const originalIndex = dadosTabela.findIndex(originalItem => originalItem === item);
+                    
+                    // Verificar se esta linha está filtrada
+                    const isCurrentRowFiltered = isFiltered('table_row', originalIndex.toString());
+                    const isOtherRowFiltered = isFilterActive() && !isCurrentRowFiltered && filterState.activeFilter.sourceComponent === 'tabela-riscos';
+                    
+                    return (
+                      <tr 
+                        key={index} 
+                        className={`cursor-pointer transition-all duration-200 ${
+                          isOtherRowFiltered ? 'opacity-50' : 'opacity-100'
+                        } hover:bg-gray-50`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFilter('table', 'table_row', originalIndex.toString(), 'tabela-riscos');
+                        }}
+                        data-interactive="true"
+                      >
+                        <td className="px-3 py-2">
+                          <div className="text-xs font-medium text-gray-900 break-words max-w-32">{item.processo || 'N/A'}</div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="text-xs font-medium text-gray-900 break-words max-w-40">{item.risco || 'N/A'}</div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="text-xs text-gray-900 break-words max-w-40">{item.acao || 'N/A'}</div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="text-xs text-gray-900 break-words max-w-32">{item.responsavel_risco || 'N/A'}</div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`px-1 py-1 inline-flex text-xs leading-4 font-semibold rounded-full shadow-sm ${getCorNivelRisco(item.nivel_risco)}`}>
+                            {item.nivel_risco || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`px-1 py-1 inline-flex text-xs leading-4 font-semibold rounded-full shadow-sm ${getCorNivelRisco(item.nivel_risco_tratado)}`}>
+                            {item.nivel_risco_tratado || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="text-xs text-gray-900 break-words max-w-32">{item.resposta_risco || 'N/A'}</div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-2 text-center text-gray-500 text-xs">
+                      Nenhum dado encontrado
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
     </Layout>
+  );
+};
+
+// Componente principal que fornece o contexto de filtros
+const RiscosProcessosTrabalho: React.FC = () => {
+  return (
+    <FilterProvider>
+      <RiscosProcessosTrabalhoContent />
+    </FilterProvider>
   );
 };
 

@@ -130,14 +130,14 @@ export const useDetalhamentoTable = () => {
       console.log('✅ Dados recebidos do Supabase:', rawData?.length || 0, 'registros');
       
       // Transformar dados para o formato da tabela
-      const transformedData: DetalhamentoTableRow[] = (rawData || []).map((item: any) => ({
-        id: item.id,
+      const transformedData: DetalhamentoTableRow[] = (rawData || []).map((item: Record<string, any>) => ({
+        id: String(item.id || ''),
         macroprocesso: item['005_processos']?.['004_macroprocessos']?.macroprocesso || '',
         processo: item['005_processos']?.processo || '',
-        subprocesso: item.subprocesso || '',
+        subprocesso: String(item.subprocesso || ''),
         responsavel_processo: item['005_processos']?.['003_areas_gerencias']?.sigla_area || '',
-        link_manual: item.link_manual || '',
-        updated_at: item.updated_at || ''
+        link_manual: String(item.link_manual || ''),
+        updated_at: String(item.updated_at || '')
       }));
 
       console.log('🔄 Dados transformados:', transformedData.length, 'registros');

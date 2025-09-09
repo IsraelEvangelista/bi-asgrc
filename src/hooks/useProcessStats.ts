@@ -47,12 +47,12 @@ export const useProcessStats = () => {
         error: null
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar estatísticas de processos:', error);
       setStats(prev => ({
         ...prev,
         loading: false,
-        error: error.message || 'Erro ao carregar estatísticas'
+        error: (error as Error)?.message || 'Erro ao carregar estatísticas'
       }));
     }
   };

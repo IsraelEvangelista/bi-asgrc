@@ -32,7 +32,16 @@
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_wait_for",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run check:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm audit:*)",
+      "Bash(timeout 10 npm run client:dev -- --port 8080)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

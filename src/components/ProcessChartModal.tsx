@@ -39,7 +39,19 @@ const ProcessChartModal: React.FC<ProcessChartModalProps> = ({
     'Não Publicados': '#EF4444' // red-500
   };
 
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percentage }: any) => {
+  interface PieChartLabelProps {
+    cx?: number;
+    cy?: number;
+    midAngle?: number;
+    innerRadius?: number;
+    outerRadius?: number;
+    percentage?: string;
+    [key: string]: any; // Para propriedades adicionais do Recharts
+  }
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percentage }: PieChartLabelProps) => {
+    if (!cx || !cy || !midAngle || !outerRadius || !percentage) return null;
+    
     const RADIAN = Math.PI / 180;
     const radius = outerRadius + 30; // Posicionar rótulos externos ao gráfico
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -60,7 +72,18 @@ const ProcessChartModal: React.FC<ProcessChartModalProps> = ({
     );
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      payload: {
+        name: string;
+        value: number;
+        percentage: string;
+      };
+    }>;
+  }
+
+  const CustomTooltip = ({ active, payload }: TooltipProps) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (

@@ -157,7 +157,7 @@ export const useActionRiskRelation = () => {
   }, []);
 
   // Buscar relação com detalhes expandidos (incluindo dados da ação e risco)
-  const fetchRelationWithDetails = useCallback(async (id: string): Promise<any | null> => {
+  const fetchRelationWithDetails = useCallback(async (id: string): Promise<ActionRiskRelation | null> => {
     setLoading(true);
     setError(null);
 

@@ -2,15 +2,13 @@ import React, { useEffect, Suspense, lazy, memo, useRef, useCallback } from 'rea
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
-import { supabase } from './lib/supabase';
 import ProtectedRoute from './components/ProtectedRoute';
-import LoadingSpinner, { FullScreenLoader } from './components/LoadingSpinner';
+import { FullScreenLoader } from './components/LoadingSpinner';
 import FixedLayout from './components/FixedLayout';
 
 // Preload dos componentes mais críticos para evitar tela branca
 import CadeiaValor from './pages/CadeiaValor';
 import ProcessDetail from './pages/ProcessDetail';
-import Dashboard from './pages/Dashboard';
 
 // Lazy loading apenas para componentes menos utilizados
 const Login = lazy(() => import('./pages/Login'));
@@ -45,7 +43,7 @@ function App() {
     user, 
     userProfile, 
     loading, 
-    error, 
+    
     authCheckCompleted, 
     isFullyInitialized,
     isInitializing,
@@ -107,7 +105,7 @@ function App() {
       initializeRef.current = true;
       initialize();
     }
-  }, []); // Empty dependency array - only run on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- Deve rodar apenas uma vez no mount para evitar loops
 
   useEffect(() => {
     // Setup visibility change listener

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Filter, Search } from 'lucide-react';
+import { X, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface FilterOption {

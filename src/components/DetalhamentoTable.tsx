@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Search, ExternalLink, FileText, Download } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, ExternalLink } from 'lucide-react';
 import { useDetalhamentoTable, SortField, DetalhamentoTableFilters } from '../hooks/useDetalhamentoTable';
 
 interface DetalhamentoTableProps {

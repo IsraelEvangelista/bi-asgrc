@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Filter, Check, ChevronDown, Search } from 'lucide-react';
+import type { Macroprocesso, Processo, Subprocesso } from '../types/process';
 
 interface ProcessFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   filters: ProcessFilters;
   onFiltersChange: (filters: ProcessFilters) => void;
-  macroprocessos: any[];
-  processos: any[];
-  subprocessos: any[];
+  macroprocessos: Macroprocesso[];
+  processos: Processo[];
+  subprocessos: Subprocesso[];
 }
 
 export interface ProcessFilters {

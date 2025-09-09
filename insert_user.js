@@ -21,4 +21,18 @@ async function insertUserData() {
     const { data: existingProfile, error: profileCheckError } = await supabase
       .from('001_perfis')
       .select('*')
-      .eq('i
+      .eq('id', 1);
+
+    if (profileCheckError) {
+      console.error('❌ Erro ao verificar perfil:', profileCheckError);
+      return;
+    }
+
+    console.log('✅ Dados inseridos com sucesso');
+  } catch (error) {
+    console.error('❌ Erro geral:', error);
+  }
+}
+
+// Executar função
+insertUserData();

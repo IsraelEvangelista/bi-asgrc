@@ -497,6 +497,178 @@ useEffect(() => {
 
 ---
 
+## Implementação e Correção dos Gráficos de Riscos nos Processos de Trabalho
+
+**Data:** Janeiro 2025  
+**Status:** Concluído  
+**Severidade:** Média  
+
+### Descrição das Implementações
+
+Implementação completa de três gráficos de pizza interativos na página de Riscos dos Processos de Trabalho, com correções de visualização, contagem de dados e aplicação de paletas de cores distintas para cada gráfico.
+
+### Principais Implementações
+
+#### 1. Gráfico "Nível do Risco Inerente"
+- **Fonte de Dados**: Tabela `015_riscos_x_acoes_proc_trab`
+- **Segmentação**: Por atributo `nivel_risco_inerente`
+- **Contagem**: IDs de risco distintos
+- **Paleta de Cores**: Tons de vermelho e laranja (#DC2626, #EA580C, #F97316, #FB923C)
+- **Formatação**: Rótulos externos pretos, sem linhas de conexão, legenda sincronizada
+
+#### 2. Gráfico "Situação do Risco"
+- **Fonte de Dados**: Tabela `015_riscos_x_acoes_proc_trab`
+- **Segmentação**: Por atributo `situacao_risco`
+- **Contagem**: IDs de risco distintos
+- **Paleta de Cores**: Tons de azul (#1E40AF, #2563EB, #3B82F6, #60A5FA)
+- **Formatação**: Rótulos externos pretos, sem linhas de conexão, tratamento especial para situação única
+- **Correções Específicas**: Renderização de círculo completo azul para casos de situação única
+
+#### 3. Gráfico "Plano de Resposta do Risco"
+- **Fonte de Dados**: Tabela `015_riscos_x_acoes_proc_trab`
+- **Segmentação**: Por atributo `plano_resposta_risco`
+- **Contagem**: Total de registros `id_acao_controle` (não distinta)
+- **Paleta de Cores**: Cores vivas (#10B981, #F59E0B, #EF4444, #8B5CF6, #06B6D4)
+- **Formatação**: Rótulos externos pretos, sem linhas de conexão, cores aplicadas tanto nas seções quanto na legenda
+
+### Problemas Identificados e Soluções
+
+#### Problema 1: Gráfico "Situação do Risco" Não Exibia Seções Visualmente
+**Sintomas**: Gráfico aparecia como círculo uniforme sem divisões
+**Causa**: Dados não estavam sendo carregados corretamente da tabela
+**Solução**: 
+- Correção do hook `useRiscosPorSituacao` para buscar dados da tabela correta
+- Implementação de agrupamento por `situacao_risco`
+- Renderização especial para casos de situação única (círculo completo azul)
+
+#### Problema 2: Contagem Incorreta no Gráfico "Plano de Resposta"
+**Sintomas**: Contagem baseada em IDs de risco em vez de ações de controle
+**Causa**: Query SQL contando campo incorreto
+**Solução**:
+- Alteração da contagem de `id_risco` para `id_acao_controle`
+- Remoção do DISTINCT para contagem total de registros
+- Atualização do hook `useRiscosPorPlanoResposta`
+
+#### Problema 3: Segmentos em Tons de Cinza
+**Sintomas**: Gráficos exibindo cores padrão cinzas em vez das paletas definidas
+**Causa**: Cores não sendo aplicadas corretamente aos componentes SVG
+**Solução**:
+- Implementação de paletas de cores hexadecimais específicas
+- Sincronização de cores entre seções SVG e legenda
+- Aplicação de cores vivas diferentes para cada gráfico
+
+### Arquivos Modificados
+
+- **`src/pages/RiscosProcessosTrabalho.tsx`**
+  - Implementação dos três gráficos de pizza
+  - Aplicação de paletas de cores distintas
+  - Formatação padronizada (rótulos externos, sem linhas de conexão)
+  - Layout responsivo com grid de 3 colunas
+
+- **`src/hooks/useRiscosPorNivel.ts`**
+  - Hook para buscar dados agrupados por `nivel_risco_inerente`
+  - Contagem de IDs de risco distintos
+  - Tratamento de erros e estados de loading
+
+- **`src/hooks/useRiscosPorSituacao.ts`**
+  - Hook para buscar dados agrupados por `situacao_risco`
+  - Contagem de IDs de risco distintos
+  - Integração com tabela `015_riscos_x_acoes_proc_trab`
+
+- **`src/hooks/useRiscosPorPlanoResposta.ts`**
+  - Hook para buscar dados agrupados por `plano_resposta_risco`
+  - Contagem total de `id_acao_controle` (não distinta)
+  - Query SQL otimizada para contagem correta
+
+### Tecnologias e Técnicas Utilizadas
+
+- **React**: Componentes funcionais com hooks personalizados
+- **TypeScript**: Tipagem forte para dados e interfaces
+- **Tailwind CSS**: Estilização responsiva e layout grid
+- **Recharts**: Biblioteca para gráficos de pizza interativos
+- **Supabase**: Consultas SQL para agregação de dados
+- **Custom Hooks**: Separação de lógica de negócio e apresentação
+
+### Configurações Específicas dos Gráficos
+
+#### Formatação Padronizada
+- **Rótulos**: Externos, cor preta, fonte legível
+- **Linhas de Conexão**: Removidas para visual limpo
+- **Legenda**: Sincronizada com cores das seções
+- **Container**: Expandido para melhor visualização
+- **Responsividade**: Adaptável a diferentes tamanhos de tela
+
+#### Paletas de Cores Distintas
+- **Gráfico 1**: Vermelho/Laranja (diferenciação por severidade)
+- **Gráfico 2**: Azul (tons corporativos)
+- **Gráfico 3**: Cores Vivas (verde, amarelo, vermelho, roxo, ciano)
+
+### Resultado
+
+✅ **Três Gráficos Funcionais**: Todos exibindo dados corretamente  
+✅ **Paletas Distintas**: Cada gráfico com cores únicas e apropriadas  
+✅ **Contagem Precisa**: Dados agregados conforme especificação  
+✅ **Formatação Consistente**: Visual padronizado e profissional  
+✅ **Responsividade**: Adaptação a diferentes dispositivos  
+✅ **Performance Otimizada**: Hooks eficientes e queries SQL otimizadas  
+
+### Impacto no Usuário
+
+- **Visualização Clara**: Três perspectivas distintas dos riscos
+- **Análise Facilitada**: Dados segmentados por diferentes critérios
+- **Interface Intuitiva**: Gráficos interativos com legendas claras
+- **Tomada de Decisão**: Informações visuais para gestão de riscos
+- **Experiência Consistente**: Formatação padronizada em todos os gráficos
+
+### Lições Aprendidas
+
+#### Boas Práticas Identificadas
+
+1. **Separação de Responsabilidades**
+   - Hooks personalizados para lógica de dados
+   - Componentes focados apenas na apresentação
+   - Queries SQL otimizadas para agregações
+
+2. **Consistência Visual**
+   - Paletas de cores bem definidas e distintas
+   - Formatação padronizada entre gráficos
+   - Responsividade mantida em todos os componentes
+
+3. **Qualidade de Dados**
+   - Validação de contagens e agrupamentos
+   - Tratamento adequado de casos especiais
+   - Sincronização entre dados e visualização
+
+#### Prevenção Futura
+
+1. **Testes de Visualização**
+   - Verificar renderização com diferentes volumes de dados
+   - Testar paletas de cores em diferentes dispositivos
+   - Validar responsividade em múltiplas resoluções
+
+2. **Validação de Dados**
+   - Confirmar queries SQL antes da implementação
+   - Testar contagens e agrupamentos com dados reais
+   - Implementar logs para debugging de dados
+
+3. **Documentação**
+   - Documentar paletas de cores utilizadas
+   - Registrar estrutura de dados esperada
+   - Manter exemplos de uso dos hooks
+
+### Métricas de Impacto
+
+- **Tempo de Implementação:** ~6 horas
+- **Complexidade:** Média-Alta
+- **Arquivos Criados:** 3 hooks personalizados
+- **Arquivos Modificados:** 1 página principal
+- **Gráficos Implementados:** 3
+- **Paletas de Cores:** 3 distintas
+- **Impacto Visual:** Alto
+- **Risco de Regressão:** Baixo
+
+---
+
 ## Problema: Cabeçalho e Navegação Não Fixos Durante Scroll
 
 **Data:** Janeiro 2025  
