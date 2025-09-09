@@ -36,7 +36,8 @@ const navigationItems: NavItem[] = [
       {
         label: 'Monitoramento',
         children: [
-          { label: 'Monitoramento de Riscos', path: '/riscos-estrategicos/monitoramento' },
+          { label: 'Plano de Ações', path: '/riscos-estrategicos/plano-acoes' },
+          { label: 'Indicadores', path: '/riscos-estrategicos/indicadores' },
         ],
       },
     ],

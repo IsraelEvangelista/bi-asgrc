@@ -277,10 +277,18 @@ function App() {
             } 
           />
           <Route 
-            path="/riscos-estrategicos/monitoramento" 
+            path="/riscos-estrategicos/plano-acoes" 
             element={
               <ProtectedRoute>
-                <MonitoramentoRiscos />
+                <Actions />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/riscos-estrategicos/indicadores" 
+            element={
+              <ProtectedRoute>
+                <Indicators />
               </ProtectedRoute>
             } 
           />
