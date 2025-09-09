@@ -29,7 +29,7 @@ export const useAuth = (): UseAuthReturn => {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    console.log('🎯 useAuth.login: Iniciando processo de login para:', email);
+    console.log('🎯 useAuth.login: Iniciando processo de login para: [MASKED]');
     setIsLoading(true);
     setError(null);
     
@@ -39,7 +39,7 @@ export const useAuth = (): UseAuthReturn => {
       
       console.log('🎯 useAuth.login: Resposta do signIn:', {
         hasError: !!loginError,
-        errorMessage: loginError?.message
+        errorMessage: loginError?.message ? '[MASKED]' : null
       });
       
       if (loginError) {
@@ -50,6 +50,13 @@ export const useAuth = (): UseAuthReturn => {
       }
       
       console.log('✅ useAuth.login: Login realizado com sucesso');
+      
+      // Implementar refresh automático da página após 500ms para garantir carregamento correto
+      setTimeout(() => {
+        console.log('🔄 useAuth.login: Executando refresh automático da página');
+        window.location.reload();
+      }, 500);
+      
       return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao fazer login';

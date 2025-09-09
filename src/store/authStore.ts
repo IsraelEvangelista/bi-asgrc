@@ -35,7 +35,7 @@ interface AuthState {
   signUp: (userData: RegisterData) => Promise<RegisterResponse>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
-  loadUserProfile: () => Promise<void>;
+  loadUserProfile: (retryCount?: number) => Promise<void>;
   activateUser: (email: string) => Promise<{ success: boolean; error?: string }>;
   // Message management functions
   setSignupMessage: (message: string | null) => void;
@@ -218,6 +218,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialize: async () => {
     const state = get();
     
+    // Debug logs removed for production
+    
     // Prevent concurrent initializations with better guard
     if (state.isInitializing || state.isFullyInitialized) {
       console.log('🔄 AuthStore: Inicialização já em andamento ou concluída, ignorando...');
@@ -237,7 +239,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { data: { session }, error: sessionError } = await Promise.race([
         sessionPromise,
         timeoutPromise
-      ]) as any;
+      ]) as { data: { session: any }, error: any };
       
       if (sessionError) {
         console.error('❌ AuthStore: Erro ao obter sessão:', sessionError);
@@ -283,7 +285,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           console.log('🔄 AuthStore: Auth state change:', event, {
             hasSession: !!session,
             hasUser: !!session?.user,
-            userId: session?.user?.id
+            userId: session?.user?.id ? '[MASKED]' : null
           });
           
           // Prevent processing during initialization
@@ -293,14 +295,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return;
           }
           
-          if (event === 'SIGNED_IN' && session?.user) {
+          // Handle different auth events
+          if (event === 'INITIAL_SESSION') {
+            // Initial session - don't process as it's already handled in initialize()
+            console.log('🔄 AuthStore: INITIAL_SESSION detectado, ignorando processamento');
+            return;
+          } else if (event === 'SIGNED_IN' && session?.user) {
+            console.log('🔄 AuthStore: SIGNED_IN detectado, carregando perfil');
             set({ user: session.user, loading: true });
             try {
               await get().loadUserProfile();
+              
+              // Force immediate redirect to conceitos
+              if (window.location.pathname === '/login') {
+                window.location.replace('/conceitos');
+              }
             } catch (error) {
               console.error('❌ AuthStore: Erro ao carregar perfil após login:', error);
             }
           } else if (event === 'SIGNED_OUT') {
+            console.log('🔄 AuthStore: SIGNED_OUT detectado, limpando estado');
             set({
               user: null,
               userProfile: null,
@@ -312,6 +326,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               isLoadingProfile: false,
               error: null
             });
+          } else if (event === 'TOKEN_REFRESHED') {
+            console.log('🔄 AuthStore: TOKEN_REFRESHED detectado, mantendo estado atual');
+            // Token refreshed - no action needed, just log
           }
         });
         
@@ -333,14 +350,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loadUserProfile: async () => {
+  loadUserProfile: async (retryCount = 0) => {
     const state = get();
+    const maxRetries = 3;
     
     if (process.env.NODE_ENV === 'development') {
       console.log('🔄 loadUserProfile: Iniciando carregamento', {
         hasUser: !!state.user,
-        userId: state.user?.id,
-        isLoadingProfile: state.isLoadingProfile
+        userId: state.user?.id ? '[MASKED]' : null,
+        isLoadingProfile: state.isLoadingProfile,
+        retryCount
       });
     }
     
@@ -357,8 +376,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     
     // Prevent concurrent loading with better guard
-    if (state.isLoadingProfile || state.isFullyInitialized) {
-      console.log('⏳ loadUserProfile: Carregamento já em progresso ou perfil já carregado, ignorando...');
+    if (state.isLoadingProfile && retryCount === 0) {
+      console.log('⏳ loadUserProfile: Carregamento já em progresso, ignorando...');
+      return;
+    }
+    
+    // Se já está totalmente inicializado, não recarregar
+    if (state.isFullyInitialized && retryCount === 0) {
+      console.log('✅ loadUserProfile: Perfil já carregado, ignorando...');
       return;
     }
 
@@ -370,28 +395,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     try {
-      console.log('🔍 loadUserProfile: Buscando usuário por email:', state.user.email);
-      console.log('🔍 loadUserProfile: ID do usuário logado:', state.user.id);
+      console.log('🔍 loadUserProfile: Buscando usuário por email: [MASKED]');
+      console.log('🔍 loadUserProfile: ID do usuário logado: [MASKED]');
       
-      // Add timeout to prevent hanging requests
-      const profilePromise = supabase
+      // Buscar perfil do usuário sem joins para evitar recursão RLS
+      const { data, error } = await supabase
         .from('002_usuarios')
-        .select(`
-          *,
-          perfil:001_perfis(*),
-          area_gerencia:003_areas_gerencias(*)
-        `)
+        .select('*')
         .eq('email', state.user.email)
         .single();
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile loading timeout')), 5000)
-      );
-      
-      const { data, error } = await Promise.race([
-        profilePromise,
-        timeoutPromise
-      ]) as any;
 
       if (error) {
         console.error('❌ loadUserProfile: Erro ao buscar perfil:', error);
@@ -425,6 +437,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           });
           
           console.log('✅ loadUserProfile: Perfil básico criado temporariamente');
+          
+          // Force immediate redirect to conceitos
+          if (window.location.pathname !== '/conceitos') {
+            window.location.replace('/conceitos');
+          }
+          
           return;
         }
         
@@ -460,13 +478,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      // Extract profile and permissions from the loaded data
-        const profile = data.perfil;
-        const permissions = profile ? {
-          admin: profile.nome === 'Administrador',
-          all: profile.acessos_interfaces?.includes('*') || false,
-          // Add other permission mappings as needed
-        } : { admin: false, all: false };
+      // Como não temos mais joins, vamos buscar o perfil separadamente se necessário
+        // Por enquanto, criar permissões básicas baseadas nos dados do usuário
+        const permissions = {
+          admin: false, // Será definido posteriormente quando buscarmos o perfil
+          all: false
+        };
 
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ loadUserProfile: Perfil carregado com sucesso:', {
@@ -484,7 +501,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ 
         userProfile: data,
-        profile: profile,
+        profile: null, // Será carregado separadamente se necessário
         permissions: permissions,
         loading: false,
         isLoadingProfile: false,
@@ -495,12 +512,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
       console.log('🎉 loadUserProfile: Inicialização completa!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ loadUserProfile: Erro ao carregar perfil:', {
         error: error instanceof Error ? error.message : 'Erro desconhecido',
         userId: state.user?.id,
+        retryCount,
         timestamp: new Date().toISOString()
       });
+      
+      // Tentar novamente se ainda há tentativas disponíveis
+      if (retryCount < maxRetries) {
+        console.log(`🔄 loadUserProfile: Tentativa ${retryCount + 1}/${maxRetries + 1} em 2 segundos...`);
+        
+        setTimeout(() => {
+          const currentState = get();
+          if (currentState.isLoadingProfile) {
+            get().loadUserProfile(retryCount + 1);
+          }
+        }, 2000);
+        return;
+      }
+      
+      // Todas as tentativas falharam, criar perfil básico como fallback
+      console.log('❌ loadUserProfile: Todas as tentativas falharam, criando perfil básico');
       
       // Only update state if we're still in loading state
       const currentState = get();
@@ -529,7 +563,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           error: null // Não definir erro para evitar tela branca
         });
         
-        console.log('⚠️ loadUserProfile: Perfil básico criado como fallback após erro');
+        console.log('⚠️ loadUserProfile: Perfil básico criado como fallback após todas as tentativas falharem');
       }
     }
   },

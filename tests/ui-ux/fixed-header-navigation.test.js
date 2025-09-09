@@ -128,8 +128,8 @@ test.describe('Fixed Header and Navigation Bar Tests', () => {
         const header = await page.locator('header').boundingBox();
         const nav = await page.locator('nav').boundingBox();
 
-        expect(header.y).toBe(0);
-        expect(nav.y).toBe(64);
+        expect(header?.y).toBe(0);
+        expect(nav?.y).toBe(64);
 
         console.log(`✓ Fixed positioning verified on ${page_info.name} page`);
       } else {
@@ -206,12 +206,12 @@ test.describe('Fixed Header and Navigation Bar Tests', () => {
       // Verify fixed positioning still works
       const header = await page.locator('header').boundingBox();
       if (header) {
-        expect(header.y).toBe(0);
+        expect(header?.y).toBe(0);
       }
 
       const nav = await page.locator('nav').boundingBox();
       if (nav) {
-        expect(nav.y).toBe(64);
+        expect(nav?.y).toBe(64);
       }
 
       console.log(`✓ Fixed positioning verified on ${viewport.name} viewport`);

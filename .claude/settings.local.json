@@ -23,7 +23,16 @@
       "Bash(npm run dev:*)",
       "Bash(taskkill:*)",
       "Bash(cmd /c:*)",
-      "Bash(npm run client:dev:*)"
+      "Bash(npm run client:dev:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_close",
+      "mcp__playwright__browser_wait_for",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

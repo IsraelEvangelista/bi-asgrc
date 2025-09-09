@@ -39,9 +39,8 @@ test('Investigação completa do header fixo', async ({ page }) => {
   console.log('Navbar existe:', navbarExists);
   
   // 2. Verificar CSS computado do container fixo
-  let containerStyles = null;
   if (containerExists) {
-    containerStyles = await headerContainer.evaluate(el => {
+    const containerStyles = await headerContainer.evaluate(el => {
       const computed = window.getComputedStyle(el);
       return {
         position: computed.position,
@@ -141,18 +140,15 @@ test('Investigação completa do header fixo', async ({ page }) => {
   console.log('🔒 Header manteve posição fixa:', headerStayedFixed);
   
   // 9. Verificar classes aplicadas
-  let appliedClasses = null;
-  if (containerExists) {
-    appliedClasses = await headerContainer.evaluate(el => ({
-      className: el.className,
-      classList: Array.from(el.classList)
-    }));
-  } else {
-    appliedClasses = await header.evaluate(el => ({
-      className: el.className,
-      classList: Array.from(el.classList)
-    }));
-  }
+  const appliedClasses = containerExists 
+    ? await headerContainer.evaluate(el => ({
+        className: el.className,
+        classList: Array.from(el.classList)
+      }))
+    : await header.evaluate(el => ({
+        className: el.className,
+        classList: Array.from(el.classList)
+      }));
   console.log('🏷️ Classes aplicadas:', appliedClasses);
   
   // 10. Verificar altura do conteúdo principal e padding-top
@@ -205,7 +201,6 @@ test('Investigação completa do header fixo', async ({ page }) => {
   console.log('\n=== ANÁLISE FINAL ===');
   console.log('Container fixo implementado:', containerExists);
   console.log('Header permaneceu fixo durante scroll:', headerStayedFixed);
-  console.log('Position CSS do container:', containerStyles?.position || 'N/A');
   console.log('Position CSS do header:', headerStyles?.position || 'N/A');
   
   // 13. Screenshot final para comparação

@@ -100,12 +100,10 @@ body {
 /* Garantir que elementos fixos funcionem corretamente */
 html {
   scroll-behavior: smooth;
-  overflow: hidden; /* Remove barra de rolagem do html */
   height: 100%;
 }
 
 body {
-  overflow: hidden; /* Remove barra de rolagem do body */
   height: 100%;
   margin: 0;
   padding: 0;
@@ -158,7 +156,6 @@ body {
 body {
   position: relative;
   transform: none !important;
-  overflow: hidden !important; /* Reforça que body não deve ter scroll */
 }
 
 /* Reset de transforms que podem interferir */

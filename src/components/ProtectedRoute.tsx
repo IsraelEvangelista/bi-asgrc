@@ -34,15 +34,31 @@ const ProtectedRoute = ({
   
   // Memoiza as verificações de permissão para evitar re-renderizações desnecessárias
   const permissionChecks = useMemo(() => {
-    if (!user || !userProfile) return null;
+    // Se não há usuário, não pode fazer verificações
+    if (!user) return null;
     
+    // Se há usuário mas não há perfil e ainda está carregando, aguarda
+    if (!userProfile && loading) return null;
+    
+    // Se há usuário mas não há perfil e não está carregando, permite acesso básico
+    // (o perfil básico será criado pelo authStore)
+    if (!userProfile && !loading) {
+      return {
+        hasAdminAccess: !requireAdmin, // Só permite se não requer admin
+        hasRouteAccess: !requiredRoute, // Só permite se não requer rota específica
+        hasPermission: !requiredPermission, // Só permite se não requer permissão específica
+        hasCustomAccess: !customCheck // Só permite se não há verificação customizada
+      };
+    }
+    
+    // Verificações normais quando há usuário e perfil
     return {
       hasAdminAccess: requireAdmin ? isUserAdmin() : true,
       hasRouteAccess: requiredRoute ? canAccessRoute(requiredRoute) : true,
       hasPermission: requiredPermission ? hasUserPermission(requiredPermission) : true,
       hasCustomAccess: customCheck ? customCheck() : true
     };
-  }, [user, userProfile, requireAdmin, requiredRoute, requiredPermission, customCheck, isUserAdmin, canAccessRoute, hasUserPermission]);
+  }, [user, userProfile, loading, requireAdmin, requiredRoute, requiredPermission, customCheck, isUserAdmin, canAccessRoute, hasUserPermission]);
   
   // Show loading only if we're truly checking auth for the first time
   // Don't show loading if user exists but profile is loading (navigation case)
@@ -60,19 +76,27 @@ const ProtectedRoute = ({
     return <FullScreenLoader text="Carregando perfil do usuário..." />;
   }
 
-  // If we have a user but no profile after initialization is complete, there's an error
-  if (user && !userProfile && isFullyInitialized) {
+  // Se o usuário existe mas o perfil não foi encontrado e o estado está inicializado
+  // Mas só exibe erro se não for um perfil básico válido
+  if (user && !userProfile && isFullyInitialized && !loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center transition-all duration-300">
-        <div className="text-center bg-white rounded-lg shadow-lg p-8 max-w-md mx-4">
-          <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-          <h2 className="text-lg font-medium text-gray-900 mb-2">Perfil não encontrado</h2>
-          <p className="text-gray-600 mb-4">Seu perfil de usuário não pôde ser carregado. Entre em contato com o administrador.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-yellow-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Perfil não encontrado</h2>
+          <p className="text-gray-600 mb-6">
+            Seu perfil de usuário não pôde ser carregado. Entre em contato com o administrador.
+          </p>
           <button
-            onClick={() => window.location.href = '/login'}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+            onClick={() => {
+              // Não fazer logout automático, apenas redirecionar para conceitos
+              window.location.href = '/conceitos';
+            }}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Fazer login novamente
+            Continuar para o sistema
           </button>
         </div>
       </div>
@@ -80,8 +104,15 @@ const ProtectedRoute = ({
   }
 
   // Usa as verificações memoizadas para evitar re-renderizações
-  if (!permissionChecks) {
+  // Só mostra loading de permissões se realmente está carregando e há usuário
+  if (!permissionChecks && user && loading) {
     return <FullScreenLoader text="Verificando permissões..." />;
+  }
+  
+  // Se não há permissionChecks mas há usuário e não está carregando,
+  // significa que algo deu errado - redireciona para conceitos
+  if (!permissionChecks && user && !loading) {
+    return <Navigate to="/conceitos" replace />;
   }
 
   // Componente de erro reutilizável

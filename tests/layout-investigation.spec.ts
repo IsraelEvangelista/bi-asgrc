@@ -51,30 +51,38 @@ test('Investigação do header fixo - Análise de CSS e comportamento', async ({
   }
   
   // 3. Verificar CSS computado do header
-  const headerStyles = await header.evaluate(el => {
-    const computed = window.getComputedStyle(el);
-    return {
-      position: computed.position,
-      width: computed.width,
-      height: computed.height,
-      backgroundColor: computed.backgroundColor,
-      boxShadow: computed.boxShadow
-    };
-  });
-  console.log('Header styles:', headerStyles);
+  if (await header.count() > 0) {
+    const headerStyles = await header.evaluate(el => {
+      const computed = window.getComputedStyle(el);
+      return {
+        position: computed.position,
+        width: computed.width,
+        height: computed.height,
+        backgroundColor: computed.backgroundColor,
+        boxShadow: computed.boxShadow
+      };
+    });
+    console.log('Header styles:', headerStyles);
+  } else {
+    console.log('Header element not found');
+  }
   
   // 4. Verificar CSS computado da navbar
-  const navbarStyles = await navbar.evaluate(el => {
-    const computed = window.getComputedStyle(el);
-    return {
-      position: computed.position,
-      width: computed.width,
-      height: computed.height,
-      backgroundColor: computed.backgroundColor,
-      borderBottom: computed.borderBottom
-    };
-  });
-  console.log('Navbar styles:', navbarStyles);
+  if (await navbar.count() > 0) {
+    const navbarStyles = await navbar.evaluate(el => {
+      const computed = window.getComputedStyle(el);
+      return {
+        position: computed.position,
+        width: computed.width,
+        height: computed.height,
+        backgroundColor: computed.backgroundColor,
+        borderBottom: computed.borderBottom
+      };
+    });
+    console.log('Navbar styles:', navbarStyles);
+  } else {
+    console.log('Navbar element not found');
+  }
   
   // 5. Verificar posição inicial do header
   const initialHeaderPosition = await headerContainer.boundingBox();
@@ -88,8 +96,10 @@ test('Investigação do header fixo - Análise de CSS e comportamento', async ({
   console.log('After scroll header position:', afterScrollHeaderPosition);
   
   // 7. Verificar se o header permaneceu no topo
-  const headerStayedFixed = initialHeaderPosition?.y === afterScrollHeaderPosition?.y;
+  const headerStayedFixed = initialHeaderPosition?.y === afterScrollHeaderPosition?.y && afterScrollHeaderPosition?.y === 0;
   console.log('Header stayed fixed after scroll:', headerStayedFixed);
+  console.log('Initial Y position:', initialHeaderPosition?.y);
+  console.log('After scroll Y position:', afterScrollHeaderPosition?.y);
   
   // 8. Fazer mais scroll para testar
   await page.evaluate(() => window.scrollTo(0, 1000));
@@ -98,20 +108,53 @@ test('Investigação do header fixo - Análise de CSS e comportamento', async ({
   const afterMoreScrollHeaderPosition = await headerContainer.boundingBox();
   console.log('After more scroll header position:', afterMoreScrollHeaderPosition);
   
+  // Verificar se ainda está fixo após mais scroll
+  const stillFixed = afterMoreScrollHeaderPosition?.y === 0;
+  console.log('Header still fixed after more scroll:', stillFixed);
+  
   // 9. Verificar elementos visíveis na tela
   const visibleElements = await page.evaluate(() => {
     const elements = [];
-    const rect = document.querySelector('div.fixed.top-0.left-0.right-0.z-50')?.getBoundingClientRect();
-    if (rect) {
+    const headerContainer = document.querySelector('div.fixed.top-0.left-0.right-0.z-50');
+    const header = document.querySelector('header');
+    const nav = document.querySelector('nav');
+    
+    if (headerContainer) {
+      const rect = headerContainer.getBoundingClientRect();
       elements.push({
         element: 'header-container',
         top: rect.top,
         left: rect.left,
         width: rect.width,
         height: rect.height,
-        visible: rect.top >= 0
+        visible: rect.top >= 0 && rect.top < window.innerHeight
       });
     }
+    
+    if (header) {
+      const rect = header.getBoundingClientRect();
+      elements.push({
+        element: 'header',
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        visible: rect.top >= 0 && rect.top < window.innerHeight
+      });
+    }
+    
+    if (nav) {
+      const rect = nav.getBoundingClientRect();
+      elements.push({
+        element: 'nav',
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        visible: rect.top >= 0 && rect.top < window.innerHeight
+      });
+    }
+    
     return elements;
   });
   console.log('Visible elements info:', visibleElements);
@@ -123,11 +166,15 @@ test('Investigação do header fixo - Análise de CSS e comportamento', async ({
   });
   
   // 11. Verificar classes Tailwind aplicadas
-  const appliedClasses = await headerContainer.evaluate(el => ({
-    className: el.className,
-    classList: Array.from(el.classList)
-  }));
-  console.log('Applied classes:', appliedClasses);
+  if (await headerContainer.count() > 0) {
+    const appliedClasses = await headerContainer.evaluate(el => ({
+      className: el.className,
+      classList: Array.from(el.classList)
+    }));
+    console.log('Applied classes:', appliedClasses);
+  } else {
+    console.log('Header container not found for class inspection');
+  }
   
   // 12. Verificar se há CSS customizado interferindo
   const customCSS = await page.evaluate(() => {
@@ -141,16 +188,22 @@ test('Investigação do header fixo - Análise de CSS e comportamento', async ({
           if (rule.type === 1 && rule.selectorText) { // CSSStyleRule
             if (rule.selectorText.includes('header') || 
                 rule.selectorText.includes('nav') || 
-                rule.selectorText.includes('fixed')) {
+                rule.selectorText.includes('fixed') ||
+                rule.selectorText.includes('.top-0') ||
+                rule.selectorText.includes('.z-50')) {
               styles.push({
                 selector: rule.selectorText,
-                cssText: rule.cssText
+                cssText: rule.cssText,
+                href: sheet.href || 'inline'
               });
             }
           }
         }
       } catch (e) {
-        // Ignorar erros de CORS
+        styles.push({
+          error: 'CORS or access error',
+          href: sheet.href || 'unknown'
+        });
       }
     }
     return styles;

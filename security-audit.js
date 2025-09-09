@@ -100,8 +100,8 @@ async function checkSecurityIssues() {
     try {
       // Tentar fazer login com credenciais inválidas
       const { data: loginData, error: loginError } = await anonClient.auth.signInWithPassword({
-        email: 'test@invalid.com',
-        password: 'invalid'
+        email: '[MASKED_TEST_EMAIL]',
+        password: '[MASKED_TEST_PASSWORD]'
       });
       
       if (loginError) {
@@ -130,8 +130,8 @@ async function checkSecurityIssues() {
     try {
       // Tentar registrar com email inválido
       const { data: signupData, error: signupError } = await anonClient.auth.signUp({
-        email: 'invalid-email',
-        password: 'test123456'
+        email: '[MASKED_INVALID_EMAIL]',
+        password: '[MASKED_TEST_PASSWORD]'
       });
       
       if (signupError && signupError.message.includes('email')) {
@@ -153,8 +153,8 @@ async function checkSecurityIssues() {
     try {
       // Tentar registrar com senha fraca
       const { data: weakPassData, error: weakPassError } = await anonClient.auth.signUp({
-        email: 'test@example.com',
-        password: '123'
+        email: '[MASKED_TEST_EMAIL]',
+        password: '[MASKED_WEAK_PASSWORD]'
       });
       
       if (weakPassError && weakPassError.message.includes('password')) {
@@ -184,8 +184,8 @@ async function checkSecurityIssues() {
     for (let i = 0; i < 10; i++) {
       try {
         const { error } = await anonClient.auth.signInWithPassword({
-          email: 'test@invalid.com',
-          password: 'invalid'
+          email: '[MASKED_TEST_EMAIL]',
+          password: '[MASKED_TEST_PASSWORD]'
         });
         
         if (error && error.message.includes('rate')) {

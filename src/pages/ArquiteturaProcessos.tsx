@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '../components/Layout';
-import { Network, Target, Settings, GitBranch, Loader2, ChevronDown, ChevronRight, Expand, Minimize2, Check } from 'lucide-react';
+import { Network, Target, Settings, GitBranch, Loader2, ChevronDown, ChevronRight, Expand, Minimize2, Check, PieChart, ExternalLink, FileText, Filter, X } from 'lucide-react';
 import { useProcesses } from '../hooks/useProcesses';
+import { useProcessStats } from '../hooks/useProcessStats';
+import ProcessChartModal from '../components/ProcessChartModal';
+import DetalhamentoTable from '../components/DetalhamentoTable';
+import ProcessFilterModal from '../components/ProcessFilterModal';
 
 const ArquiteturaProcessos: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'grafica' | 'tabela'>('grafica');
@@ -13,10 +17,19 @@ const ArquiteturaProcessos: React.FC = () => {
   // Estados para controle de expansão dos cards de Subprocessos
   const [expandedProcessos, setExpandedProcessos] = useState<Set<string>>(new Set());
   const [allSubprocessosExpanded, setAllSubprocessosExpanded] = useState(false);
+  const [showProcessChart, setShowProcessChart] = useState(false);
   
   // Estados para seleção de macroprocessos
   const [selectedMacroprocessos, setSelectedMacroprocessos] = useState<Set<string>>(new Set());
   const [selectAllMacroprocessos, setSelectAllMacroprocessos] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({
+    macroprocessos: [],
+    processos: [],
+    subprocessos: [],
+    responsaveis: [],
+    publicado: []
+  });
   const { 
     macroprocessos, 
     processos, 
@@ -27,22 +40,59 @@ const ArquiteturaProcessos: React.FC = () => {
     fetchProcessos, 
     fetchSubprocessos 
   } = useProcesses();
+  const { publishedCount, unpublishedCount, loading: statsLoading } = useProcessStats();
 
-  // Filtros baseados na seleção de macroprocessos
-  const filteredProcessos = useMemo(() => {
-    if (selectedMacroprocessos.size === 0) return processos;
-    return processos.filter(processo => 
-      selectedMacroprocessos.has(processo.id_macroprocesso)
-    );
-  }, [processos, selectedMacroprocessos]);
+  // Aplicar filtros avançados
+  const applyAdvancedFilters = useMemo(() => {
+    let filteredMacros = macroprocessos;
+    let filteredProcs = processos;
+    let filteredSubs = subprocessos;
 
-  const filteredSubprocessos = useMemo(() => {
-    if (selectedMacroprocessos.size === 0) return subprocessos;
-    const filteredProcessoIds = new Set(filteredProcessos.map(p => p.id));
-    return subprocessos.filter(subprocesso => 
-      filteredProcessoIds.has(subprocesso.id_processo)
-    );
-  }, [subprocessos, filteredProcessos, selectedMacroprocessos]);
+    // Filtrar por macroprocessos selecionados na hierarquia
+    if (selectedMacroprocessos.size > 0) {
+      filteredMacros = macroprocessos.filter(macro => selectedMacroprocessos.has(macro.id));
+      filteredProcs = processos.filter(processo => selectedMacroprocessos.has(processo.id_macroprocesso));
+      filteredSubs = subprocessos.filter(subprocesso => {
+        const processo = processos.find(p => p.id === subprocesso.id_processo);
+        return processo && selectedMacroprocessos.has(processo.id_macroprocesso);
+      });
+    }
+
+    // Aplicar filtros do modal
+    if (activeFilters.macroprocessos.length > 0) {
+      filteredMacros = filteredMacros.filter(macro => activeFilters.macroprocessos.includes(macro.id.toString()));
+      filteredProcs = filteredProcs.filter(processo => activeFilters.macroprocessos.includes(processo.id_macroprocesso.toString()));
+    }
+
+    if (activeFilters.processos && activeFilters.processos.length > 0) {
+      filteredProcs = filteredProcs.filter(processo => activeFilters.processos.includes(processo.id.toString()));
+    }
+
+    if (activeFilters.subprocessos && activeFilters.subprocessos.length > 0) {
+      filteredSubs = filteredSubs.filter(subprocesso => activeFilters.subprocessos.includes(subprocesso.id.toString()));
+    }
+
+    if (activeFilters.responsaveis && activeFilters.responsaveis.length > 0) {
+      filteredProcs = filteredProcs.filter(processo => 
+        activeFilters.responsaveis.includes(processo.responsavel_processo)
+      );
+    }
+
+    if (activeFilters.publicado && activeFilters.publicado.length > 0) {
+      filteredProcs = filteredProcs.filter(processo => {
+        const isPublished = Boolean(processo.publicado);
+        return activeFilters.publicado.includes(isPublished ? 'true' : 'false');
+      });
+      filteredSubs = filteredSubs.filter(subprocesso => {
+        const isPublished = Boolean(subprocesso.publicado);
+        return activeFilters.publicado.includes(isPublished ? 'true' : 'false');
+      });
+    }
+
+    return { filteredMacros, filteredProcs, filteredSubs };
+  }, [macroprocessos, processos, subprocessos, selectedMacroprocessos, activeFilters]);
+
+  const { filteredMacros: filteredMacroprocessos, filteredProcs: filteredProcessos, filteredSubs: filteredSubprocessos } = applyAdvancedFilters;
 
   useEffect(() => {
     const loadData = async () => {
@@ -126,6 +176,8 @@ const ArquiteturaProcessos: React.FC = () => {
     }
   };
 
+
+
   return (
     <Layout>
       <div className="p-6">
@@ -144,28 +196,50 @@ const ArquiteturaProcessos: React.FC = () => {
           </div>
           
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab('grafica')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'grafica'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Visualização Gráfica
-              </button>
-              <button
-                onClick={() => setActiveTab('tabela')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'tabela'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Visualização em Tabela
-              </button>
-            </nav>
+            <div className="flex items-center justify-between px-6">
+              <nav className="flex space-x-8" aria-label="Tabs">
+                <button
+                  onClick={() => setActiveTab('grafica')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'grafica'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Hierarquia de Processos
+                </button>
+                <button
+                  onClick={() => setActiveTab('tabela')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'tabela'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Detalhamento
+                </button>
+              </nav>
+              
+              {/* Botão de Filtro */}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setFilterModalOpen(true)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtros
+                  {(activeFilters.macroprocessos.length > 0 || 
+                    activeFilters.processos.length > 0 || 
+                    activeFilters.subprocessos.length > 0 || 
+                    activeFilters.responsaveis.length > 0 || 
+                    activeFilters.publicado.length > 0) && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Ativo
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
           
           <div className="p-6">
@@ -174,11 +248,11 @@ const ArquiteturaProcessos: React.FC = () => {
                 {/* Cards dos Níveis Hierárquicos */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
                   {/* Nível 1 - Macroprocessos */}
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white flex flex-col">
+                  <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-lg shadow-lg p-6 text-white flex flex-col">
                     <div className="flex items-center justify-between mb-4 flex-shrink-0">
                       <h3 className="text-lg font-bold">Nível 1</h3>
-                      <div className="bg-white bg-opacity-20 rounded-full p-2">
-                        <Target size={24} />
+                      <div className="bg-white bg-opacity-80 rounded-full p-2">
+                        <img src="https://mfgnuiozkznfqmtnlzgs.supabase.co/storage/v1/object/public/media-files/bf5ff449-a432-4b2c-b33e-ed85c4cbf4a5/1757336109786.png" alt="Macroprocessos" className="w-6 h-6" />
                         {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                       </div>
                     </div>
@@ -186,7 +260,7 @@ const ArquiteturaProcessos: React.FC = () => {
                     <div className="text-2xl font-bold text-white mb-2">
                       {macroprocessos.length}
                     </div>
-                    <p className="text-blue-100 text-sm mb-2">
+                    <p className="text-yellow-100 text-sm mb-2">
                       Processos estratégicos de alto nível que definem a direção organizacional
                     </p>
                     <div className="flex justify-end mb-4">
@@ -202,9 +276,9 @@ const ArquiteturaProcessos: React.FC = () => {
                         <div className={`w-3 h-3 border rounded flex items-center justify-center ${
                           selectAllMacroprocessos 
                             ? 'bg-white border-white' 
-                            : 'border-blue-200 bg-transparent'
+                            : 'border-yellow-200 bg-transparent'
                         }`}>
-                          {selectAllMacroprocessos && <Check size={10} className="text-blue-600" />}
+                          {selectAllMacroprocessos && <Check size={10} className="text-yellow-600" />}
                         </div>
                         <span>{selectAllMacroprocessos ? "Desmarcar" : "Selecionar"}</span>
                       </button>
@@ -223,20 +297,20 @@ const ArquiteturaProcessos: React.FC = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <span className="text-sm font-medium">{macro.macroprocesso}</span>
-                              <div className="text-xs text-blue-200 mt-1">
+                              <div className="text-xs text-yellow-200 mt-1">
                                 {macro.tipo_macroprocesso}
                               </div>
-                              <div className="text-xs text-blue-300 mt-1">
+                              <div className="text-xs text-yellow-300 mt-1">
                                 {macro.total_processos || 0} processos • {macro.total_subprocessos || 0} subprocessos
                               </div>
                             </div>
                             <div className={`w-4 h-4 border rounded flex items-center justify-center ml-2 flex-shrink-0 ${
                               selectedMacroprocessos.has(macro.id)
                                 ? 'bg-white border-white'
-                                : 'border-blue-200 bg-transparent'
+                                : 'border-yellow-200 bg-transparent'
                             }`}>
                               {selectedMacroprocessos.has(macro.id) && (
-                                <Check size={12} className="text-blue-600" />
+                                <Check size={12} className="text-yellow-600" />
                               )}
                             </div>
                           </div>
@@ -249,8 +323,8 @@ const ArquiteturaProcessos: React.FC = () => {
                   <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white flex flex-col">
                     <div className="flex items-center justify-between mb-4 flex-shrink-0">
                       <h3 className="text-lg font-bold">Nível 2</h3>
-                      <div className="bg-white bg-opacity-20 rounded-full p-2">
-                        <GitBranch size={24} />
+                      <div className="bg-white bg-opacity-80 rounded-full p-2">
+                        <img src="https://mfgnuiozkznfqmtnlzgs.supabase.co/storage/v1/object/public/media-files/bf5ff449-a432-4b2c-b33e-ed85c4cbf4a5/1757336132004.png" alt="Processos" className="w-6 h-6" />
                         {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                       </div>
                     </div>
@@ -266,7 +340,15 @@ const ArquiteturaProcessos: React.FC = () => {
                     <p className="text-green-100 text-sm mb-2">
                       Processos operacionais que executam as atividades principais da organização
                     </p>
-                    <div className="flex justify-end mb-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <button
+                        onClick={() => setShowProcessChart(true)}
+                        className="flex items-center space-x-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded px-3 py-1 text-xs font-medium transition-all duration-200"
+                        title="Ver Gráfico de Processos Publicados"
+                      >
+                        <PieChart size={14} />
+                        <span>Visualização de Publicação</span>
+                      </button>
                       <button
                         onClick={toggleAllProcessos}
                         className="flex items-center space-x-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded px-3 py-1 text-xs font-medium transition-all duration-200"
@@ -320,11 +402,11 @@ const ArquiteturaProcessos: React.FC = () => {
                   </div>
 
                   {/* Nível 3 - Subprocessos */}
-                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white flex flex-col">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white flex flex-col">
                     <div className="flex items-center justify-between mb-4 flex-shrink-0">
                       <h3 className="text-lg font-bold">Nível 3</h3>
-                      <div className="bg-white bg-opacity-20 rounded-full p-2">
-                        <Settings size={24} />
+                      <div className="bg-white bg-opacity-80 rounded-full p-2">
+                        <img src="https://mfgnuiozkznfqmtnlzgs.supabase.co/storage/v1/object/public/media-files/bf5ff449-a432-4b2c-b33e-ed85c4cbf4a5/1757336149614.png" alt="Subprocessos" className="w-6 h-6" />
                         {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                       </div>
                     </div>
@@ -332,12 +414,12 @@ const ArquiteturaProcessos: React.FC = () => {
                     <div className="text-2xl font-bold text-white mb-2">
                       {filteredSubprocessos.length}
                       {selectedMacroprocessos.size > 0 && (
-                        <span className="text-lg font-normal text-orange-200 ml-2">
+                        <span className="text-lg font-normal text-blue-200 ml-2">
                           (filtrado)
                         </span>
                       )}
                     </div>
-                    <p className="text-orange-100 text-sm mb-2">
+                    <p className="text-blue-100 text-sm mb-2">
                       Atividades específicas que compõem os processos principais
                     </p>
                     <div className="flex justify-end mb-4">
@@ -360,13 +442,13 @@ const ArquiteturaProcessos: React.FC = () => {
                         return (
                           <div key={processo.id} className="mb-4">
                             <div 
-                              className="font-medium text-orange-200 text-sm mb-2 border-b border-orange-300 pb-1 cursor-pointer hover:text-orange-100 transition-colors duration-200 flex items-center justify-between"
+                              className="font-medium text-blue-200 text-sm mb-2 border-b border-blue-300 pb-1 cursor-pointer hover:text-blue-100 transition-colors duration-200 flex items-center justify-between"
                               onClick={() => toggleProcesso(processo.id)}
                             >
                               <span>{processo.processo} ({subprocessosDoProcesso.length})</span>
                               {isExpanded ? 
-                                <ChevronDown size={16} className="text-orange-300" /> : 
-                                <ChevronRight size={16} className="text-orange-300" />
+                                <ChevronDown size={16} className="text-blue-300" /> : 
+                                <ChevronRight size={16} className="text-blue-300" />
                               }
                             </div>
                             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -375,14 +457,38 @@ const ArquiteturaProcessos: React.FC = () => {
                               <div className="space-y-2 ml-2 pt-2">
                                 {subprocessosDoProcesso.map((subprocesso) => (
                                   <div key={subprocesso.id} className="bg-white bg-opacity-10 rounded p-2 transform transition-all duration-200 hover:bg-opacity-20">
-                                    <div className="text-xs font-medium text-orange-100">
-                                      {subprocesso.subprocesso}
-                                    </div>
-                                    {subprocesso.responsavel_subprocesso && (
-                                      <div className="text-xs text-orange-200 mt-1">
-                                        Resp: {subprocesso.responsavel_subprocesso}
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="text-xs font-medium text-blue-100">
+                                          {subprocesso.subprocesso}
+                                        </div>
+                                        {subprocesso.responsavel_subprocesso && (
+                                          <div className="text-xs text-blue-200 mt-1">
+                                            Resp: {subprocesso.responsavel_subprocesso}
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
+                                      <div className="flex items-center space-x-1 ml-2">
+                                        {subprocesso.link_subprocesso && (
+                                          <button
+                                            onClick={() => window.open(subprocesso.link_subprocesso, '_blank', 'noopener,noreferrer')}
+                                            className="text-blue-200 hover:text-white transition-colors p-1"
+                                            title="Subprocesso"
+                                          >
+                                            <ExternalLink className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                        {subprocesso.link_manual && (
+                                          <button
+                                            onClick={() => window.open(subprocesso.link_manual, '_blank', 'noopener,noreferrer')}
+                                            className="text-blue-200 hover:text-white transition-colors p-1"
+                                            title="Manual"
+                                          >
+                                            <FileText className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -398,13 +504,34 @@ const ArquiteturaProcessos: React.FC = () => {
             )}
             
             {activeTab === 'tabela' && (
-              <div className="text-center text-gray-500 py-8">
-                <p>Visualização em tabela será implementada em breve</p>
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <DetalhamentoTable />
               </div>
             )}
           </div>
         </div>
       </div>
+      
+      {/* Modal do Gráfico de Processos */}
+      <ProcessChartModal 
+        isOpen={showProcessChart}
+        onClose={() => setShowProcessChart(false)}
+        publishedCount={publishedCount}
+         unpublishedCount={unpublishedCount}
+      />
+      
+      {/* Modal de Filtros */}
+      <ProcessFilterModal
+        isOpen={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        filters={activeFilters}
+        onFiltersChange={setActiveFilters}
+        macroprocessos={macroprocessos}
+        processos={processos}
+        subprocessos={subprocessos}
+      />
+      
+
     </Layout>
   );
 };

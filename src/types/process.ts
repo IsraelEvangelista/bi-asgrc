@@ -31,10 +31,16 @@ export interface Processo {
   objetivo_processo?: string;
   entregas_processo?: string;
   situacao: 'Ativo' | 'Inativo';
+  publicado?: boolean;
   created_at?: string;
   updated_at?: string;
   // Relacionamentos
   macroprocesso?: Macroprocesso;
+  responsavel_area?: {
+    id: string;
+    sigla_area: string;
+    gerencia: string;
+  };
 }
 
 export interface ProcessoWithMacro extends Processo {
@@ -58,11 +64,19 @@ export interface Subprocesso {
   id_processo: string;
   subprocesso: string;
   responsavel_subprocesso?: string;
+  link_subprocesso?: string;
+  link_manual?: string;
   situacao: 'Ativo' | 'Inativo';
+  publicado?: boolean;
   created_at?: string;
   updated_at?: string;
   // Relacionamentos
   processo?: Processo;
+  responsavel_area?: {
+    id: string;
+    sigla_area: string;
+    gerencia: string;
+  };
 }
 
 export interface SubprocessoWithProcesso extends Subprocesso {
@@ -73,6 +87,8 @@ export interface CreateSubprocessoInput {
   id_processo: string;
   subprocesso: string;
   responsavel_subprocesso?: string;
+  link_subprocesso?: string;
+  link_manual?: string;
   situacao?: 'Ativo' | 'Inativo';
 }
 
@@ -150,6 +166,8 @@ export interface SubprocessoFormData {
   id_processo: string;
   subprocesso: string;
   responsavel_subprocesso: string;
+  link_subprocesso: string;
+  link_manual: string;
   situacao: 'Ativo' | 'Inativo';
 }
 

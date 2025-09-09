@@ -170,8 +170,8 @@ test.describe('Authenticated Fixed Header and Navigation Tests', () => {
       const header = await page.locator('header.fixed').boundingBox();
       const navbar = await page.locator('nav.fixed').boundingBox();
 
-      expect(header.y).toBe(0);
-      expect(navbar.y).toBe(64);
+      expect(header?.y).toBe(0);
+      expect(navbar?.y).toBe(64);
 
       console.log('✓ Fixed positioning works on Conceitos page');
     }
@@ -206,7 +206,7 @@ test.describe('Authenticated Fixed Header and Navigation Tests', () => {
 
         // Verify fixed positioning
         const header = await page.locator('header.fixed').boundingBox();
-        expect(header.y).toBe(0);
+        expect(header?.y).toBe(0);
 
         console.log('✓ Fixed positioning works on Cadeia de Valor page');
       }
@@ -248,12 +248,12 @@ test.describe('Authenticated Fixed Header and Navigation Tests', () => {
 
       if (await header.count() > 0) {
         const headerBox = await header.boundingBox();
-        expect(headerBox.y).toBe(0);
+        expect(headerBox?.y).toBe(0);
       }
 
       if (await navbar.count() > 0) {
         const navbarBox = await navbar.boundingBox();
-        expect(navbarBox.y).toBe(64);
+        expect(navbarBox?.y).toBe(64);
       }
 
       console.log(`✓ Fixed positioning verified on ${viewport.name} viewport`);
@@ -322,8 +322,8 @@ test.describe('Authenticated Fixed Header and Navigation Tests', () => {
       const header = await page.locator('header.fixed').boundingBox();
       const navbar = await page.locator('nav.fixed').boundingBox();
 
-      expect(header.y).toBe(0);
-      expect(navbar.y).toBe(64);
+      expect(header?.y).toBe(0);
+      expect(navbar?.y).toBe(64);
 
       // Verify dropdown is still visible and positioned correctly
       const dropdown = page.locator('nav .absolute.left-0.mt-1');

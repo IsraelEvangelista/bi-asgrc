@@ -10,7 +10,9 @@ import {
   Layers,
   ArrowLeft,
   Building,
-  Settings
+  Settings,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import {
   Subprocesso,
@@ -49,6 +51,8 @@ const SubprocessManagement: React.FC = () => {
     id_processo: '',
     subprocesso: '',
     responsavel_subprocesso: '',
+    link_subprocesso: '',
+    link_manual: '',
     situacao: 'Ativo'
   });
 
@@ -111,6 +115,8 @@ const SubprocessManagement: React.FC = () => {
       id_processo: subprocesso.id_processo,
       subprocesso: subprocesso.subprocesso,
       responsavel_subprocesso: subprocesso.responsavel_subprocesso || '',
+      link_subprocesso: subprocesso.link_subprocesso || '',
+      link_manual: subprocesso.link_manual || '',
       situacao: subprocesso.situacao
     });
     setShowForm(true);
@@ -127,6 +133,8 @@ const SubprocessManagement: React.FC = () => {
       id_processo: '',
       subprocesso: '',
       responsavel_subprocesso: '',
+      link_subprocesso: '',
+      link_manual: '',
       situacao: 'Ativo'
     });
     setFormErrors({});
@@ -296,6 +304,9 @@ const SubprocessManagement: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Responsável
                   </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Links
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Situação
                   </th>
@@ -349,6 +360,31 @@ const SubprocessManagement: React.FC = () => {
                         <span className="text-sm text-gray-900">
                           {subprocesso.responsavel_subprocesso || '-'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center space-x-2">
+                          {subprocesso.link_subprocesso && (
+                            <button
+                              onClick={() => window.open(subprocesso.link_subprocesso, '_blank', 'noopener,noreferrer')}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Subprocesso"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </button>
+                          )}
+                          {subprocesso.link_manual && (
+                            <button
+                              onClick={() => window.open(subprocesso.link_manual, '_blank', 'noopener,noreferrer')}
+                              className="text-green-600 hover:text-green-800 transition-colors"
+                              title="Manual"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </button>
+                          )}
+                          {!subprocesso.link_subprocesso && !subprocesso.link_manual && (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSituacaoColor(subprocesso.situacao)}`}>
@@ -447,6 +483,34 @@ const SubprocessManagement: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, responsavel_subprocesso: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Nome do responsável"
+                  />
+                </div>
+
+                {/* Link do Subprocesso */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Link do Subprocesso
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.link_subprocesso}
+                    onChange={(e) => setFormData(prev => ({ ...prev, link_subprocesso: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://exemplo.com/subprocesso"
+                  />
+                </div>
+
+                {/* Link do Manual */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Link do Manual
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.link_manual}
+                    onChange={(e) => setFormData(prev => ({ ...prev, link_manual: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://exemplo.com/manual"
                   />
                 </div>
 

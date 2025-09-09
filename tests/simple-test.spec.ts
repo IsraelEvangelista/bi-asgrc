@@ -15,13 +15,16 @@ test('Screenshot da página atual', async ({ page }) => {
     path: 'tests/screenshots/viewport.png'
   });
   
-  // Verifica se existem elementos
+  // Verifica se existem elementos e adiciona assertions
   const bodyContent = await page.textContent('body');
   console.log('Body content length:', bodyContent?.length || 0);
+  expect(bodyContent).toBeTruthy();
   
   const pageTitle = await page.title();
   console.log('Page title:', pageTitle);
+  expect(pageTitle).toBeTruthy();
   
   const url = page.url();
   console.log('Current URL:', url);
+  expect(url).toContain('localhost:8081');
 });

@@ -3,7 +3,6 @@ import { test, expect } from '@playwright/test';
 test.describe('Análise de Transições entre Interfaces - COGERH ASGRC', () => {
   const baseURL = 'http://localhost:8080';
   let transitionTimes = {};
-  let screenshots = [];
 
   test.beforeEach(async ({ page }) => {
     await page.goto(baseURL);
@@ -47,7 +46,7 @@ test.describe('Análise de Transições entre Interfaces - COGERH ASGRC', () => 
   test('Analisar transições do Dashboard para outras interfaces', async ({ page }) => {
     console.log('🔄 Testando transições a partir do Dashboard...');
     
-    const startTime = Date.now();
+    // Aguardar dashboard estar completamente carregado
     
     // Aguardar dashboard estar completamente carregado
     await page.waitForSelector('[data-testid="dashboard"]', { timeout: 10000 });
@@ -125,13 +124,8 @@ test.describe('Análise de Transições entre Interfaces - COGERH ASGRC', () => 
     console.log('🔍 Detectando páginas intermediárias...');
     
     // Interceptar requests para detectar redirects e páginas intermediárias
-    const requests = [];
     page.on('request', request => {
-      requests.push({
-        url: request.url(),
-        method: request.method(),
-        timestamp: Date.now()
-      });
+      console.log(`📤 Request: ${request.method()} ${request.url()}`);
     });
     
     page.on('response', response => {

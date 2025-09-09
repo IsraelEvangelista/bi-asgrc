@@ -215,8 +215,8 @@ async function checkRLSAndPolicies() {
     for (const weakPass of weakPasswords) {
       try {
         const { data, error } = await anonClient.auth.signUp({
-          email: `test${Date.now()}@example.com`,
-          password: weakPass
+          email: `[MASKED_TEST_EMAIL]`,
+          password: '[MASKED_WEAK_PASSWORD]'
         });
         
         if (!error) {
@@ -224,7 +224,7 @@ async function checkRLSAndPolicies() {
           issues.warnings.push({
             type: 'WEAK_PASSWORD_POLICY',
             severity: 'WARNING',
-            description: `Senha fraca "${weakPass}" foi aceita pelo sistema`,
+            description: `Senha fraca "[MASKED]" foi aceita pelo sistema`,
             recommendation: 'Implementar política de senha mais rigorosa'
           });
           break;

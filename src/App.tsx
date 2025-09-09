@@ -53,17 +53,17 @@ function App() {
   } = useAuthStore();
 
   const initializeRef = useRef(false);
+  
+  // Reset ref on hot reload during development
+  useEffect(() => {
+    if (import.meta.hot) {
+      initializeRef.current = false;
+    }
+  }, []);
   const visibilityTimeoutRef = useRef<NodeJS.Timeout>();
   const lastVisibilityChangeRef = useRef<number>(0);
 
-  console.log('🔄 App: Renderizando com estado:', {
-    loading,
-    authCheckCompleted,
-    hasUser: !!user,
-    hasUserProfile: !!userProfile,
-    isFullyInitialized,
-    error
-  });
+  // Debug logs removed for production
 
   const handleVisibilityChange = useCallback(() => {
     const now = Date.now();
@@ -104,7 +104,6 @@ function App() {
     
     // Only initialize once on mount
     if (!isFullyInitialized && !isInitializing) {
-      console.log('🚀 App: Inicializando aplicação...');
       initializeRef.current = true;
       initialize();
     }
@@ -127,18 +126,12 @@ function App() {
     return <FullScreenLoader text="Inicializando aplicação..." />;
   }
   
-  // If there's a user but profile is still loading
-  if (user && loading && !userProfile) {
+  // If there's a user but profile is still loading and we're not fully initialized
+  if (user && !userProfile && !isFullyInitialized) {
     return <FullScreenLoader text="Carregando perfil do usuário..." />;
   }
   
-  console.log('🔍 App render state:', {
-    loading,
-    authCheckCompleted,
-    user: !!user,
-    userProfile: !!userProfile,
-    isFullyInitialized
-  });
+  // App render state tracking removed for production
 
   return (
     <Router>
@@ -391,11 +384,9 @@ function App() {
           <Route
             path="/"
             element={
-              user && userProfile ? (
+              <ProtectedRoute>
                 <Navigate to="/conceitos" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              </ProtectedRoute>
             }
           />
           

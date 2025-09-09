@@ -195,6 +195,11 @@ export const useProcesses = () => {
             macroprocesso,
             tipo_macroprocesso,
             situacao
+          ),
+          responsavel_area:003_areas_gerencias(
+            id,
+            sigla_area,
+            gerencia
           )
         `);
 
@@ -351,6 +356,11 @@ export const useProcesses = () => {
               id,
               macroprocesso,
               tipo_macroprocesso
+            ),
+            responsavel_area:003_areas_gerencias(
+              id,
+              sigla_area,
+              gerencia
             )
           )
         `);
