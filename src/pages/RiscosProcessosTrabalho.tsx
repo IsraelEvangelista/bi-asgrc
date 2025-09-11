@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { AlertTriangle, Filter, Workflow, Users, TrendingUp, PieChart, Plus, Edit, Trash2, ChevronUp, ChevronDown, Settings, CheckCircle, FileText, Shield } from 'lucide-react';
 
-import { FilterProvider, useFilter, filterData } from '../contexts/FilterContext';
+// import { FilterProvider, useFilter, filterData } from '../contexts/FilterContext';
 import { useRiscosCards } from '../hooks/useRiscosCards';
 import { useRiscosPorCategoria } from '../hooks/useRiscosPorCategoria';
 import { useRiscosPorSituacao } from '../hooks/useRiscosPorSituacao';
@@ -13,7 +13,12 @@ import { useRiscosProcessosTrabalhoData } from '../hooks/useRiscosProcessosTraba
 // Componente interno que usa o contexto de filtros
 const RiscosProcessosTrabalhoContent: React.FC = () => {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const { state: filterState, toggleFilter, clearFilter, isFiltered, isFilterActive } = useFilter();
+  // const { state: filterState, toggleFilter, clearFilter, isFiltered, isFilterActive } = useFilter();
+  const filterState = null;
+  const toggleFilter = () => {};
+  const clearFilter = () => {};
+  const isFiltered = () => false;
+  const isFilterActive = () => false;
 
   // Dados simulados para os gráficos
   const dadosNivelRiscoOriginal = [
@@ -36,8 +41,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
   ];
 
   // Aplicar filtragem cruzada nos dados dos gráficos
-  const dadosNivelRisco = filterData(dadosNivelRiscoOriginal, 'grafico-nivel-risco', filterState);
-  const dadosSituacaoRisco = filterData(dadosSituacaoRiscoOriginal, 'grafico-situacao-risco', filterState);
+  const dadosNivelRisco = dadosNivelRiscoOriginal;
+  const dadosSituacaoRisco = dadosSituacaoRiscoOriginal;
   const { quantidadeProcessos, quantidadeRiscos, quantidadeAcoes, loading, error } = useRiscosCards();
 
   // Função para lidar com cliques fora dos elementos interativos
@@ -49,7 +54,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 target.closest('tr[data-interactive="true"]');
     
     // Se não foi em um elemento interativo e há filtro ativo, limpar filtro
-    if (!isInteractiveElement && isFilterActive()) {
+    if (!isInteractiveElement && false) {
       clearFilter();
     }
   };
@@ -60,10 +65,10 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
   const { dados: dadosTabela, loading: loadingTabela, error: errorTabela } = useRiscosProcessosTrabalhoData();
   
   // Aplicar filtragem nos dados após sua declaração
-  const dadosStatusAcaoFiltrados = filterData(dadosStatusAcao, 'grafico-status-acao', filterState);
-  const dadosCategoriaFiltrados = filterData(dadosCategoria, 'grafico-nivel-risco', filterState);
-  const dadosSituacaoFiltrados = filterData(dadosSituacao, 'grafico-situacao-risco', filterState);
-  const dadosPlanoRespostaFiltrados = filterData(dadosPlanoResposta, 'grafico-plano-resposta', filterState);
+  const dadosStatusAcaoFiltrados = dadosStatusAcao;
+  const dadosCategoriaFiltrados = dadosCategoria;
+  const dadosSituacaoFiltrados = dadosSituacao;
+  const dadosPlanoRespostaFiltrados = dadosPlanoResposta;
 
   return (
     <Layout>
@@ -196,8 +201,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
-                            const isCurrentFiltered = isFiltered('nivel_risco', item.nivel_risco);
-                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-nivel-risco';
+                            const isCurrentFiltered = false;
+                            const isOtherFiltered = false;
                             
                             return (
                               <path
@@ -211,7 +216,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 } hover:opacity-80`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  toggleFilter('chart', 'nivel_risco', item.nivel_risco, 'grafico-nivel-risco');
+                                  // toggleFilter('chart', 'nivel_risco', item.nivel_risco, 'grafico-nivel-risco');
                                 }}
                                 data-interactive="true"
                               />
@@ -328,8 +333,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             const outerRadius = 90;
                             const innerRadius = 30;
                             
-                            const isCurrentFiltered = isFiltered('situacao_risco', item.situacao_risco);
-                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-situacao-risco';
+                            const isCurrentFiltered = false;
+                            const isOtherFiltered = false;
                             
                             return (
                               <g key={item.situacao_risco}>
@@ -346,7 +351,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                   } hover:opacity-80`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
+                                    // toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
                                   }}
                                   data-interactive="true"
                                 />
@@ -398,8 +403,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
-                            const isCurrentFiltered = isFiltered('situacao_risco', item.situacao_risco);
-                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-situacao-risco';
+                            const isCurrentFiltered = false;
+                            const isOtherFiltered = false;
                             
                             return (
                               <path
@@ -413,7 +418,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 } hover:opacity-80`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
+                                  // toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
                                 }}
                                 data-interactive="true"
                               />
@@ -548,8 +553,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             const outerRadius = 90;
                             const innerRadius = 30;
                             
-                            const isCurrentFiltered = isFiltered('status_acao', item.status_acao);
-                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-status-acao';
+                            const isCurrentFiltered = false;
+                            const isOtherFiltered = false;
                             
                             return (
                               <g key={item.status_acao}>
@@ -566,7 +571,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                   } hover:opacity-80`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
+                                    // toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
                                   }}
                                   data-interactive="true"
                                 />
@@ -619,8 +624,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
-                            const isCurrentFiltered = isFiltered('status_acao', item.status_acao);
-                            const isOtherFiltered = isFilterActive() && !isCurrentFiltered && filterState.activeFilter.sourceComponent === 'grafico-status-acao';
+                            const isCurrentFiltered = false;
+                            const isOtherFiltered = false;
                             
                             return (
                               <path
@@ -634,7 +639,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 } hover:opacity-80`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
+                                  // toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
                                 }}
                                 data-interactive="true"
                               />
@@ -821,7 +826,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                     </td>
                   </tr>
                 ) : dadosTabela && dadosTabela.length > 0 ? (
-                  filterData(dadosTabela, 'tabela-riscos', filterState).map((item, index) => {
+                  dadosTabela.map((item, index) => {
                     // Função para determinar a cor do badge baseado no nível de risco
                     const getCorNivelRisco = (nivel: string) => {
                       switch (nivel?.toLowerCase()) {
@@ -843,8 +848,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                     const originalIndex = dadosTabela.findIndex(originalItem => originalItem === item);
                     
                     // Verificar se esta linha está filtrada
-                    const isCurrentRowFiltered = isFiltered('table_row', originalIndex.toString());
-                    const isOtherRowFiltered = isFilterActive() && !isCurrentRowFiltered && filterState.activeFilter.sourceComponent === 'tabela-riscos';
+                    const isCurrentRowFiltered = false;
+                    const isOtherRowFiltered = false;
                     
                     return (
                       <tr 
@@ -854,7 +859,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                         } hover:bg-gray-50`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleFilter('table', 'table_row', originalIndex.toString(), 'tabela-riscos');
+                          // toggleFilter('table', 'table_row', originalIndex.toString(), 'tabela-riscos');
                         }}
                         data-interactive="true"
                       >
@@ -902,12 +907,10 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
   );
 };
 
-// Componente principal que fornece o contexto de filtros
+// Componente principal
 const RiscosProcessosTrabalho: React.FC = () => {
   return (
-    <FilterProvider>
-      <RiscosProcessosTrabalhoContent />
-    </FilterProvider>
+    <RiscosProcessosTrabalhoContent />
   );
 };
 

@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
 import { FullScreenLoader } from './components/LoadingSpinner';
 import FixedLayout from './components/FixedLayout';
+import { FilterProvider } from './contexts/FilterContext';
 
 // Preload dos componentes mais críticos para evitar tela branca
 import CadeiaValor from './pages/CadeiaValor';
@@ -133,9 +134,10 @@ function App() {
 
   return (
     <Router>
-      <FixedLayout>
-        <Suspense fallback={<FullScreenLoader text="Carregando página..." />}>
-          <Routes>
+      <FilterProvider>
+        <FixedLayout>
+          <Suspense fallback={<FullScreenLoader text="Carregando página..." />}>
+            <Routes>
           {/* Rota pública - Login */}
           <Route path="/login" element={<Login />} />
         
@@ -401,9 +403,10 @@ function App() {
             path="*"
             element={<Navigate to="/login" replace />}
           />
-          </Routes>
-        </Suspense>
-      </FixedLayout>
+            </Routes>
+          </Suspense>
+        </FixedLayout>
+      </FilterProvider>
         
         {/* Toast notifications */}
         <Toaster 

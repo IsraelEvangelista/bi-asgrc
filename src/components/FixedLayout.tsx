@@ -7,7 +7,7 @@ interface FixedLayoutProps {
   children: React.ReactNode;
 }
 
-const FixedLayout = ({ children }: FixedLayoutProps) => {
+const FixedLayout: React.FC<FixedLayoutProps> = ({ children }) => {
   const location = useLocation();
   
   // Não mostrar header e navbar na página de login
