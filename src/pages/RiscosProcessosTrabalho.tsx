@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { AlertTriangle, Filter, Workflow, Users, TrendingUp, PieChart, Plus, Edit, Trash2, ChevronUp, ChevronDown, Settings, CheckCircle, FileText, Shield } from 'lucide-react';
 
-// import { FilterProvider, useFilter, filterData } from '../contexts/FilterContext';
 import { useRiscosCards } from '../hooks/useRiscosCards';
 import { useRiscosPorCategoria } from '../hooks/useRiscosPorCategoria';
 import { useRiscosPorSituacao } from '../hooks/useRiscosPorSituacao';
@@ -13,12 +12,6 @@ import { useRiscosProcessosTrabalhoData } from '../hooks/useRiscosProcessosTraba
 // Componente interno que usa o contexto de filtros
 const RiscosProcessosTrabalhoContent: React.FC = () => {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  // const { state: filterState, toggleFilter, clearFilter, isFiltered, isFilterActive } = useFilter();
-  const filterState = null;
-  const toggleFilter = () => {};
-  const clearFilter = () => {};
-  const isFiltered = () => false;
-  const isFilterActive = () => false;
 
   // Dados simulados para os gráficos
   const dadosNivelRiscoOriginal = [
@@ -55,7 +48,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
     
     // Se não foi em um elemento interativo e há filtro ativo, limpar filtro
     if (!isInteractiveElement && false) {
-      clearFilter();
+      // clearFilter();
     }
   };
   const { dados: dadosCategoria, total: totalCategoria, loading: loadingCategoria } = useRiscosPorCategoria();
