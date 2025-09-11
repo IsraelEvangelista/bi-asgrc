@@ -7,6 +7,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+import dataRoutes from './routes/data.js';
 
 // load env
 dotenv.config();
@@ -47,6 +48,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
  * API Routes
  */
 app.use('/api/auth', authRoutes);
+app.use('/api/data', dataRoutes);
 
 /**
  * health
