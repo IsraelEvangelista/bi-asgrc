@@ -126,7 +126,7 @@ const PortfolioAcoes: React.FC = () => {
   // Debug logs
   
   
-  const [activeTab, setActiveTab] = useState<'severidade'>('severidade');
+  const [activeTab, setActiveTab] = useState<'severidade' | 'hierarquia'>('severidade');
   // Estado para controlar a visão ativa da tabela
   const [activeView, setActiveView] = useState<'acao' | 'natureza' | 'categoria'>('acao');
   // Estado para busca por texto
@@ -776,7 +776,7 @@ const PortfolioAcoes: React.FC = () => {
                           strokeWidth={2}
                           strokeDasharray="6 4"
                           ifOverflow="hidden"
-                          isFront
+                          // isFront removido - propriedade não suportada
                           label={{
                             // Renderiza o rótulo acima do ponto inicial da linha
                             content: (props: any) => {
