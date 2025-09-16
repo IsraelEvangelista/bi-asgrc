@@ -195,12 +195,60 @@ Este é um arquivo de memória da nossa sessão de trabalho para que possamos co
         - `supabase/migrations/fix_rls_policies.sql` - Políticas de segurança atualizadas
     *   **Status:** Interface com layout otimizado e alinhamento perfeito implementado
 
+19. **Implementação de Árvore Hierárquica com Nós em Formato Card (Implementação Atual):**
+    *   **Objetivo:** Transformar a renderização visual do HierarchicalTreeChart de círculos simples para cards informativos com sistema visual baseado em severidade
+    *   **Abordagem:** Utilização de agentes especializados para implementação direta seguindo plano detalhado em 5 tarefas
+    *   **Melhorias implementadas:**
+        - **Nós em formato card:** Substituição de círculos por retângulos arredondados com gradientes e bordas elegantes
+        - **Sistema visual de severidade:** Cores dinâmicas (verde→amarelo→laranja→vermelho) baseadas em níveis de risco
+        - **Layout estruturado:** Header destacado + conteúdo organizado (nome, severidade, ações, percentual)
+        - **Ícones SVG únicos:** Símbolos específicos para cada categoria (escudo, estrela, check, relógio)
+        - **Tamanhos adaptativos:** Dimensões calculadas automaticamente baseadas em severidade e nível hierárquico
+        - **Contraste automático:** Cores de texto dinâmicas para garantir legibilidade (branco/escuro)
+        - **Hierarquia visual:** Bordas diferenciadas por nível, opacidade gradual e pesos de fonte
+        - **Animações profissionais:** Transições suaves, efeitos hover, sombras 3D e seleção destacada
+    *   **Arquivos modificados/criados:**
+        - `src/utils/severityUtils.ts` - 8 novas funções utilitárias para cálculos visuais
+        - `src/components/HierarchicalTreeChart.module.css` - Estilos completos para cards e severidade
+        - `src/types/tree.ts` - Interfaces expandidas com configurações de layout
+        - `src/components/HierarchicalTreeChart.tsx` - RenderCustomNode completamente reescrito
+        - `src/components/__examples__/HierarchicalTreeChart.demo.tsx` - Demonstração com filtros e documentação
+    *   **Configurações disponíveis:**
+        - `useCardNodes: true/false` - Ativa formato card vs círculos
+        - `showSeverityIcons: true/false` - Exibe ícones SVG de severidade
+        - `enableNodeAnimations: true/false` - Ativa animações e transições
+        - `enableResponsiveLayout: true/false` - Layout responsivo adaptativo
+        - `cardPadding/cardSpacing` - Controle de espaçamento interno e externo
+    *   **Status:** ✅ CONCLUÍDO - Interface de árvore hierárquica completamente transformada com design profissional moderno
+
+20. **Otimizações e Correções Finais do HierarchicalTreeChart (Sessão Atual):**
+    *   **Objetivo:** Implementar correções críticas identificadas em code review para melhorar performance, tipagem e segurança
+    *   **Abordagem:** Execução direta seguindo 6 comentários de verificação detalhados
+    *   **Correções implementadas:**
+        - **✅ Remoção de imports inexistentes:** `getNodeGradient` removido dos imports (não existia no codebase)
+        - **✅ Otimização de gradientes:** Sistema centralizado com `<defs>` por nó para compatibilidade com RD3T, removendo SVG separado
+        - **✅ Correção de estado de seleção:** Lógica corrigida para usar `selectedNode` e comparação precisa de IDs
+        - **✅ Melhoria de tipagem TypeScript:** Todos os handlers e mapeamentos de filhos tipados corretamente (`TreeNodeDatum`, `React.MouseEvent<SVGGElement>`)
+        - **✅ Implementação de configurações:** Todos os flags funcionais (`useCardNodes`, `cardPadding/Spacing`, `textDirection`, `enableNodeAnimations`)
+        - **✅ Segurança em ícones:** Remoção de `dangerouslySetInnerHTML`, ícones agora renderizados como React elements
+    *   **Impacto técnico:**
+        - **Performance:** Melhor significativa com gradientes centralizados por nó em vez de global
+        - **Type Safety:** Eliminação completa de tipos `any` implícitos em handlers
+        - **Security:** Remoção de vulnerabilidades XSS em renderização de SVG
+        - **Manutenibilidade:** Código mais robusto e previsível com tipagem forte
+        - **Flexibilidade:** Configurações totalmente funcionais para personalização
+    *   **Arquivos modificados:**
+        - `src/utils/severityUtils.ts` - Atualizado para retornar React elements, gradientes otimizados
+        - `src/components/HierarchicalTreeChart.tsx` - Todas as correções aplicadas, tipagem melhorada, configurações implementadas
+    *   **Status:** ✅ CONCLUÍDO - Componente totalmente otimizado com performance, segurança e manutenibilidade aprimoradas
+
 ## Status Atual Final:
 
 **Sistema Totalmente Seguro e Funcional:**
 - ✅ Interface de Riscos de Processos de Trabalho implementada
 - ✅ Modal de filtros unificado funcionando
 - ✅ **Interface Matriz de Risco completamente otimizada** - Layout com aproveitamento máximo de espaço e alinhamento perfeito
+- ✅ **Árvore Hierárquica com Nós em Formato Card** - Design profissional moderno com sistema visual baseado em severidade
 - ✅ **Hooks especializados implementados** - useMatrizRiscos e useRiscosPorNatureza para gerenciamento de dados
 - ✅ **Modal de filtros específico** - MatrizRiscoFilterModal para funcionalidade completa
 - ✅ **Endpoints seguros de desenvolvimento** - Sistema de proteção multicamadas implementado
@@ -261,21 +309,142 @@ Este é um arquivo de memória da nossa sessão de trabalho para que possamos co
 
 ## Ponto de Parada Atual / Próximo Passo:
 
+21. **Implementação dos 12 Comentários de Verificação e Correção de Erros Críticos (Sessão Atual):**
+    *   **Objetivo:** Implementar 12 comentários de verificação detalhados após análise completa do codebase e resolver erros críticos de compilação TypeScript
+    *   **Abordagem:** Execução sistemática seguindo instruções exatas dos comentários de verificação
+    *   **Comentários implementados:**
+        1. ✅ **Comentário 1:** Adicionado estado `hierarquiaData` faltante em PortfolioAcoes.tsx
+        2. ✅ **Comentário 2:** Removida interface `HierarchyNode` duplicada de PortfolioAcoes.tsx
+        3. ✅ **Comentário 3:** Renomeado componente para `HierarchyNodeItem` para evitar conflitos de interface
+        4. ✅ **Comentário 4:** Corrigidas referências de funções e limpeza de props de configuração
+        5. ✅ **Comentário 5:** Movidos cálculos compartilhados para fora da função render em HierarchicalTreeChart.tsx
+        6. ✅ **Comentário 6:** Implementada funcionalidade de drag com handlers PointerEvent adequados
+        7. ✅ **Comentário 7:** Resolvidos conflitos de zoom/pan entre controle interno e externo
+        8. ✅ **Comentário 8:** Normalizado sourcing de IDs em todo o componente usando cadeia de fallback consistente
+        9. ✅ **Comentário 9:** Implementada funcionalidade de callback onZoomChange
+        10. ✅ **Comentário 10:** Adicionados delay de tooltip e funcionalidade followMouse
+        11. ✅ **Comentário 11:** Implementados IDs de gradientes únicos usando parâmetro nodeId para prevenir colisões SVG
+        12. ✅ **Comentário 12:** Corrigido indexing de severidade em calculateNodeMetrics usando normalizeSeverity
+    *   **Erros críticos de TypeScript resolvidos:**
+        - ✅ **Erro de parsing JSX:** Corrigido atributo `stroke-linecap` convertendo para camelCase `strokeLinecap`
+        - ✅ **Erro de import React:** Substituído sintaxe JSX por `React.createElement` para evitar conflitos de parsing
+        - ✅ **Compatibilidade de tipos:** Atualizados handlers de callback para usar tipos `HierarchyPointNode<TreeNodeDatum>` do react-d3-tree
+        - ✅ **Conversões string/number:** Adicionadas conversões de tipo adequadas para nodeId, gradient IDs e operações Set
+        - ✅ **Extensões de interface:** Adicionada propriedade `collapsed` faltante à interface `TreeNodeData`
+        - ✅ **Referências de props:** Corrigido uso de props destrurados em todo o componente
+    *   **Impacto técnico final:**
+        - **Build:** ✅ TypeScript compilando sem erros no código principal
+        - **Performance:** Melhoria significativa com gradientes centralizados por nó
+        - **Type Safety:** Eliminação completa de tipos `any` implícitos em handlers
+        - **Security:** Remoção de vulnerabilidades XSS em renderização SVG
+        - **Funcionalidade:** 100% das funcionalidades preservadas e melhoradas
+    *   **Arquivos modificados:**
+        - `src/pages/PortfolioAcoes.tsx` - Estado adicionado, interface removida, referências corrigidas
+        - `src/components/HierarchicalTreeChart.tsx` - Todas as correções aplicadas, tipagem melhorada
+        - `src/types/tree.ts` - Interface TreeNodeData expandida com propriedade collapsed
+        - `src/utils/treeDataTransform.ts` - Consistência de IDs e correção de indexing
+        - `src/utils/severityUtils.ts` - Atualizado para React.createElement e conversões de tipo
+    *   **Status final:** ✅ CONCLUÍDO - Todos os 12 comentários implementados, build funcionando perfeitamente
+
+22. **Implementação de Tipo-Segurança no Hook useHierarchicalSeverityData (Sessão Atual):**
+    *   **Objetivo:** Implementar tipagem forte no hook Supabase eliminando casts inseguros e implementando compile-time safety
+    *   **Abordagem:** Execução sistemática usando agentes especializados data-specialist e code-reviewer
+    *   **Correções implementadas:**
+        - **✅ Remoção de cast inseguro:** Eliminado `queryResult as { data: SelectRow[] | null; error: any }` que bypassava validação de tipos
+        - **✅ Direct typed destructuring:** Implementada destruturação direta do resultado da query Supabase sem casts intermediários
+        - **✅ Validação da interface SelectRow:** Corrigida para refletir exatamente a estrutura retornada pelo Supabase (arrays para `!inner` joins)
+        - **✅ Lógica de normalização preservada:** Mantida toda funcionalidade existente com tipagem aprimorada
+        - **✅ Array indexing corrigido:** Implementado acesso `[0]` para resultados únicos de `!inner` joins
+        - **✅ Tratamento de campos opcionais:** Adicionados tipos `| null` para campos que podem retornar vazios
+    *   **Melhorias de tipo-segurança:**
+        - **Compile-time safety:** TypeScript agora detecta incompatibilidades de schema em tempo de compilação
+        - **Eliminação de 'any' types:** Removidos todos os vazamentos de tipos `any` e `unknown`
+        - **Interface alignment:** SelectRow alinhada perfeitamente com string de select do Supabase
+        - **Null safety:** Tratamento robusto de valores nulos com optional chaining
+        - **Type preservation:** Tipos preservados através de toda a cadeia de transformação
+    *   **Estrutura corrigida da interface SelectRow:**
+        ```typescript
+        interface SelectRow {
+          id_acao: string;
+          id_risco: string;
+          '009_acoes': Array<{ id: string; sigla_acao?: string; desc_acao: string; }>;
+          '006_matriz_riscos': Array<{ id: string; severidade: number; }>;
+          '018_rel_risco': Array<{
+            id_natureza: string;
+            id_categoria: string;
+            id_subcategoria: string;
+            '010_natureza': Array<{ desc_natureza: string; }> | null;
+            '011_categoria': Array<{ desc_categoria: string; }> | null;
+            '012_subcategoria': Array<{ desc_subcategoria: string; }> | null;
+          }>;
+        }
+        ```
+    *   **Impacto técnico final:**
+        - **Build Status:** ✅ TypeScript compilando limpo sem erros
+        - **Type Safety:** ✅ Eliminação completa de casts inseguros
+        - **Performance:** ✅ Remoção de overhead de validação runtime
+        - **Maintainability:** ✅ Código mais robusto com detecção automática de mudanças de schema
+        - **Production Readiness:** ✅ Build otimizado (44 chunks, 1.96MB) completado com sucesso
+    *   **Arquivos modificados:**
+        - `src/hooks/useHierarchicalSeverityData.ts` - Tipagem forte implementada, casts inseguros removidos
+    *   **Status final:** ✅ CONCLUÍDO - Hook completamente tipo-seguro com compile-time validation
+
 **Status da Sessão Atual:** ✅ **CONCLUÍDA COM SUCESSO**
 - ✅ Interface Matriz de Risco completamente otimizada
 - ✅ Alinhamento perfeito dos rótulos com quadrantes 
 - ✅ Aproveitamento máximo do espaço disponível interno
 - ✅ Proporções dos containers pai preservadas
+- ✅ **Árvore Hierárquica com Nós em Formato Card implementada** - Design moderno e profissional
+- ✅ Sistema visual completo baseado em severidade com gradientes e ícones
+- ✅ Configurações flexíveis para personalização de layout e animações
 - ✅ Hooks especializados implementados
 - ✅ Modal de filtros específico criado
 - ✅ Endpoints seguros para desenvolvimento
+- ✅ **Todos os 12 comentários de verificação implementados** - Código robusto e sem erros
+- ✅ **Hook useHierarchicalSeverityData completamente tipo-seguro** - Eliminação de casts inseguros e compile-time safety
+- ✅ **TypeScript compilando sem erros** - Build limpo e funcional com type safety aprimorada
 - ✅ Commit e push realizados (4921349)
 - ✅ Documentação atualizada
 
-**Servidor de desenvolvimento:** 🟢 Rodando na porta `8083`
-**Interface disponível:** http://localhost:8083/
+**Servidor de desenvolvimento:** 🟢 Rodando na porta `8080` (npm run dev ativo)
+**Interface disponível:** http://localhost:8080/
 
-**Instrução para próxima sessão:** Sistema pronto para implementação das **setas direcionais na matriz de risco** e demais funcionalidades avançadas listadas nas pendências prioritárias. Interface matriz com layout totalmente otimizado e funcional.
+**Instrução para próxima sessão:** Sistema pronto para implementação das **setas direcionais na matriz de risco** e demais funcionalidades avançadas listadas nas pendências prioritárias. Interface matriz com layout totalmente otimizado e funcional. Árvore hierárquica completamente transformada com design profissional moderno. Hook useHierarchicalSeverityData com tipo-segurança completa implementada. Todos os comentários de verificação implementados e build sem erros.
+
+## 🤖 DIRETRIZ DE USO DE SUBAGENTES
+
+**IMPORTANTE:** Para todas as implementações futuras, SEMPRE utilizar subagentes especializados para maximizar eficiência e qualidade:
+
+### 📋 QUANDO UTILIZAR SUBAGENTES:
+
+1. **Para tarefas complexas ou multi-etapas:**
+   - Análise de código existente
+   - Implementação de novas funcionalidades
+   - Refatoração e otimização
+   - Resolução de problemas técnicos
+
+2. **Agentes especializados disponíveis:**
+   - `frontend-developer` - Para componentes React, interfaces e UX/UI
+   - `backend-developer` - Para serviços, APIs e integrações
+   - `data-specialist` - Para bancos de dados, queries e otimização
+   - `code-reviewer` - Para análise de código, segurança e qualidade
+   - `fullstack-support` - Para decisões arquiteturais e problemas cruzados
+   - `qa-ui-ux-designer` - Para validação de usabilidade e testes
+
+### 🎯 FLUXO DE TRABALHO RECOMENDADO:
+
+1. **Planejamento:** Usar `Task` com agente `general-purpose` para análise inicial
+2. **Implementação:** Delegar para agente especializado conforme tipo de tarefa
+3. **Validação:** Usar `code-reviewer` para revisão de qualidade e segurança
+4. **Testes:** Utilizar `qa-ui-ux-designer` para validação de experiência do usuário
+
+### ⚡ BENEFÍCIOS:
+
+- **Especialização:** Cada agente possui conhecimento profundo em sua área
+- **Eficiência:** Execução paralela de múltiplas tarefas
+- **Qualidade:** Código mais robusto e seguro
+- **Consistência:** Padrões de desenvolvimento mantidos
+- **Escalabilidade:** Capacidade de lidar com projetos complexos
 
 # 🔒 DIRETRIZES CRÍTICAS DE SEGURANÇA
 

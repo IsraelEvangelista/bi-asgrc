@@ -7,3 +7,4 @@ export * from './user';
 export * from './report';
 // export * from './concept'; // Arquivo não existe ainda
 export * from './actionRiskRelation';
+export * from './hierarchicalSeverity';

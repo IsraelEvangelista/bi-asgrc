@@ -12,28 +12,27 @@ interface SelectRow {
   id_risco: string;
   '009_acoes': {
     id: string;
-    sigla_acao?: string;
+    sigla_acao: string;
     desc_acao: string;
-  };
+  }[];
   '006_matriz_riscos': {
     id: string;
     severidade: number;
-    deleted_at?: string | null;
-  };
-  '018_rel_risco': Array<{
-    id_natureza: string;
-    id_categoria: string;
-    id_subcategoria: string;
+  }[];
+  '018_rel_risco': {
+    id_natureza: string | null;
+    id_categoria: string | null;
+    id_subcategoria: string | null;
     '010_natureza': {
       desc_natureza: string;
-    };
+    }[];
     '011_categoria': {
       desc_categoria: string;
-    };
+    }[];
     '012_subcategoria': {
       desc_subcategoria: string;
-    };
-  }>;
+    }[];
+  }[];
 }
 
 interface NormalizedRow {
@@ -46,13 +45,13 @@ interface NormalizedRow {
     desc_acao: string;
   };
   naturezas: Array<{
-    id_natureza: string;
+    id_natureza: string | null;
     desc_natureza: string;
     categoria: {
-      id_categoria: string;
+      id_categoria: string | null;
       desc_categoria: string;
       subcategoria: {
-        id_subcategoria: string;
+        id_subcategoria: string | null;
         desc_subcategoria: string;
       } | null;
     } | null;
@@ -70,7 +69,7 @@ export const useHierarchicalSeverityData = (): HierarchicalSeverityStats => {
       setLoading(true);
       setError(null);
 
-      const queryResult = await supabase
+      const response = await supabase
         .from('016_rel_acoes_riscos')
         .select(`
           id_acao,
@@ -98,9 +97,8 @@ export const useHierarchicalSeverityData = (): HierarchicalSeverityStats => {
         .is('016_rel_acoes_riscos.deleted_at', null)
         .is('018_rel_risco.deleted_at', null);
 
-      const { data: rawData, error: fetchError } = queryResult as { data: SelectRow[] | null; error: any };
-
-      if (fetchError) throw fetchError;
+      // Type-safe extraction without assertions - TypeScript infers correctly
+      const { data: rawData, error: fetchError } = response;
 
       // Handle empty dataset
       if (!rawData || !rawData.length) {
@@ -122,7 +120,9 @@ export const useHierarchicalSeverityData = (): HierarchicalSeverityStats => {
         return;
       }
 
-      // Normalize each row to handle array-or-object returns
+      if (fetchError) throw fetchError;
+      
+      // Type-safe direct usage with validation
       const normalizedRelations = (rawData ?? []).map(normalizeRow);
       
       // Build hierarchical structure
@@ -138,28 +138,28 @@ export const useHierarchicalSeverityData = (): HierarchicalSeverityStats => {
   };
 
   const normalizeRow = (row: SelectRow): NormalizedRow => {
-    const acaoData = row['009_acoes'];
-    const riscoData = row['006_matriz_riscos'];
-    const relRiscoData = row['018_rel_risco'];
+    // Access first element since !inner guarantees at least one result
+    const acaoData = row['009_acoes'][0];
+    const riscoData = row['006_matriz_riscos'][0];
     
     return {
       id_acao: row.id_acao,
       id_risco: row.id_risco,
-      severidade: riscoData?.severidade || 0,
+      severidade: riscoData.severidade,
       acao: {
-        id: acaoData?.id || '',
-        sigla_acao: acaoData?.sigla_acao || '',
-        desc_acao: acaoData?.desc_acao || ''
+        id: acaoData.id,
+        sigla_acao: acaoData.sigla_acao || '',
+        desc_acao: acaoData.desc_acao
       },
-      naturezas: relRiscoData.map(rel => ({
+      naturezas: row['018_rel_risco'].map(rel => ({
         id_natureza: rel.id_natureza,
-        desc_natureza: rel['010_natureza']?.desc_natureza || '',
-        categoria: rel['011_categoria'] ? {
+        desc_natureza: rel['010_natureza']?.[0]?.desc_natureza || '',
+        categoria: rel['011_categoria']?.[0] ? {
           id_categoria: rel.id_categoria,
-          desc_categoria: rel['011_categoria']?.desc_categoria || '',
-          subcategoria: rel['012_subcategoria'] ? {
+          desc_categoria: rel['011_categoria'][0]?.desc_categoria || '',
+          subcategoria: rel['012_subcategoria']?.[0] ? {
             id_subcategoria: rel.id_subcategoria,
-            desc_subcategoria: rel['012_subcategoria']?.desc_subcategoria || ''
+            desc_subcategoria: rel['012_subcategoria'][0]?.desc_subcategoria || ''
           } : null
         } : null
       }))

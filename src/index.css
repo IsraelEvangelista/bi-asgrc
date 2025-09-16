@@ -266,3 +266,107 @@ html {
   transform: translateY(-10px);
   transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
+
+/* Estilos 3D para botões de filtragem */
+.shadow-3d-button {
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.2),
+    0 8px 12px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  transform: translateY(0);
+  transition: all 0.15s ease-out;
+}
+
+.shadow-3d-button:hover {
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.25),
+    0 12px 16px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.shadow-3d-button-hover {
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.25),
+    0 12px 16px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.shadow-inner-3d-pressed {
+  box-shadow:
+    inset 0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(2px);
+  border: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Efeitos de brilho e realce para hover */
+.shadow-3d-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 12px 12px 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.shadow-3d-button:hover::before {
+  opacity: 1;
+}
+
+/* Animação de clique */
+.shadow-3d-button:active {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Efeito de borda luminosa para estado ativo */
+.shadow-3d-button-active-glow {
+  box-shadow:
+    inset 0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(59, 130, 246, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Gradientes específicos para cada tipo de botão */
+.btn-blue-gradient {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+}
+
+.btn-green-gradient {
+  background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+}
+
+.btn-orange-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+/* Animação de pulso sutil para botões ativos */
+@keyframes pulse-3d {
+  0%, 100% {
+    transform: translateY(2px) scale(1);
+  }
+  50% {
+    transform: translateY(1px) scale(1.01);
+  }
+}
+
+.pulse-3d-active {
+  animation: pulse-3d 2s ease-in-out infinite;
+}

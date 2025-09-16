@@ -1,0 +1,892 @@
+/* Container principal da árvore hierárquica */
+.treeContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Estilos base para nós customizados */
+.customNode {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.customNode:hover {
+  filter: brightness(1.1);
+  transform: scale(1.05);
+}
+
+/* Nós em formato de card - base */
+.nodeCard {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+.nodeCard:hover {
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.25));
+  transform: translateY(-2px);
+}
+
+/* Container principal do nó card */
+.nodeCardContainer {
+  rx: 8;
+  ry: 8;
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.nodeCardContainer:hover {
+  stroke-width: 3;
+}
+
+/* Background do nó card */
+.nodeCardBackground {
+  rx: 8;
+  ry: 8;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.nodeCardBackground:hover {
+  opacity: 1;
+}
+
+/* Header do nó card */
+.nodeCardHeader {
+  rx: 8;
+  ry: 8;
+  opacity: 0.95;
+}
+
+/* Ícone de severidade */
+.nodeSeverityIcon {
+  transition: all 0.3s ease;
+}
+
+.nodeCard:hover .nodeSeverityIcon {
+  transform: scale(1.1);
+}
+
+/* Textos do nó card */
+.nodeCardTitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transition: all 0.3s ease;
+}
+
+.nodeCardSubtitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transition: all 0.3s ease;
+}
+
+.nodeCardInfo {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 400;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transition: all 0.3s ease;
+}
+
+/* Indicador de filhos para nós card */
+.nodeChildrenIndicator {
+  transition: all 0.3s ease;
+  animation: subtlePulse 2s infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Severidade específica - nós cards */
+.nodeCard--critica .nodeCardContainer {
+  stroke: #991b1b;
+  stroke-width: 3;
+}
+
+.nodeCard--critica .nodeCardBackground {
+  fill: url(#gradient-critica);
+}
+
+.nodeCard--critica .nodeCardHeader {
+  fill: url(#gradient-critica-light);
+}
+
+.nodeCard--critica .nodeCardTitle,
+.nodeCard--critica .nodeCardSubtitle,
+.nodeCard--critica .nodeCardInfo {
+  fill: #ffffff;
+}
+
+.nodeCard--critica .nodeSeverityIcon {
+  stroke: #ffffff;
+  fill: none;
+}
+
+.nodeCard--alta .nodeCardContainer {
+  stroke: #c2410c;
+  stroke-width: 2.5;
+}
+
+.nodeCard--alta .nodeCardBackground {
+  fill: url(#gradient-alta);
+}
+
+.nodeCard--alta .nodeCardHeader {
+  fill: url(#gradient-alta-light);
+}
+
+.nodeCard--alta .nodeCardTitle,
+.nodeCard--alta .nodeCardSubtitle,
+.nodeCard--alta .nodeCardInfo {
+  fill: #ffffff;
+}
+
+.nodeCard--alta .nodeSeverityIcon {
+  stroke: #ffffff;
+  fill: none;
+}
+
+.nodeCard--media .nodeCardContainer {
+  stroke: #b45309;
+  stroke-width: 2;
+}
+
+.nodeCard--media .nodeCardBackground {
+  fill: url(#gradient-media);
+}
+
+.nodeCard--media .nodeCardHeader {
+  fill: url(#gradient-media-light);
+}
+
+.nodeCard--media .nodeCardTitle,
+.nodeCard--media .nodeCardSubtitle,
+.nodeCard--media .nodeCardInfo {
+  fill: #1f2937;
+}
+
+.nodeCard--media .nodeSeverityIcon {
+  stroke: #1f2937;
+  fill: none;
+}
+
+.nodeCard--baixa .nodeCardContainer {
+  stroke: #15803d;
+  stroke-width: 1.5;
+}
+
+.nodeCard--baixa .nodeCardBackground {
+  fill: url(#gradient-baixa);
+}
+
+.nodeCard--baixa .nodeCardHeader {
+  fill: url(#gradient-baixa-light);
+}
+
+.nodeCard--baixa .nodeCardTitle,
+.nodeCard--baixa .nodeCardSubtitle,
+.nodeCard--baixa .nodeCardInfo {
+  fill: #1f2937;
+}
+
+.nodeCard--baixa .nodeSeverityIcon {
+  stroke: #1f2937;
+  fill: none;
+}
+
+/* Estados de seleção para nós cards */
+.nodeCard--selected .nodeCardContainer {
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.5));
+}
+
+.nodeCard--selected .nodeCardBackground {
+  opacity: 1;
+}
+
+/* Nível hierárquico - ajustes visuais */
+.nodeCard--level-0 .nodeCardContainer {
+  stroke-width: 3;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+.nodeCard--level-1 .nodeCardContainer {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.15));
+}
+
+.nodeCard--level-2 .nodeCardContainer {
+  stroke-width: 2;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
+}
+
+.nodeCard--level-3plus .nodeCardContainer {
+  stroke-width: 1.5;
+  stroke-dasharray: 5,3;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Animações de entrada para nós cards */
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.nodeCard {
+  animation: cardSlideIn 0.4s ease-out;
+}
+
+/* Responsividade para nós cards */
+@media (max-width: 768px) {
+  .nodeCardTitle {
+    font-size: 10px !important;
+  }
+  
+  .nodeCardSubtitle {
+    font-size: 8px !important;
+  }
+  
+  .nodeCardInfo {
+    font-size: 7px !important;
+  }
+  
+  .nodeCardContainer {
+    stroke-width: 1.5 !important;
+  }
+}
+
+/* Círculo principal do nó */
+.nodeCircle {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.nodeCircle:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Labels dos nós */
+.nodeLabel {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+  fill: #1f2937;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.nodeLabel:hover {
+  fill: #111827;
+  font-weight: 700;
+}
+
+/* Informações adicionais dos nós */
+.nodeInfo {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 500;
+  fill: #6b7280;
+  transition: all 0.3s ease;
+}
+
+/* Indicador de filhos colapsados */
+.childrenIndicator {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Tooltip de detalhes */
+.tooltip {
+  position: fixed;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+  max-width: 250px;
+  z-index: 1000;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header do tooltip */
+.tooltipHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tooltipTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  margin-right: 8px;
+  line-height: 1.4;
+}
+
+.severityBadge {
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Conteúdo do tooltip */
+.tooltipContent {
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.tooltipContent p {
+  margin: 4px 0;
+  font-size: 11px;
+}
+
+.tooltipContent strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Controles de zoom e navegação */
+.controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+
+.controlButton {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.controlButton:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: #9ca3af;
+  color: #111827;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.controlButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Legenda de severidade */
+.legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.legendTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.legendItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.legendLabel {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Estilos para links/conexões da árvore (sobrescrever estilos padrão do react-d3-tree) */
+:global(.rd3t-link) {
+  stroke: #cbd5e1;
+  stroke-width: 2;
+  fill: none;
+  transition: all 0.3s ease;
+}
+
+:global(.rd3t-link:hover) {
+  stroke: #94a3b8;
+  stroke-width: 3;
+}
+
+/* Estilos para SVG da árvore */
+:global(.rd3t-tree-container) {
+  width: 100%;
+  height: 100%;
+}
+
+:global(.rd3t-svg) {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+/* Estilos para nós colapsados */
+:global(.rd3t-node circle.rd3t-leaf-node) {
+  fill: #e5e7eb;
+  stroke: #9ca3af;
+}
+
+/* Animações para transições */
+:global(.rd3t-node) {
+  transition: all 0.3s ease;
+}
+
+:global(.rd3t-node:hover) {
+  filter: brightness(1.05);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .controls {
+    top: 8px;
+    right: 8px;
+  }
+  
+  .controlButton {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .legend {
+    bottom: 8px;
+    left: 8px;
+    padding: 8px 12px;
+  }
+  
+  .legendTitle {
+    font-size: 11px;
+  }
+  
+  .legendLabel {
+    font-size: 10px;
+  }
+  
+  .tooltip {
+    max-width: 200px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  
+  .tooltipTitle {
+    font-size: 12px;
+  }
+  
+  .tooltipContent p {
+    font-size: 10px;
+  }
+}
+
+/* Estados de foco para acessibilidade */
+.controlButton:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.customNode:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+/* Animação de entrada para a árvore */
+.treeContainer {
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para modo escuro (opcional) */
+@media (prefers-color-scheme: dark) {
+  .treeContainer {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+  }
+  
+  .nodeLabel {
+    fill: #f1f5f9;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+  
+  .nodeInfo {
+    fill: #94a3b8;
+  }
+  
+  .tooltip {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+    color: #f1f5f9;
+  }
+  
+  .tooltipContent {
+    color: #cbd5e1;
+  }
+  
+  .tooltipContent strong {
+    color: #f1f5f9;
+  }
+  
+  .tooltipTitle {
+    color: #f8fafc;
+  }
+  
+  .controlButton {
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    border-color: #64748b;
+    color: #f1f5f9;
+  }
+  
+  .controlButton:hover {
+    background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+    border-color: #94a3b8;
+  }
+  
+  .legend {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+  }
+  
+  .legendTitle {
+    color: #f1f5f9;
+  }
+  
+  .legendLabel {
+    color: #94a3b8;
+  }
+  
+  :global(.rd3t-link) {
+    stroke: #64748b;
+  }
+  
+  :global(.rd3t-link:hover) {
+    stroke: #94a3b8;
+  }
+}
+
+/* Container interativo - cursor states */
+.treeContainer {
+  cursor: grab;
+  outline: none;
+}
+
+.treeContainer.dragging {
+  cursor: grabbing;
+}
+
+/* Enhanced hover effects for nodes */
+.customNode {
+  transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.customNode:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Enhanced card hover effects */
+.nodeCard:hover {
+  transform: scale(1.05) translateY(-2px);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+}
+
+.nodeCard:hover .nodeCardContainer {
+  stroke-width: 4;
+}
+
+.nodeCard:hover .nodeSeverityIcon {
+  transform: scale(1.2) rotate(5deg);
+}
+
+/* Enhanced children indicator animations */
+.nodeChildrenIndicator {
+  transition: all 0.3s ease;
+}
+
+.nodeChildrenIndicator:hover {
+  transform: scale(1.1);
+}
+
+.nodeChildrenIndicator:hover circle {
+  opacity: 0.8;
+  transform: scale(1.2);
+}
+
+/* Rotation animation for expand/collapse indicators */
+.nodeChildrenIndicator.expanded {
+  animation: rotateExpand 0.3s ease;
+}
+
+.nodeChildrenIndicator.collapsed {
+  animation: rotateCollapse 0.3s ease;
+}
+
+@keyframes rotateExpand {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(90deg); }
+}
+
+@keyframes rotateCollapse {
+  from { transform: rotate(90deg); }
+  to { transform: rotate(0deg); }
+}
+
+/* Enhanced tooltip with backdrop blur and animations */
+.tooltip {
+  backdrop-filter: blur(8px);
+  animation: tooltipFadeIn 0.3s ease-out;
+  max-width: 300px;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tooltip.fade-out {
+  animation: tooltipFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes tooltipFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+/* Enhanced control buttons with tactile feedback */
+.controlButton {
+  transition: all 0.2s ease, transform 0.1s ease;
+}
+
+.controlButton:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.controlButton:active {
+  transform: translateY(0) scale(0.95);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Keyboard navigation focus styles */
+.treeContainer:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.treeContainer:focus-visible .customNode:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Enhanced severity indicator animations */
+.severityBadge {
+  transition: all 0.2s ease;
+}
+
+.severityBadge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Smooth transitions for all interactive elements */
+.customNode,
+.nodeCard,
+.nodeCardContainer,
+.nodeCardBackground,
+.nodeSeverityIcon,
+.nodeCardTitle,
+.nodeCardSubtitle,
+.nodeCardInfo,
+.nodeChildrenIndicator,
+.controlButton,
+.tooltip {
+  transition-property: transform, opacity, filter, box-shadow, stroke-width;
+  transition-timing-function: ease;
+  transition-duration: 0.2s ease;
+}
+
+/* Enhanced drag feedback */
+.treeContainer.dragging::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  pointer-events: none;
+  border-radius: 12px;
+  border: 2px dashed #3b82f6;
+  animation: dragPulse 1.5s infinite;
+}
+
+@keyframes dragPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* Responsive enhanced interactions */
+@media (max-width: 768px) {
+  .treeContainer {
+    cursor: grab;
+  }
+  
+  .nodeCard:hover {
+    transform: scale(1.02) translateY(-1px);
+  }
+  
+  .controlButton:hover {
+    transform: translateY(-1px) scale(1.02);
+  }
+  
+  .tooltip {
+    max-width: 250px;
+    font-size: 11px;
+  }
+}
+
+/* Accessibility enhancements */
+@media (prefers-reduced-motion: reduce) {
+  .customNode,
+  .nodeCard,
+  .nodeChildrenIndicator,
+  .controlButton,
+  .tooltip {
+    transition: none;
+    animation: none;
+  }
+  
+  .treeContainer.dragging::before {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nodeCardContainer {
+    stroke-width: 3 !important;
+  }
+  
+  .controlButton {
+    border-width: 2px !important;
+  }
+  
+  .treeContainer:focus-visible {
+    outline-width: 3px !important;
+  }
+}
