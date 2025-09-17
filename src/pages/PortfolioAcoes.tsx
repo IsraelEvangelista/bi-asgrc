@@ -15,6 +15,7 @@ import { useSeveridadePorCategoria } from '../hooks/useSeveridadePorCategoria';
 import { useRiscosDetalhados } from '../hooks/useRiscosDetalhados';
 import RiscosTooltip from '../components/RiscosTooltip';
 import TableRiscosTooltip from '../components/TableRiscosTooltip';
+import DynamicTooltip from '../components/DynamicTooltip';
 import Layout from '../components/Layout';
 import HierarchicalTreeChart from '../components/HierarchicalTreeChart';
 import { 
@@ -964,7 +965,7 @@ const PortfolioAcoes: React.FC = () => {
                       <Tooltip
                         wrapperStyle={{ zIndex: 9999 }}
                         allowEscapeViewBox={{ x: true, y: true }}
-                        content={({ active, payload, label }) => {
+                        content={({ active, payload, label, coordinate }) => {
                           if (!active || !payload || !payload.length) return null;
 
                           // Find the correct action ID using multiple strategies
@@ -979,94 +980,95 @@ const PortfolioAcoes: React.FC = () => {
                           const severidadeValue = Number(payload[0].value);
 
                           return (
-                            <div 
-                              className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[300px] max-w-[400px]"
-                              style={{ 
-                                zIndex: 9999,
-                                position: 'fixed',
-                                pointerEvents: 'none'
-                              }}
+                            <DynamicTooltip 
+                              active={active} 
+                              payload={payload} 
+                              label={label}
+                              coordinate={coordinate}
+                              offset={{ x: 1, y: 1 }}
                             >
-                              {/* Cabeçalho com informações da ação */}
-                              <div className="border-b border-gray-200 pb-3 mb-3">
-                                <h4 className="font-semibold text-gray-900 text-sm">{String(label)}</h4>
-                                <div className="flex justify-between items-center mt-1">
-                                  <span className="text-xs text-gray-600">Média de Severidade:</span>
-                                  <span className="text-sm font-medium text-gray-900">{severidadeValue.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between items-center mt-1">
-                                  <span className="text-xs text-gray-600">Conformidade:</span>
-                                  <span className="text-sm font-medium text-gray-900">
-                                    {severityToPercent(severidadeValue).toFixed(0)}%
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Lista de riscos associados */}
-                              {riscosDetalhados && riscosDetalhados.length > 0 && (
-                                <div>
-                                  <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
-                                    Riscos Associados ({riscosDetalhados.length})
-                                  </h5>
-                                  <div className="max-h-60 overflow-y-auto space-y-2">
-                                    {riscosDetalhados.map((risco, index) => (
-                                      <div
-                                        key={risco.id || index}
-                                        className="bg-gray-50 rounded-lg p-2 border border-gray-100"
-                                      >
-                                        <div className="flex justify-between items-start mb-1">
-                                          <h6 className="text-xs font-medium text-gray-900 flex-1 pr-2">
-                                            {risco.desc_risco}
-                                          </h6>
-                                          <div className="flex items-center space-x-2">
-                                            <span className="text-xs font-medium text-gray-700">
-                                              {risco.severidade.toFixed(1)}
-                                            </span>
-                                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                            <span className="text-xs font-medium text-gray-700">
-                                              {severityToPercent(risco.severidade).toFixed(0)}%
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Barra de conformidade */}
-                                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                          <div
-                                            className={`h-1.5 rounded-full ${
-                                              severityToPercent(risco.severidade) >= 80 ? 'bg-green-500' :
-                                              severityToPercent(risco.severidade) >= 60 ? 'bg-yellow-500' :
-                                              severityToPercent(risco.severidade) >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                                            }`}
-                                            style={{ width: `${severityToPercent(risco.severidade)}%` }}
-                                          ></div>
-                                        </div>
-
-                                        {/* Informações adicionais */}
-                                        {(risco.desc_natureza || risco.desc_categoria || risco.desc_subcategoria) && (
-                                          <div className="flex flex-wrap gap-1 mt-1">
-                                            {risco.desc_natureza && (
-                                              <span className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
-                                                {risco.desc_natureza}
-                                              </span>
-                                            )}
-                                            {risco.desc_categoria && (
-                                              <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded">
-                                                {risco.desc_categoria}
-                                              </span>
-                                            )}
-                                            {risco.desc_subcategoria && (
-                                              <span className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
-                                                {risco.desc_subcategoria}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
+                              <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[300px] max-w-[500px]">
+                                {/* Cabeçalho com informações da ação */}
+                                <div className="border-b border-gray-200 pb-3 mb-3">
+                                  <h4 className="font-semibold text-gray-900 text-sm">{String(label)}</h4>
+                                  <div className="flex justify-between items-center mt-1">
+                                    <span className="text-xs text-gray-600">Média de Severidade:</span>
+                                    <span className="text-sm font-medium text-gray-900">{severidadeValue.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center mt-1">
+                                    <span className="text-xs text-gray-600">Conformidade:</span>
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {severityToPercent(severidadeValue).toFixed(0)}%
+                                    </span>
                                   </div>
                                 </div>
-                              )}
-                            </div>
+
+                                {/* Lista de riscos associados */}
+                                {riscosDetalhados && riscosDetalhados.length > 0 && (
+                                  <div>
+                                    <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
+                                      Riscos Associados ({riscosDetalhados.length})
+                                    </h5>
+                                    <div className="space-y-2">
+                                      {riscosDetalhados.map((risco, index) => (
+                                        <div
+                                          key={risco.id || index}
+                                          className="bg-gray-50 rounded-lg p-2 border border-gray-100"
+                                        >
+                                          <div className="flex justify-between items-start mb-1">
+                                            <h6 className="text-xs font-medium text-gray-900 flex-1 pr-2">
+                                              {risco.desc_risco}
+                                            </h6>
+                                            <div className="flex items-center space-x-2">
+                                              <span className="text-xs font-medium text-gray-700">
+                                                {risco.severidade.toFixed(1)}
+                                              </span>
+                                              <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                              <span className="text-xs font-medium text-gray-700">
+                                                {severityToPercent(risco.severidade).toFixed(0)}%
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {/* Barra de conformidade */}
+                                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                            <div
+                                              className={`h-1.5 rounded-full ${
+                                                severityToPercent(risco.severidade) >= 80 ? 'bg-green-500' :
+                                                severityToPercent(risco.severidade) >= 60 ? 'bg-yellow-500' :
+                                                severityToPercent(risco.severidade) >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                                              }`}
+                                              style={{ width: `${severityToPercent(risco.severidade)}%` }}
+                                            ></div>
+                                          </div>
+
+                                          {/* Informações adicionais */}
+                                          {(risco.desc_natureza || risco.desc_categoria || risco.desc_subcategoria) && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                              {risco.desc_natureza && (
+                                                <span className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
+                                                  {risco.desc_natureza}
+                                                </span>
+                                              )}
+                                              {risco.desc_categoria && (
+                                                <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded">
+                                                  {risco.desc_categoria}
+                                                </span>
+                                              )}
+                                              {risco.desc_subcategoria && (
+                                                <span className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
+                                                  {risco.desc_subcategoria}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </DynamicTooltip>
                           );
                         }}
                       />
