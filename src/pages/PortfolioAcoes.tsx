@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
@@ -10,6 +10,11 @@ import { Input } from '../components/ui/input';
 import { useAcoesStats } from '../hooks/useAcoesStats';
 import { useRiscosStats } from '../hooks/useRiscosStats';
 import { useSeveridadePorAcao } from '../hooks/useSeveridadePorAcao';
+import { useSeveridadePorNatureza } from '../hooks/useSeveridadePorNatureza';
+import { useSeveridadePorCategoria } from '../hooks/useSeveridadePorCategoria';
+import { useRiscosDetalhados } from '../hooks/useRiscosDetalhados';
+import RiscosTooltip from '../components/RiscosTooltip';
+import TableRiscosTooltip from '../components/TableRiscosTooltip';
 import Layout from '../components/Layout';
 import HierarchicalTreeChart from '../components/HierarchicalTreeChart';
 import { 
@@ -121,7 +126,43 @@ const PortfolioAcoes: React.FC = () => {
   // Hooks para dados reais
   const { totalAcoes, loading: loadingAcoes, error: errorAcoes } = useAcoesStats();
   const { totalRiscos, mediaSeveridade, loading: loadingRiscos, error: errorRiscos } = useRiscosStats();
-  const { severidadeAcoes, loading: loadingSeveridade, error: errorSeveridade } = useSeveridadePorAcao();
+  const { severidadeAcoes, loading: loadingSeveridadeAcao, error: errorSeveridadeAcao } = useSeveridadePorAcao();
+  const { severidadeNatureza, loading: loadingSeveridadeNatureza, error: errorSeveridadeNatureza } = useSeveridadePorNatureza();
+  const { severidadeCategorias, loading: loadingSeveridadeCategoria, error: errorSeveridadeCategoria } = useSeveridadePorCategoria();
+  const { riscosPorAcao, loading: loadingRiscosDetalhados } = useRiscosDetalhados();
+
+  // Dados mock para teste enquanto os dados reais não estão disponíveis
+  const mockSeveridadeNatureza = [
+    { id_natureza: '1', desc_natureza: 'Operacional', media_severidade: 15.5, qtd_riscos: 8 },
+    { id_natureza: '2', desc_natureza: 'Financeiro', media_severidade: 8.2, qtd_riscos: 5 },
+    { id_natureza: '3', desc_natureza: 'Estratégico', media_severidade: 12.8, qtd_riscos: 3 }
+  ];
+
+  const mockSeveridadeAcoes = [
+    { id_acao: '1', sigla_acao: 'A001', desc_acao: 'Ação 1', media_severidade: 18.3, qtd_riscos: 6 },
+    { id_acao: '2', sigla_acao: 'A002', desc_acao: 'Ação 2', media_severidade: 7.5, qtd_riscos: 4 },
+    { id_acao: '3', sigla_acao: 'A003', desc_acao: 'Ação 3', media_severidade: 14.2, qtd_riscos: 8 }
+  ];
+
+  const mockSeveridadeCategorias = [
+    { id: 'cat-1', nome: 'Processos', tipo: 'categoria' as const, media_severidade: 16.8, qtd_riscos: 12, id_categoria: '1' },
+    { id: 'cat-2', nome: 'Pessoas', tipo: 'categoria' as const, media_severidade: 9.4, qtd_riscos: 7, id_categoria: '2' },
+    { id: 'sub-1', nome: 'Contratação', tipo: 'subcategoria' as const, media_severidade: 11.2, qtd_riscos: 4, id_subcategoria: '1', parentId: 'cat-2' }
+  ];
+
+  // Dados mock para riscos detalhados
+  const mockRiscosPorAcao: { [key: string]: import('../hooks/useRiscosDetalhados').RiscoDetalhado[] } = {
+    '1': [
+      { id: '1', desc_risco: 'Risco Operacional 1', severidade: 18.5, conformidade: 73.0, id_natureza: '1', desc_natureza: 'Operacional' },
+      { id: '2', desc_risco: 'Risco Operacional 2', severidade: 22.1, conformidade: 87.9, id_natureza: '1', desc_natureza: 'Operacional' }
+    ],
+    '2': [
+      { id: '3', desc_risco: 'Risco Financeiro 1', severidade: 8.3, conformidade: 30.4, id_natureza: '2', desc_natureza: 'Financeiro' }
+    ],
+    '3': [
+      { id: '4', desc_risco: 'Risco Estratégico 1', severidade: 14.7, conformidade: 57.3, id_natureza: '3', desc_natureza: 'Estratégico' }
+    ]
+  };
   
   // Debug logs
   
@@ -131,12 +172,14 @@ const PortfolioAcoes: React.FC = () => {
   const [activeView, setActiveView] = useState<'acao' | 'natureza' | 'categoria'>('acao');
   // Estado para busca por texto
   const [searchTerm, setSearchTerm] = useState('');
-  // Ordenação da tabela Severidade da Ação
-  const [sortBy, setSortBy] = useState<'acao' | 'descricao' | null>(null);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  // Ordenação da tabela Severidade da Ação - padrão por severidade (maior para menor)
+  const [sortBy, setSortBy] = useState<'acao' | 'descricao' | 'natureza' | 'categoria' | 'hierarquia' | null>('descricao');
+  // Estado para controle de expansão de categorias
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const toggleSort = (column: 'acao' | 'descricao') => {
+  const toggleSort = (column: 'acao' | 'descricao' | 'natureza' | 'categoria') => {
     setSortBy(prev => {
       if (prev === column) {
         setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -178,21 +221,178 @@ const PortfolioAcoes: React.FC = () => {
     }).filter(Boolean) as { label: string; color: string; value: number; start: string; end: string; }[];
   }, [severidadeAcoes]);
 
+  // Função para ordenação alfanumérica inteligente (A1, A2, A3... ao invés de A1, A10, A11...)
+  const smartAlphanumericSort = (a: string, b: string): number => {
+    // Regex para separar letra(s) e número(s)
+    const regex = /^([A-Za-z]+)(\d+)$/;
+    const matchA = a.match(regex);
+    const matchB = b.match(regex);
+    
+    // Se ambos seguem o padrão letra+número
+    if (matchA && matchB) {
+      const [, letterA, numberA] = matchA;
+      const [, letterB, numberB] = matchB;
+      
+      // Primeiro compara as letras
+      const letterCmp = letterA.localeCompare(letterB, 'pt-BR');
+      if (letterCmp !== 0) return letterCmp;
+      
+      // Se as letras são iguais, compara os números numericamente
+      return parseInt(numberA, 10) - parseInt(numberB, 10);
+    }
+    
+    // Fallback para comparação normal se não seguir o padrão
+    return a.localeCompare(b, 'pt-BR');
+  };
+
   // Dados ordenados para a tabela (Ação/Descrição)
   const sortedSeveridadeAcoes = useMemo(() => {
-    const arr = [...severidadeAcoes];
+    const arr = severidadeAcoes.length > 0 ? [...severidadeAcoes] : [...mockSeveridadeAcoes];
+    console.log('Debug - Dados sendo usados:', {
+      severidadeAcoesLength: severidadeAcoes.length,
+      usingMockData: severidadeAcoes.length === 0,
+      data: arr
+    });
     if (!sortBy) return arr;
     return arr.sort((a, b) => {
       if (sortBy === 'acao') {
-        const aKey = (a.sigla_acao || '').toString().toLowerCase();
-        const bKey = (b.sigla_acao || '').toString().toLowerCase();
-        const cmp = aKey.localeCompare(bKey, 'pt-BR');
+        const aKey = (a.sigla_acao || '').toString();
+        const bKey = (b.sigla_acao || '').toString();
+        const cmp = smartAlphanumericSort(aKey, bKey);
         return sortDir === 'asc' ? cmp : -cmp;
       }
       const cmp = (a.media_severidade || 0) - (b.media_severidade || 0);
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [severidadeAcoes, sortBy, sortDir]);
+
+  // Converte severidade (1..25) para percentual (0..100)
+  const severityToPercent = (severidade: number): number => {
+    const clamped = Math.max(1, Math.min(25, severidade));
+    return ((clamped - 1) / 24) * 100;
+  };
+
+  // Função para obter riscos por ação
+  const getRiscosPorAcao = (acaoId: string) => {
+    if (!acaoId) return [];
+
+    // Try to get real data first
+    const realData = riscosPorAcao[acaoId];
+    if (realData && realData.length > 0) {
+      return realData;
+    }
+
+    // Fallback to mock data if no real data available
+    return mockRiscosPorAcao[acaoId] || [];
+  };
+
+  // Função para obter riscos por natureza
+  const getRiscosPorNatureza = (naturezaId: string) => {
+    const riscosPorNatureza: { [key: string]: import('../hooks/useRiscosDetalhados').RiscoDetalhado[] } = {};
+
+    // Agrupar riscos por natureza
+    Object.entries(riscosPorAcao).forEach(([acaoId, riscos]) => {
+      riscos.forEach(risco => {
+        if (risco.id_natureza === naturezaId) {
+          if (!riscosPorNatureza[naturezaId]) {
+            riscosPorNatureza[naturezaId] = [];
+          }
+          riscosPorNatureza[naturezaId].push(risco);
+        }
+      });
+    });
+
+    return riscosPorNatureza[naturezaId] || [];
+  };
+
+  // Função para obter riscos por categoria
+  const getRiscosPorCategoria = (categoriaId: string) => {
+    const riscosPorCategoria: { [key: string]: import('../hooks/useRiscosDetalhados').RiscoDetalhado[] } = {};
+
+    // Agrupar riscos por categoria
+    Object.entries(riscosPorAcao).forEach(([acaoId, riscos]) => {
+      riscos.forEach(risco => {
+        if (risco.id_categoria === categoriaId) {
+          if (!riscosPorCategoria[categoriaId]) {
+            riscosPorCategoria[categoriaId] = [];
+          }
+          riscosPorCategoria[categoriaId].push(risco);
+        }
+      });
+    });
+
+    return riscosPorCategoria[categoriaId] || [];
+  };
+
+  // Função para obter riscos por subcategoria
+  const getRiscosPorSubcategoria = (subcategoriaId: string) => {
+    const riscosPorSubcategoria: { [key: string]: import('../hooks/useRiscosDetalhados').RiscoDetalhado[] } = {};
+
+    // Agrupar riscos por subcategoria
+    Object.entries(riscosPorAcao).forEach(([acaoId, riscos]) => {
+      riscos.forEach(risco => {
+        if (risco.id_subcategoria === subcategoriaId) {
+          if (!riscosPorSubcategoria[subcategoriaId]) {
+            riscosPorSubcategoria[subcategoriaId] = [];
+          }
+          riscosPorSubcategoria[subcategoriaId].push(risco);
+        }
+      });
+    });
+
+    return riscosPorSubcategoria[subcategoriaId] || [];
+  };
+
+  // Dados ordenados para a tabela de natureza
+  const sortedSeveridadeNatureza = useMemo(() => {
+    const arr = severidadeNatureza.length > 0 ? [...severidadeNatureza] : [...mockSeveridadeNatureza];
+    return arr.sort((a, b) => {
+      // Calcular conformidade (percentual)
+      const aConformidade = severityToPercent(a.media_severidade || 0);
+      const bConformidade = severityToPercent(b.media_severidade || 0);
+
+      if (sortBy === 'natureza' || sortBy === 'descricao') {
+        // Ordenar por conformidade
+        const cmp = aConformidade - bConformidade;
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      // Padrão: ordenar por conformidade
+      const cmp = aConformidade - bConformidade;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [severidadeNatureza, sortBy, sortDir]);
+
+  // Dados organizados para categorias e subcategorias com ordenação por conformidade
+  const categoriaHierarchy = useMemo(() => {
+    const categoriasData = severidadeCategorias.length > 0 ? severidadeCategorias : mockSeveridadeCategorias;
+    const categorias = categoriasData.filter(item => item.tipo === 'categoria');
+    const subcategorias = categoriasData.filter(item => item.tipo === 'subcategoria');
+
+    // Ordenar categorias por conformidade
+    const sortedCategorias = [...categorias].sort((a, b) => {
+      const aConformidade = severityToPercent(a.media_severidade || 0);
+      const bConformidade = severityToPercent(b.media_severidade || 0);
+      return sortDir === 'asc' ? aConformidade - bConformidade : bConformidade - aConformidade;
+    });
+
+    return sortedCategorias.map(categoria => ({
+      ...categoria,
+      subcategorias: subcategorias.filter(sub => sub.parentId === categoria.id)
+    }));
+  }, [severidadeCategorias, sortDir]);
+
+  // Função para alternar expansão de categoria
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
   
   // Estados para funcionalidade de quebra (Power BI style)
   const [selectedBreakAttribute, setSelectedBreakAttribute] = useState<string>('departamento');
@@ -528,12 +728,6 @@ const PortfolioAcoes: React.FC = () => {
     return '#6b7280';
   };
 
-  // Converte severidade (1..25) para percentual (0..100)
-  const severityToPercent = (severidade: number): number => {
-    const clamped = Math.max(1, Math.min(25, severidade));
-    return ((clamped - 1) / 24) * 100;
-  };
-
   // Função para expandir/colapsar nós da árvore hierárquica
   const toggleHierarchyNode = (nodeId: string, nodes: HierarchyNode[]): HierarchyNode[] => {
     return nodes.map(node => {
@@ -566,44 +760,80 @@ const PortfolioAcoes: React.FC = () => {
   }, []);
 
   // Componente para renderizar nó da árvore hierárquica
-  const HierarchyNodeItem: React.FC<{ node: HierarchyNode; level: number }> = ({ node, level }) => (
-    <div className={`${level > 1 ? 'ml-6' : ''}`}>
-      <div
-        className={`flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer border-l-2 ${
-          level === 1 ? 'border-blue-300 bg-blue-25' : level === 2 ? 'border-green-300 bg-green-25' : 'border-gray-300'
-        }`}
-        onClick={() => handleHierarchyToggle(node.id)}
-      >
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center">
-            {node.children.length > 0 ? (
-              node.expandido ? (
-                <ChevronDown className="w-4 h-4 text-gray-600" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-gray-600" />
-              )
-            ) : (
-              <div className="w-4 h-4" />
-            )}
+  const HierarchyNodeItem: React.FC<{ node: HierarchyNode; level: number }> = ({ node, level }) => {
+    // Calcular conformidade baseada na severidade (25 = 100%, 1 = 0%)
+    const conformidadePercent = Math.max(0, Math.min(100, ((25 - node.severidade) / 24) * 100));
+    
+    // Determinar cor baseada na severidade (similar ao gráfico)
+    const getConformidadeColor = (severidade: number) => {
+      if (severidade >= 20) return '#dc2626'; // Vermelho (crítico)
+      if (severidade >= 15) return '#ea580c'; // Laranja (alto)
+      if (severidade >= 10) return '#d97706'; // Amarelo (médio)
+      return '#16a34a'; // Verde (baixo)
+    };
+
+    const barColor = getConformidadeColor(node.severidade);
+
+    return (
+      <div className={`${level > 1 ? 'ml-6' : ''}`}>
+        <div
+          className={`flex flex-col p-3 hover:bg-gray-50 cursor-pointer border-l-2 ${
+            level === 1 ? 'border-blue-300 bg-blue-25' : level === 2 ? 'border-green-300 bg-green-25' : 'border-gray-300'
+          }`}
+          onClick={() => handleHierarchyToggle(node.id)}
+        >
+          {/* Linha principal com informações */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center">
+                {node.children.length > 0 ? (
+                  node.expandido ? (
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                  )
+                ) : (
+                  <div className="w-4 h-4" />
+                )}
+              </div>
+              <span className={`font-medium ${level === 1 ? 'text-lg text-blue-800' : level === 2 ? 'text-base text-green-700' : 'text-sm text-gray-700'}`}>
+                {node.nome}
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className={`px-2 py-1 text-xs font-semibold rounded border ${getSeveridadeColor(node.severidade)}`}>
+                Severidade: {node.severidade.toFixed(1)}
+              </span>
+              <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                {node.totalAcoes} ações
+              </span>
+            </div>
           </div>
-          <span className={`font-medium ${level === 1 ? 'text-lg text-blue-800' : level === 2 ? 'text-base text-green-700' : 'text-sm text-gray-700'}`}>
-            {node.nome}
-          </span>
+          
+          {/* Barra de conformidade horizontal */}
+          <div className="mt-2 w-full">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <span>Conformidade</span>
+              <span>{conformidadePercent.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300 ease-in-out"
+                style={{
+                  width: `${conformidadePercent}%`,
+                  backgroundColor: barColor
+                }}
+                title={`Conformidade: ${conformidadePercent.toFixed(1)}% (Severidade: ${node.severidade.toFixed(1)})`}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <span className={`px-2 py-1 text-xs font-semibold rounded border ${getSeveridadeColor(node.severidade)}`}>
-            Severidade: {node.severidade.toFixed(1)}
-          </span>
-          <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-            {node.totalAcoes} ações
-          </span>
-        </div>
+        {node.expandido && node.children.map(child => (
+          <HierarchyNodeItem key={child.id} node={child} level={level + 1} />
+        ))}
       </div>
-      {node.expandido && node.children.map(child => (
-        <HierarchyNodeItem key={child.id} node={child} level={level + 1} />
-      ))}
-    </div>
-  );
+    );
+  };
 
   return (
     <Layout>
@@ -682,20 +912,20 @@ const PortfolioAcoes: React.FC = () => {
             <CardTitle>Severidade por Ação</CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingSeveridade ? (
+            {loadingSeveridadeAcao ? (
               <div className="h-80 flex items-center justify-center">
                 <p className="text-gray-500">Carregando dados...</p>
               </div>
-            ) : errorSeveridade ? (
+            ) : errorSeveridadeAcao ? (
               <div className="h-80 flex items-center justify-center">
-                <p className="text-red-500">Erro ao carregar dados: {errorSeveridade}</p>
+                <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeAcao}</p>
               </div>
             ) : severidadeAcoes.length === 0 ? (
               <div className="h-80 flex items-center justify-center">
                 <p className="text-gray-500">Nenhum dado encontrado</p>
               </div>
             ) : (
-              <div className="h-[250px] w-full overflow-x-auto bg-white rounded-lg border">
+              <div className="h-[250px] w-full overflow-x-auto bg-white rounded-lg border relative">
                 {/*
                   Ajuste de largura: reduzimos a largura mínima por categoria
                   para aproximar as barras. Antes: length * 60. Agora: length * 28.
@@ -731,13 +961,113 @@ const PortfolioAcoes: React.FC = () => {
                         fontSize={10}
                         stroke="#374151"
                       />
-                      <Tooltip 
-                        formatter={(value: number) => [value.toFixed(2), 'Média de Severidade']}
-                        labelFormatter={(label) => `Ação: ${label}`}
-                        contentStyle={{
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px'
+                      <Tooltip
+                        wrapperStyle={{ zIndex: 9999 }}
+                        allowEscapeViewBox={{ x: true, y: true }}
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload || !payload.length) return null;
+
+                          // Find the correct action ID using multiple strategies
+                          const acaoData = severidadeAcoes.find(a => a.sigla_acao === label);
+                          const chartDataItem = chartData.find(item => item.acao === label);
+
+                          // Use the proper action ID from the data, fallback to chart data, then to label
+                          const acaoId = acaoData?.id_acao || chartDataItem?.acao || String(label);
+
+                          // Get detailed risks for this action with fallback to mock data
+                          const riscosDetalhados = getRiscosPorAcao(acaoId);
+                          const severidadeValue = Number(payload[0].value);
+
+                          return (
+                            <div 
+                              className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[300px] max-w-[400px]"
+                              style={{ 
+                                zIndex: 9999,
+                                position: 'fixed',
+                                pointerEvents: 'none'
+                              }}
+                            >
+                              {/* Cabeçalho com informações da ação */}
+                              <div className="border-b border-gray-200 pb-3 mb-3">
+                                <h4 className="font-semibold text-gray-900 text-sm">{String(label)}</h4>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-xs text-gray-600">Média de Severidade:</span>
+                                  <span className="text-sm font-medium text-gray-900">{severidadeValue.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-xs text-gray-600">Conformidade:</span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {severityToPercent(severidadeValue).toFixed(0)}%
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Lista de riscos associados */}
+                              {riscosDetalhados && riscosDetalhados.length > 0 && (
+                                <div>
+                                  <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
+                                    Riscos Associados ({riscosDetalhados.length})
+                                  </h5>
+                                  <div className="max-h-60 overflow-y-auto space-y-2">
+                                    {riscosDetalhados.map((risco, index) => (
+                                      <div
+                                        key={risco.id || index}
+                                        className="bg-gray-50 rounded-lg p-2 border border-gray-100"
+                                      >
+                                        <div className="flex justify-between items-start mb-1">
+                                          <h6 className="text-xs font-medium text-gray-900 flex-1 pr-2">
+                                            {risco.desc_risco}
+                                          </h6>
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-xs font-medium text-gray-700">
+                                              {risco.severidade.toFixed(1)}
+                                            </span>
+                                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                            <span className="text-xs font-medium text-gray-700">
+                                              {severityToPercent(risco.severidade).toFixed(0)}%
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Barra de conformidade */}
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                          <div
+                                            className={`h-1.5 rounded-full ${
+                                              severityToPercent(risco.severidade) >= 80 ? 'bg-green-500' :
+                                              severityToPercent(risco.severidade) >= 60 ? 'bg-yellow-500' :
+                                              severityToPercent(risco.severidade) >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                                            }`}
+                                            style={{ width: `${severityToPercent(risco.severidade)}%` }}
+                                          ></div>
+                                        </div>
+
+                                        {/* Informações adicionais */}
+                                        {(risco.desc_natureza || risco.desc_categoria || risco.desc_subcategoria) && (
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {risco.desc_natureza && (
+                                              <span className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
+                                                {risco.desc_natureza}
+                                              </span>
+                                            )}
+                                            {risco.desc_categoria && (
+                                              <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded">
+                                                {risco.desc_categoria}
+                                              </span>
+                                            )}
+                                            {risco.desc_subcategoria && (
+                                              <span className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
+                                                {risco.desc_subcategoria}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
                         }}
                       />
                       {/*
@@ -833,12 +1163,11 @@ const PortfolioAcoes: React.FC = () => {
 
                         <button
                           onClick={() => setActiveView('natureza')}
-                          disabled
-                          className={`relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 transform ${
+                          className={`relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 transform hover:scale-105 ${
                             activeView === 'natureza'
                               ? 'bg-gradient-to-b from-green-500 to-green-600 text-white shadow-inner-3d-pressed'
                               : 'bg-gradient-to-b from-green-400 to-green-500 text-white shadow-3d-button hover:shadow-3d-button-hover'
-                          } ${activeView !== 'natureza' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          }`}
                         >
                           <span className="relative z-10 flex items-center gap-2">
                             <Briefcase className="w-4 h-4" />
@@ -851,12 +1180,11 @@ const PortfolioAcoes: React.FC = () => {
 
                         <button
                           onClick={() => setActiveView('categoria')}
-                          disabled
-                          className={`relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 transform ${
+                          className={`relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 transform hover:scale-105 ${
                             activeView === 'categoria'
                               ? 'bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-inner-3d-pressed'
                               : 'bg-gradient-to-b from-orange-400 to-orange-500 text-white shadow-3d-button hover:shadow-3d-button-hover'
-                          } ${activeView !== 'categoria' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          }`}
                         >
                           <span className="relative z-10 flex items-center gap-2">
                             <Filter className="w-4 h-4" />
@@ -884,34 +1212,27 @@ const PortfolioAcoes: React.FC = () => {
 
                   <div className="bg-white rounded-lg border">
                     <div className="overflow-x-auto">
-                      {loadingSeveridade ? (
+                    {/* View por Ação */}
+                    {activeView === 'acao' && (
+                      loadingSeveridadeAcao || loadingRiscosDetalhados ? (
                         <div className="p-8 text-center">
                           <p className="text-gray-500">Carregando dados...</p>
                         </div>
-                      ) : errorSeveridade ? (
+                      ) : errorSeveridadeAcao ? (
                         <div className="p-8 text-center">
-                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridade}</p>
+                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeAcao}</p>
                         </div>
                       ) : severidadeAcoes.length === 0 ? (
                         <div className="p-8 text-center">
                           <p className="text-gray-500">Nenhum dado encontrado</p>
                         </div>
                       ) : (
-                        <>
                         <table className="w-full">
                           <colgroup>
                             <col style={{ width: '60%' }} />
                             <col style={{ width: '40%' }} />
                           </colgroup>
                           <thead className="bg-gradient-to-r from-blue-500 to-blue-700 text-white">
-                            <tr className="hidden">
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ação
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Descrição
-                              </th>
-                            </tr>
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" onClick={() => toggleSort('acao')}>
                                 <span className="inline-flex items-center gap-2">
@@ -931,20 +1252,33 @@ const PortfolioAcoes: React.FC = () => {
                             {sortedSeveridadeAcoes.map((item, index) => {
                               const percent = severityToPercent(item.media_severidade);
                               const color = getSeverityHex(item.media_severidade);
+                              console.log(`Debug - Item ${index}:`, {
+                                acao: item.sigla_acao,
+                                severidade: item.media_severidade,
+                                percent,
+                                color
+                              });
                               return (
                                 <tr key={index} className="hover:bg-gray-50 align-top">
                                   <td className="px-6 py-4 text-sm font-medium text-gray-900 w-3/5">
                                     {item.desc_acao || item.sigla_acao}
                                   </td>
                                   <td className="px-6 py-4 text-sm text-gray-900 w-2/5">
-                                    <div className="mb-1 text-xs text-gray-600 flex items-center justify-between">
+                                    <div className="mb-2 text-xs text-gray-600 flex items-center justify-between">
                                       <span>{item.sigla_acao} - Qtd de Riscos {item.qtd_riscos}</span>
                                       <span className="text-gray-700">
                                         Média da Severidade: {item.media_severidade.toFixed(2)} / Conformidade: {severityToPercent(item.media_severidade).toFixed(0)}%
                                       </span>
                                     </div>
-                                    <div className="w-full relative h-3 bg-gray-200 rounded">
-                                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 rounded" style={{ width: `${percent}%`, backgroundColor: color }} />
+                                    <div className="w-full bg-gray-200 rounded-full h-4">
+                                      <div
+                                        className="h-4 rounded-full transition-all duration-300"
+                                        style={{
+                                          width: `${percent}%`,
+                                          backgroundColor: color
+                                        }}
+                                        title={`${item.desc_acao || item.sigla_acao} - Conformidade: ${severityToPercent(item.media_severidade).toFixed(0)}%`}
+                                      />
                                     </div>
                                   </td>
                                 </tr>
@@ -952,40 +1286,203 @@ const PortfolioAcoes: React.FC = () => {
                             })}
                           </tbody>
                         </table>
-                        <table className="w-full hidden">
-                          <thead className="bg-gray-50">
+                      )
+                    )}
+
+                    {/* View por Natureza */}
+                    {activeView === 'natureza' && (
+                      loadingSeveridadeNatureza || loadingRiscosDetalhados ? (
+                        <div className="p-8 text-center">
+                          <p className="text-gray-500">Carregando dados...</p>
+                        </div>
+                      ) : errorSeveridadeNatureza ? (
+                        <div className="p-8 text-center">
+                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeNatureza}</p>
+                        </div>
+                      ) : severidadeNatureza.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <p className="text-gray-500">Nenhum dado encontrado</p>
+                        </div>
+                      ) : (
+                        <table className="w-full">
+                          <colgroup>
+                            <col style={{ width: '60%' }} />
+                            <col style={{ width: '40%' }} />
+                          </colgroup>
+                          <thead className="bg-gradient-to-r from-green-500 to-green-700 text-white">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ação
+                              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" onClick={() => toggleSort('natureza')}>
+                                <span className="inline-flex items-center gap-2">
+                                  <span>Natureza</span>
+                                  <span className="text-white">{sortBy==='natureza' ? (sortDir==='asc' ? '▲' : '▼') : '↕'}</span>
+                                </span>
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Severidade
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Classificação
+                              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" onClick={() => toggleSort('descricao')}>
+                                <span className="inline-flex items-center gap-2">
+                                  <span>Descrição</span>
+                                  <span className="text-white">{sortBy==='descricao' ? (sortDir==='asc' ? '▲' : '▼') : '↕'}</span>
+                                </span>
                               </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {severidadeAcoes.map((item, index) => (
-                              <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {item.sigla_acao}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {item.media_severidade.toFixed(2)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <Badge className={getSeverityClass(item.media_severidade)}>
-                                    {getSeverityLabel(item.media_severidade)}
-                                  </Badge>
-                                </td>
-                              </tr>
-                            ))}
+                            {sortedSeveridadeNatureza.map((item, index) => {
+                              const percent = severityToPercent(item.media_severidade);
+                              const color = getSeverityHex(item.media_severidade);
+                              return (
+                                <tr key={index} className="hover:bg-gray-50 align-top">
+                                  <td className="px-6 py-4 text-sm font-medium text-gray-900 w-3/5">
+                                    {item.desc_natureza}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900 w-2/5">
+                                    <div className="mb-2 text-xs text-gray-600 flex items-center justify-between">
+                                      <span>Qtd de Riscos: {item.qtd_riscos}</span>
+                                      <span className="text-gray-700">
+                                        Média da Severidade: {item.media_severidade.toFixed(2)} / Conformidade: {severityToPercent(item.media_severidade).toFixed(0)}%
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-4">
+                                      <div
+                                        className="h-4 rounded-full transition-all duration-300"
+                                        style={{
+                                          width: `${percent}%`,
+                                          backgroundColor: color
+                                        }}
+                                        title={`${item.desc_natureza} - Conformidade: ${severityToPercent(item.media_severidade).toFixed(0)}%`}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
-                        </>
-                      )}
+                      )
+                    )}
+
+                    {/* View por Categoria e Subcategoria */}
+                    {activeView === 'categoria' && (
+                      loadingSeveridadeCategoria || loadingRiscosDetalhados ? (
+                        <div className="p-8 text-center">
+                          <p className="text-gray-500">Carregando dados...</p>
+                        </div>
+                      ) : errorSeveridadeCategoria ? (
+                        <div className="p-8 text-center">
+                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeCategoria}</p>
+                        </div>
+                      ) : severidadeCategorias.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <p className="text-gray-500">Nenhum dado encontrado</p>
+                        </div>
+                      ) : (
+                        <table className="w-full">
+                          <colgroup>
+                            <col style={{ width: '60%' }} />
+                            <col style={{ width: '40%' }} />
+                          </colgroup>
+                          <thead className="bg-gradient-to-r from-orange-500 to-orange-700 text-white">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" onClick={() => toggleSort('categoria')}>
+                                <span className="inline-flex items-center gap-2">
+                                  <span>Categoria e Subcategoria</span>
+                                  <span className="text-white">{sortBy==='categoria' ? (sortDir==='asc' ? '▲' : '▼') : '↕'}</span>
+                                </span>
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none" onClick={() => toggleSort('descricao')}>
+                                <span className="inline-flex items-center gap-2">
+                                  <span>Descrição</span>
+                                  <span className="text-white">{sortBy==='descricao' ? (sortDir==='asc' ? '▲' : '▼') : '↕'}</span>
+                                </span>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {categoriaHierarchy.map((categoria) => {
+                              const isExpanded = expandedCategories.has(categoria.id);
+                              const categoriaPercent = severityToPercent(categoria.media_severidade);
+                              const categoriaColor = getSeverityHex(categoria.media_severidade);
+
+                              return (
+                                <Fragment key={categoria.id}>
+                                  {/* Categoria (Pai) */}
+                                  <tr className="hover:bg-blue-50 align-top border-l-4 border-blue-400 bg-blue-50/30">
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-900 w-3/5">
+                                      <div className="flex items-center space-x-2">
+                                        {categoria.subcategorias.length > 0 && (
+                                          <span className="text-gray-500 cursor-pointer" onClick={() => toggleCategoryExpansion(categoria.id)}>
+                                            {isExpanded ? (
+                                              <ChevronDown className="w-4 h-4" />
+                                            ) : (
+                                              <ChevronRight className="w-4 h-4" />
+                                            )}
+                                          </span>
+                                        )}
+                                        <span className="font-semibold text-blue-900">{categoria.nome}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-900 w-2/5">
+                                      <div className="mb-2 text-xs text-gray-600 flex items-center justify-between">
+                                        <span>Qtd de Riscos: {categoria.qtd_riscos}</span>
+                                        <span className="text-gray-700">
+                                          Média da Severidade: {categoria.media_severidade.toFixed(2)} / Conformidade: {categoriaPercent.toFixed(0)}%
+                                        </span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-4">
+                                        <div
+                                          className="h-4 rounded-full transition-all duration-300"
+                                          style={{
+                                            width: `${categoriaPercent}%`,
+                                            backgroundColor: categoriaColor
+                                          }}
+                                          title={`${categoria.nome} - Conformidade: ${categoriaPercent.toFixed(0)}%`}
+                                        />
+                                      </div>
+                                    </td>
+                                  </tr>
+
+                                  {/* Subcategoria (Filha) */}
+                                  {isExpanded && categoria.subcategorias.length > 0 && (
+                                    categoria.subcategorias.map((subcategoria) => {
+                                      const subcategoriaPercent = severityToPercent(subcategoria.media_severidade);
+                                      const subcategoriaColor = getSeverityHex(subcategoria.media_severidade);
+
+                                      return (
+                                        <tr key={subcategoria.id} className="hover:bg-green-50 align-top border-l-4 border-green-400 bg-green-50/30">
+                                          <td className="px-6 py-4 text-sm font-medium text-gray-700 w-3/5">
+                                            <div className="flex items-center space-x-4">
+                                              <div className="w-2 h-4 bg-green-500 rounded-sm ml-6"></div>
+                                              <span className="text-green-800">{subcategoria.nome}</span>
+                                            </div>
+                                          </td>
+                                          <td className="px-6 py-4 text-sm text-gray-700 w-2/5">
+                                            <div className="mb-2 text-xs text-gray-600 flex items-center justify-between">
+                                              <span>Qtd de Riscos: {subcategoria.qtd_riscos}</span>
+                                              <span className="text-gray-700">
+                                                Média da Severidade: {subcategoria.media_severidade.toFixed(2)} / Conformidade: {subcategoriaPercent.toFixed(0)}%
+                                              </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-4">
+                                              <div
+                                                className="h-4 rounded-full transition-all duration-300"
+                                                style={{
+                                                  width: `${subcategoriaPercent}%`,
+                                                  backgroundColor: subcategoriaColor
+                                                }}
+                                                title={`${subcategoria.nome} - Conformidade: ${subcategoriaPercent.toFixed(0)}%`}
+                                              />
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })
+                                  )}
+                                </Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )
+                    )}
                     </div>
                   </div>
                 </TabsContent>

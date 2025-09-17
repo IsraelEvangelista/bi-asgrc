@@ -487,21 +487,29 @@ const HierarchicalTreeChart: React.FC<HierarchicalTreeChartProps> = ({
 
       if (treeContainer.current) {
         const containerRect = treeContainer.current.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         const tooltipWidth = Math.min(mergedTooltipConfig.maxWidth, 300);
         const tooltipHeight = 200; // Altura estimada
+        const margin = 20;
         
-        // Ajustar posição para evitar overflow do container
-        if (evt.clientX + tooltipWidth + 20 > containerRect.right) {
-          tooltipX = evt.clientX - tooltipWidth - 20;
+        // Ajustar posição X para evitar overflow da viewport
+        if (evt.clientX + tooltipWidth + margin > viewportWidth) {
+          tooltipX = Math.max(margin, evt.clientX - tooltipWidth - margin);
         } else {
-          tooltipX = evt.clientX + 20;
+          tooltipX = Math.min(viewportWidth - tooltipWidth - margin, evt.clientX + margin);
         }
         
-        if (evt.clientY + tooltipHeight + 20 > containerRect.bottom) {
-          tooltipY = evt.clientY - tooltipHeight - 20;
+        // Ajustar posição Y para evitar overflow da viewport
+        if (evt.clientY + tooltipHeight + margin > viewportHeight) {
+          tooltipY = Math.max(margin, evt.clientY - tooltipHeight - margin);
         } else {
-          tooltipY = evt.clientY + 20;
+          tooltipY = Math.min(viewportHeight - tooltipHeight - margin, evt.clientY + margin);
         }
+        
+        // Garantir que o tooltip não saia da área visível
+        tooltipX = Math.max(margin, Math.min(tooltipX, viewportWidth - tooltipWidth - margin));
+        tooltipY = Math.max(margin, Math.min(tooltipY, viewportHeight - tooltipHeight - margin));
       }
       
       setTreeState(prev => ({
@@ -550,21 +558,29 @@ const HierarchicalTreeChart: React.FC<HierarchicalTreeChartProps> = ({
 
     if (treeContainer.current) {
       const containerRect = treeContainer.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       const tooltipWidth = Math.min(mergedTooltipConfig.maxWidth, 300);
       const tooltipHeight = 200; // Altura estimada
+      const margin = 20;
       
-      // Ajustar posição para evitar overflow do container
-      if (evt.clientX + tooltipWidth + 20 > containerRect.right) {
-        tooltipX = evt.clientX - tooltipWidth - 20;
+      // Ajustar posição X para evitar overflow da viewport
+      if (evt.clientX + tooltipWidth + margin > viewportWidth) {
+        tooltipX = Math.max(margin, evt.clientX - tooltipWidth - margin);
       } else {
-        tooltipX = evt.clientX + 20;
+        tooltipX = Math.min(viewportWidth - tooltipWidth - margin, evt.clientX + margin);
       }
       
-      if (evt.clientY + tooltipHeight + 20 > containerRect.bottom) {
-        tooltipY = evt.clientY - tooltipHeight - 20;
+      // Ajustar posição Y para evitar overflow da viewport
+      if (evt.clientY + tooltipHeight + margin > viewportHeight) {
+        tooltipY = Math.max(margin, evt.clientY - tooltipHeight - margin);
       } else {
-        tooltipY = evt.clientY + 20;
+        tooltipY = Math.min(viewportHeight - tooltipHeight - margin, evt.clientY + margin);
       }
+      
+      // Garantir que o tooltip não saia da área visível
+      tooltipX = Math.max(margin, Math.min(tooltipX, viewportWidth - tooltipWidth - margin));
+      tooltipY = Math.max(margin, Math.min(tooltipY, viewportHeight - tooltipHeight - margin));
     }
 
     setTreeState(prev => ({
