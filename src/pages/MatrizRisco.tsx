@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Activity, ChevronUp, ChevronDown, Loader2, TrendingUp, TrendingDown, BarChart3, PieChart as PieChartIcon, Filter, X } from 'lucide-react';
+import { AlertTriangle, Activity, ChevronUp, ChevronDown, Loader2, TrendingUp, TrendingDown, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList } from 'recharts';
 import Layout from '../components/Layout';
 import { useMatrizRiscos } from '../hooks/useMatrizRiscos';
 import { useRiscosPorNatureza } from '../hooks/useRiscosPorNatureza';
 import { useFilter } from '../contexts/FilterContext';
 import { supabase } from '../lib/supabase';
-import MatrizRiscoFilterModal from '../components/MatrizRiscoFilterModal';
+import MatrizRiscoFilterSection from '../components/MatrizRiscoFilterSection';
 
 interface RiscoData {
   id: string;
@@ -71,15 +71,11 @@ const MatrizRisco = () => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'severidade', direction: 'desc' });
   const [activeTab, setActiveTab] = useState<TabType>('severidade');
   const [areasGerencias, setAreasGerencias] = useState<AreaGerencia[]>([]);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
-  // Função para limpar todos os filtros
-  const limparFiltros = () => {
-    setFiltroSeveridade(null);
-    setFiltroQuadrante(null);
-    setFiltroNatureza(null);
-    setSegmentoSelecionado(null);
-    setSecaoBarraSelecionada(null);
+  // Função para alternar expansão dos filtros
+  const toggleFilterExpansion = () => {
+    setIsFilterExpanded(!isFilterExpanded);
   };
 
   // Buscar áreas/gerências
@@ -505,35 +501,11 @@ const MatrizRisco = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Matriz de Risco</h1>
-            <p className="text-gray-600">Análise e visualização dos riscos organizacionais</p>
-          </div>
-          
-          {/* Botões de Filtro */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm"
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-            </button>
-            
-            {/* Botão Limpar - só aparece quando há filtros ativos */}
-            {(filtroSeveridade || filtroQuadrante || filtroNatureza) && (
-              <button
-                onClick={limparFiltros}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-sm text-sm"
-              >
-                <X className="h-4 w-4" />
-                Limpar
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Header com Filtros Expansíveis */}
+        <MatrizRiscoFilterSection 
+          isExpanded={isFilterExpanded}
+          onToggle={toggleFilterExpansion}
+        />
 
         {/* Grid Principal - 4 colunas e 3 linhas */}
         <div className="grid gap-6 mb-8" style={{gridTemplateColumns: '0.8fr 0.8fr 1fr 1.4fr'}}>
@@ -549,9 +521,9 @@ const MatrizRisco = () => {
                       <p className="text-2xl font-bold">...</p>
                     </div>
                   ) : error ? (
-                    <p className="text-2xl font-bold text-red-200">Erro</p>
+                    <p className="text-2xl font-bold text-red-200">-</p>
                   ) : (
-                    <p className="text-4xl font-bold">{riscosFiltrados.length}</p>
+                    <p className="text-4xl font-bold">{riscosFiltrados.length > 0 ? riscosFiltrados.length : '-'}</p>
                   )}
                 </div>
                 <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -573,14 +545,14 @@ const MatrizRisco = () => {
                       <p className="text-2xl font-bold">...</p>
                     </div>
                   ) : error ? (
-                    <p className="text-2xl font-bold text-red-200">Erro</p>
+                    <p className="text-2xl font-bold text-red-200">-</p>
                   ) : (
                     <p className="text-3xl font-bold">
                       {riscosFiltrados.length > 0 
                         ? (riscosFiltrados.reduce((acc, risco) => acc + (risco.severidade || 0), 0) / riscosFiltrados.length).toFixed(2)
-                        : '0.00'
+                        : '-'
                       }
-                      <span className="text-xl font-normal"> / 25</span>
+                      {riscosFiltrados.length > 0 && <span className="text-xl font-normal"> / 25</span>}
                     </p>
                   )}
                 </div>
@@ -1187,12 +1159,6 @@ const MatrizRisco = () => {
           </div>
         </div>
       </div>
-      
-      {/* Modal de Filtros */}
-      <MatrizRiscoFilterModal 
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-      />
     </Layout>
   );
 };

@@ -19,6 +19,8 @@ interface RiscoRelacionado {
   severidade: number;
   probabilidade: number;
   impacto: number;
+  eventos_riscos?: string;
+  responsavel_risco?: string;
 }
 
 const calcularClassificacaoSeveridade = (severidade: number): string => {
@@ -37,10 +39,23 @@ const calcularSeveridadePorValor = (severidade: number): string => {
 };
 
 // Função para aplicar filtros nos riscos
-const aplicarFiltros = (riscos: RiscoRelacionado[], filtroSeveridade: string | null, filtroQuadrante: { impacto: number; probabilidade: number } | null, filtroNatureza: string | null): RiscoRelacionado[] => {
+const aplicarFiltros = (
+  riscos: RiscoRelacionado[], 
+  filtroSeveridade: string | null, 
+  filtroQuadrante: { impacto: number; probabilidade: number } | null, 
+  filtroNatureza: string | null,
+  filtroEventoRisco: string | null,
+  filtroResponsavelRisco: string | null
+): RiscoRelacionado[] => {
   console.log('🔍 APLICANDO FILTROS:');
   console.log('📊 Total de riscos antes dos filtros:', riscos.length);
-  console.log('🎯 Filtros recebidos:', { filtroSeveridade, filtroQuadrante, filtroNatureza });
+  console.log('🎯 Filtros recebidos:', { 
+    filtroSeveridade, 
+    filtroQuadrante, 
+    filtroNatureza, 
+    filtroEventoRisco, 
+    filtroResponsavelRisco 
+  });
   
   let filtered = riscos;
   
@@ -50,9 +65,6 @@ const aplicarFiltros = (riscos: RiscoRelacionado[], filtroSeveridade: string | n
     filtered = filtered.filter(risco => {
       const severidadeCalculada = calcularSeveridadePorValor(risco.severidade);
       const match = severidadeCalculada === filtroSeveridade;
-      if (match) {
-        console.log('✅ Risco passou no filtro de severidade:', { id_risco: risco.id_risco, severidadeCalculada, filtroSeveridade });
-      }
       return match;
     });
     console.log(`🔍 Filtro Severidade: ${antesCount} → ${filtered.length} riscos`);
@@ -71,25 +83,34 @@ const aplicarFiltros = (riscos: RiscoRelacionado[], filtroSeveridade: string | n
   // Filtro por natureza
   if (filtroNatureza) {
     const antesCount = filtered.length;
-    console.log('🔍 APLICANDO FILTRO DE NATUREZA:', { filtroNatureza, tipo: typeof filtroNatureza });
-    
-    // CORREÇÃO CRÍTICA: Os IDs são UUID (string), não números
-    // Não converter para número, usar diretamente como string
     filtered = filtered.filter(risco => {
       const match = risco.id_natureza.toString() === filtroNatureza;
-      console.log('🔍 Comparando natureza:', { 
-        risco_id_natureza: risco.id_natureza, 
-        filtroNatureza, 
-        match,
-        risco_desc: risco.desc_natureza 
-      });
       return match;
     });
     console.log(`🔍 Filtro Natureza (ID ${filtroNatureza}): ${antesCount} → ${filtered.length} riscos`);
   }
   
+  // Filtro por evento de risco
+  if (filtroEventoRisco) {
+    const antesCount = filtered.length;
+    filtered = filtered.filter(risco => {
+      const match = risco.eventos_riscos === filtroEventoRisco;
+      return match;
+    });
+    console.log(`🔍 Filtro Evento de Risco: ${antesCount} → ${filtered.length} riscos`);
+  }
+  
+  // Filtro por responsável pelo risco
+  if (filtroResponsavelRisco) {
+    const antesCount = filtered.length;
+    filtered = filtered.filter(risco => {
+      const match = risco.responsavel_risco === filtroResponsavelRisco;
+      return match;
+    });
+    console.log(`🔍 Filtro Responsável pelo Risco: ${antesCount} → ${filtered.length} riscos`);
+  }
+  
   console.log('🎯 RESULTADO FINAL DOS FILTROS:', filtered.length, 'riscos');
-  console.log('📋 Riscos filtrados:', filtered.map(r => ({ id_risco: r.id_risco, natureza: r.desc_natureza, severidade: calcularSeveridadePorValor(r.severidade) })));
   
   return filtered;
 };
@@ -98,7 +119,13 @@ export const useRiscosPorNatureza = () => {
   const [riscosPorNatureza, setRiscosPorNatureza] = useState<RiscoPorNatureza[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { filtroSeveridade, filtroQuadrante, filtroNatureza } = useFilter();
+  const { 
+    filtroSeveridade, 
+    filtroQuadrante, 
+    filtroNatureza, 
+    filtroEventoRisco, 
+    filtroResponsavelRisco 
+  } = useFilter();
 
   useEffect(() => {
     const fetchRiscosPorNatureza = async () => {
@@ -120,7 +147,9 @@ export const useRiscosPorNatureza = () => {
             006_matriz_riscos!inner(
               severidade,
               probabilidade,
-              impacto
+              impacto,
+              eventos_riscos,
+              responsavel_risco
             )
           `);
 
@@ -156,7 +185,9 @@ export const useRiscosPorNatureza = () => {
               desc_natureza: item['010_natureza']?.desc_natureza || 'Natureza não identificada',
               severidade: item['006_matriz_riscos']?.severidade || 0,
               probabilidade: item['006_matriz_riscos']?.probabilidade || 0,
-              impacto: item['006_matriz_riscos']?.impacto || 0
+              impacto: item['006_matriz_riscos']?.impacto || 0,
+              eventos_riscos: item['006_matriz_riscos']?.eventos_riscos || null,
+              responsavel_risco: item['006_matriz_riscos']?.responsavel_risco || null
             };
             console.log('✅ Risco processado:', riscoProcessado);
             riscosProcessados.push(riscoProcessado);
@@ -200,12 +231,25 @@ export const useRiscosPorNatureza = () => {
         });
 
         // 2. Se há filtros ativos, criar nova estrutura apenas com dados filtrados
-        if (filtroSeveridade || filtroQuadrante || filtroNatureza) {
+        if (filtroSeveridade || filtroQuadrante || filtroNatureza || filtroEventoRisco || filtroResponsavelRisco) {
           console.log('🔍 Aplicando filtros e recalculando contagens...');
-          console.log('🎯 Filtros aplicados:', { filtroSeveridade, filtroQuadrante, filtroNatureza });
+          console.log('🎯 Filtros aplicados:', { 
+            filtroSeveridade, 
+            filtroQuadrante, 
+            filtroNatureza, 
+            filtroEventoRisco, 
+            filtroResponsavelRisco 
+          });
           
           // Aplicar filtros nos dados originais
-          const riscosFiltrados = aplicarFiltros(riscosProcessados, filtroSeveridade, filtroQuadrante, filtroNatureza);
+          const riscosFiltrados = aplicarFiltros(
+            riscosProcessados, 
+            filtroSeveridade, 
+            filtroQuadrante, 
+            filtroNatureza, 
+            filtroEventoRisco, 
+            filtroResponsavelRisco
+          );
           console.log('🔍 Riscos após aplicação de filtros:', riscosFiltrados.length);
           
           // CORREÇÃO: Criar nova estrutura apenas com dados filtrados, mas manter todas as naturezas
@@ -268,7 +312,7 @@ export const useRiscosPorNatureza = () => {
     };
 
     fetchRiscosPorNatureza();
-  }, [filtroSeveridade, filtroQuadrante, filtroNatureza]);
+  }, [filtroSeveridade, filtroQuadrante, filtroNatureza, filtroEventoRisco, filtroResponsavelRisco]);
 
   return {
     riscosPorNatureza,

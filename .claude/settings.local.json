@@ -71,7 +71,13 @@
       "Bash(tasklist:*)",
       "mcp__playwright__browser_fill_form",
       "mcp__playwright__browser_console_messages",
-      "mcp__playwright__browser_press_key"
+      "mcp__playwright__browser_press_key",
+      "mcp__archon__health_check",
+      "mcp__archon__find_projects",
+      "mcp__archon__find_tasks",
+      "mcp__archon__manage_task",
+      "mcp__archon__rag_search_knowledge_base",
+      "mcp__byterover-mcp__byterover-store-knowledge"
     ],
     "deny": [],
     "ask": []

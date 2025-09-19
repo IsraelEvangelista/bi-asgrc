@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
-import { ChevronDown, ChevronRight, TrendingUp, AlertTriangle, Target, Briefcase, Filter, RotateCcw, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, TrendingUp, AlertTriangle, Target, Search, Briefcase, Filter, RotateCcw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -13,9 +13,13 @@ import { useSeveridadePorAcao } from '../hooks/useSeveridadePorAcao';
 import { useSeveridadePorNatureza } from '../hooks/useSeveridadePorNatureza';
 import { useSeveridadePorCategoria } from '../hooks/useSeveridadePorCategoria';
 import { useRiscosDetalhados } from '../hooks/useRiscosDetalhados';
+import { usePortfolioAcoesData } from '../hooks/usePortfolioAcoesData';
 import RiscosTooltip from '../components/RiscosTooltip';
 import TableRiscosTooltip from '../components/TableRiscosTooltip';
 import DynamicTooltip from '../components/DynamicTooltip';
+import CustomTooltip from '../components/CustomTooltip';
+import PortfolioAcoesFilterSection from '../components/PortfolioAcoesFilterSection';
+import { PortfolioAcoesFilterProvider } from '../contexts/PortfolioAcoesFilterContext';
 import Layout from '../components/Layout';
 import HierarchicalTreeChart from '../components/HierarchicalTreeChart';
 import { 
@@ -123,26 +127,38 @@ const mockData = {
 };
 
 
-const PortfolioAcoes: React.FC = () => {
+// Componente interno que usa os hooks dentro do Provider - Memoizado para evitar re-renders
+const PortfolioAcoesContent: React.FC = React.memo(() => {
   // Hooks para dados reais
   const { totalAcoes, loading: loadingAcoes, error: errorAcoes } = useAcoesStats();
   const { totalRiscos, mediaSeveridade, loading: loadingRiscos, error: errorRiscos } = useRiscosStats();
-  const { severidadeAcoes, loading: loadingSeveridadeAcao, error: errorSeveridadeAcao } = useSeveridadePorAcao();
-  const { severidadeNatureza, loading: loadingSeveridadeNatureza, error: errorSeveridadeNatureza } = useSeveridadePorNatureza();
-  const { severidadeCategorias, loading: loadingSeveridadeCategoria, error: errorSeveridadeCategoria } = useSeveridadePorCategoria();
+  
+  // Hook principal com filtros aplicados
+  const {
+    severidadeAcoes: severidadeAcoesFiltradas,
+    severidadeNatureza: severidadeNaturezaFiltrada,
+    severidadeCategorias: severidadeCategoriasFiltradas,
+    loading: loadingPortfolioData,
+    error: errorPortfolioData
+  } = usePortfolioAcoesData();
+  
+  // Manter hooks antigos como fallback
+  const { severidadeAcoes: severidadeAcoesOriginal, loading: loadingSeveridadeAcao, error: errorSeveridadeAcao } = useSeveridadePorAcao();
+  const { severidadeNatureza: severidadeNaturezaOriginal, loading: loadingSeveridadeNatureza, error: errorSeveridadeNatureza } = useSeveridadePorNatureza();
+  const { severidadeCategorias: severidadeCategoriasOriginal, loading: loadingSeveridadeCategoria, error: errorSeveridadeCategoria } = useSeveridadePorCategoria();
   const { riscosPorAcao, loading: loadingRiscosDetalhados } = useRiscosDetalhados();
-
-  // Dados mock para teste enquanto os dados reais não estão disponíveis
-  const mockSeveridadeNatureza = [
-    { id_natureza: '1', desc_natureza: 'Operacional', media_severidade: 15.5, qtd_riscos: 8 },
-    { id_natureza: '2', desc_natureza: 'Financeiro', media_severidade: 8.2, qtd_riscos: 5 },
-    { id_natureza: '3', desc_natureza: 'Estratégico', media_severidade: 12.8, qtd_riscos: 3 }
-  ];
-
+  
+  // Dados mock para fallback
   const mockSeveridadeAcoes = [
     { id_acao: '1', sigla_acao: 'A001', desc_acao: 'Ação 1', media_severidade: 18.3, qtd_riscos: 6 },
     { id_acao: '2', sigla_acao: 'A002', desc_acao: 'Ação 2', media_severidade: 7.5, qtd_riscos: 4 },
     { id_acao: '3', sigla_acao: 'A003', desc_acao: 'Ação 3', media_severidade: 14.2, qtd_riscos: 8 }
+  ];
+
+  const mockSeveridadeNatureza = [
+    { id_natureza: '1', desc_natureza: 'Operacional', media_severidade: 15.5, qtd_riscos: 8 },
+    { id_natureza: '2', desc_natureza: 'Financeiro', media_severidade: 8.2, qtd_riscos: 5 },
+    { id_natureza: '3', desc_natureza: 'Estratégico', media_severidade: 12.8, qtd_riscos: 3 }
   ];
 
   const mockSeveridadeCategorias = [
@@ -150,6 +166,27 @@ const PortfolioAcoes: React.FC = () => {
     { id: 'cat-2', nome: 'Pessoas', tipo: 'categoria' as const, media_severidade: 9.4, qtd_riscos: 7, id_categoria: '2' },
     { id: 'sub-1', nome: 'Contratação', tipo: 'subcategoria' as const, media_severidade: 11.2, qtd_riscos: 4, id_subcategoria: '1', parentId: 'cat-2' }
   ];
+  
+  // Usar dados filtrados do usePortfolioAcoesData como prioridade (contém todos os filtros aplicados)
+  const severidadeAcoes = severidadeAcoesFiltradas.length > 0 
+    ? severidadeAcoesFiltradas 
+    : severidadeAcoesOriginal.length > 0 
+      ? severidadeAcoesOriginal 
+      : mockSeveridadeAcoes;
+  
+  // Para natureza e categorias, priorizar dados filtrados que agora são processados corretamente
+  const severidadeNatureza = severidadeNaturezaFiltrada.length > 0 
+    ? severidadeNaturezaFiltrada 
+    : severidadeNaturezaOriginal.length > 0 
+      ? severidadeNaturezaOriginal 
+      : mockSeveridadeNatureza;
+  
+  const severidadeCategorias = severidadeCategoriasFiltradas.length > 0 
+    ? severidadeCategoriasFiltradas 
+    : severidadeCategoriasOriginal.length > 0 
+      ? severidadeCategoriasOriginal 
+      : mockSeveridadeCategorias;
+  
 
   // Dados mock para riscos detalhados
   const mockRiscosPorAcao: { [key: string]: import('../hooks/useRiscosDetalhados').RiscoDetalhado[] } = {
@@ -178,7 +215,7 @@ const PortfolioAcoes: React.FC = () => {
   // Estado para controle de expansão de categorias
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
   const toggleSort = (column: 'acao' | 'descricao' | 'natureza' | 'categoria') => {
     setSortBy(prev => {
@@ -191,35 +228,90 @@ const PortfolioAcoes: React.FC = () => {
     });
   };
 
-  // Dados transformados para o gráfico de barras (Severidade por Ação)
-  const chartData = useMemo(() => (
-    (severidadeAcoes || []).map(item => ({
-      acao: item.sigla_acao,
-      severidade: item.media_severidade
-    }))
-  ), [severidadeAcoes]);
+  // Dados transformados para o gráfico de barras (Severidade por Ação) - Memoizado para estabilidade
+  const chartData = useMemo(() => {
+    if (!severidadeAcoes || severidadeAcoes.length === 0) {
+      return [];
+    }
+    
+    const validChartData = severidadeAcoes
+      .filter(item => 
+        item && 
+        item.sigla_acao && 
+        typeof item.media_severidade === 'number' && 
+        !isNaN(item.media_severidade) &&
+        isFinite(item.media_severidade)
+      )
+      .map(item => ({
+        acao: item.sigla_acao,
+        severidade: Number(item.media_severidade.toFixed(2)) // Fixar precisão para evitar flutuações
+      }));
+    
+    return validChartData;
+  }, [severidadeAcoes]);
 
-  // Linhas de referência por classificação (partindo da barra mais alta para a direita)
+  // Largura interna estável do gráfico (evita re-layout em loop com ResponsiveContainer)
+  const chartInnerWidth = useMemo(() => Math.max(1200, chartData.length * 24), [chartData.length]);
+  const chartInnerHeight = 250;
+
+  // Linhas de referência - Memoizadas e estáveis
   const severityLines = useMemo(() => {
-    if (!severidadeAcoes || severidadeAcoes.length === 0) return [] as Array<never>;
-    const lastLabel = severidadeAcoes[severidadeAcoes.length - 1].sigla_acao;
+    if (!severidadeAcoes || severidadeAcoes.length === 0) {
+      return [];
+    }
+    
+    const validData = severidadeAcoes.filter(item => 
+      item && 
+      item.sigla_acao && 
+      typeof item.media_severidade === 'number' && 
+      !isNaN(item.media_severidade) &&
+      isFinite(item.media_severidade)
+    );
+    
+    if (validData.length === 0) {
+      return [];
+    }
+    
+    const lastLabel = validData[validData.length - 1]?.sigla_acao;
+    if (!lastLabel) {
+      return [];
+    }
+    
     const bands = [
       { name: 'Muito Alto', color: '#dc2626', min: 20, max: 25 },
       { name: 'Alto',        color: '#ea580c', min: 10, max: 19 },
       { name: 'Moderado',    color: '#ca8a04', min:  5, max:  9 },
       { name: 'Baixo',       color: '#16a34a', min:  1, max:  4 },
     ];
-    return bands.map(b => {
-      let max = -Infinity; let start: string | null = null;
-      for (const it of severidadeAcoes) {
-        const v = it.media_severidade;
-        if (v >= b.min && v <= b.max) {
-          if (v > max) { max = v; start = it.sigla_acao; }
+    
+    const lines = bands
+      .map(b => {
+        let max = -Infinity;
+        let start: string | null = null;
+        
+        for (const it of validData) {
+          const v = it.media_severidade;
+          if (v >= b.min && v <= b.max && v > max) {
+            max = v;
+            start = it.sigla_acao;
+          }
         }
-      }
-      if (start == null) return null;
-      return { label: b.name, color: b.color, value: max, start, end: lastLabel };
-    }).filter(Boolean) as { label: string; color: string; value: number; start: string; end: string; }[];
+        
+        if (start == null || !isFinite(max) || max === -Infinity) {
+          return null;
+        }
+        
+        return { 
+          label: b.name, 
+          color: b.color, 
+          value: Number(max.toFixed(2)), // Fixar precisão
+          start, 
+          end: lastLabel 
+        };
+      })
+      .filter(Boolean) as { label: string; color: string; value: number; start: string; end: string; }[];
+    
+    return lines;
   }, [severidadeAcoes]);
 
   // Função para ordenação alfanumérica inteligente (A1, A2, A3... ao invés de A1, A10, A11...)
@@ -249,11 +341,6 @@ const PortfolioAcoes: React.FC = () => {
   // Dados ordenados para a tabela (Ação/Descrição)
   const sortedSeveridadeAcoes = useMemo(() => {
     const arr = severidadeAcoes.length > 0 ? [...severidadeAcoes] : [...mockSeveridadeAcoes];
-    console.log('Debug - Dados sendo usados:', {
-      severidadeAcoesLength: severidadeAcoes.length,
-      usingMockData: severidadeAcoes.length === 0,
-      data: arr
-    });
     if (!sortBy) return arr;
     return arr.sort((a, b) => {
       if (sortBy === 'acao') {
@@ -557,6 +644,11 @@ const PortfolioAcoes: React.FC = () => {
     return createTreeFromPortfolioData(transformedData, "Portfólio de Ações - Quebra por " + selectedBreakAttribute);
   }, [hierarquiaData, breakHierarchyData, activeTab, selectedBreakAttribute]);
   
+  // Função para alternar expansão dos filtros
+  const toggleFilterExpansion = () => {
+    setIsFilterExpanded(!isFilterExpanded);
+  };
+  
   // Árvore com estado de expansão aplicado
   const treeWithExpansionState = useMemo(() => {
     return updateNodeExpansionState(portfolioTree, expandedNodeIds);
@@ -696,6 +788,8 @@ const PortfolioAcoes: React.FC = () => {
 
   // Métricas calculadas baseadas na seleção
   const selectedMetrics = calculateSelectedMetrics();
+
+  // A lógica de filtragem é gerenciada pelo PortfolioAcoesFilterContext
 
   // Função para calcular classificação de severidade
   const getSeverityLabel = (severidade: number): string => {
@@ -839,22 +933,11 @@ const PortfolioAcoes: React.FC = () => {
   return (
     <Layout>
       <div className="w-full space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <Briefcase className="h-6 w-6 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Portfólio de Ações</h1>
-            </div>
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm"
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-            </button>
-          </div>
-        </div>
+      {/* Filtros do Portfólio de Ações */}
+      <PortfolioAcoesFilterSection 
+        isExpanded={isFilterExpanded} 
+        onToggle={toggleFilterExpansion}
+      />
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -908,38 +991,49 @@ const PortfolioAcoes: React.FC = () => {
         </div>
 
         {/* Linha 2: Gráfico de Barras Verticais - Diagrama de Severidade */}
-        <Card className="mb-8">
+        <Card className="mb-8" style={{ position: 'relative', overflow: 'visible' }}>
           <CardHeader>
             <CardTitle>Severidade por Ação</CardTitle>
           </CardHeader>
-          <CardContent>
-            {loadingSeveridadeAcao ? (
+          <CardContent style={{ position: 'relative', overflow: 'visible' }}>
+            {(loadingSeveridadeAcao || loadingPortfolioData) ? (
               <div className="h-80 flex items-center justify-center">
                 <p className="text-gray-500">Carregando dados...</p>
               </div>
-            ) : errorSeveridadeAcao ? (
+            ) : (errorSeveridadeAcao || errorPortfolioData) ? (
               <div className="h-80 flex items-center justify-center">
-                <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeAcao}</p>
+                <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeAcao || errorPortfolioData}</p>
               </div>
             ) : severidadeAcoes.length === 0 ? (
               <div className="h-80 flex items-center justify-center">
                 <p className="text-gray-500">Nenhum dado encontrado</p>
               </div>
             ) : (
-              <div className="h-[250px] w-full overflow-x-auto bg-white rounded-lg border relative">
+              <div 
+                className="h-[250px] w-full bg-white rounded-lg border" 
+                style={{ 
+                  position: 'relative', 
+                  overflowX: 'auto',
+                  overflowY: 'visible'
+                }}
+              >
                 {/*
                   Ajuste de largura: reduzimos a largura mínima por categoria
                   para aproximar as barras. Antes: length * 60. Agora: length * 28.
                   Mantemos 1200px como mínimo para casos com poucas barras.
                 */}
-                <div style={{ minWidth: Math.max(1200, severidadeAcoes.length * 24), height: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={chartData}
-                      margin={{ top: 15, right: 30, left: 20, bottom: -20 }}
-                      /* Gap entre categorias praticamente zero para aproximar as barras */
-                      barCategoryGap="0%"
-                    >
+                <div style={{ 
+                  width: chartInnerWidth, 
+                  height: '100%',
+                  position: 'relative'
+                }}>
+                  <BarChart 
+                    width={chartInnerWidth}
+                    height={chartInnerHeight}
+                    data={chartData}
+                    margin={{ top: 15, right: 30, left: 20, bottom: -20 }}
+                    barCategoryGap="0%"
+                  >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
                       <XAxis 
                         dataKey="acao" 
@@ -951,6 +1045,9 @@ const PortfolioAcoes: React.FC = () => {
                         stroke="#374151"
                         axisLine={false}
                         tickLine={false}
+                        // Propriedades para estabilizar
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(value) => String(value)}
                       />
                       <YAxis 
                         label={{ 
@@ -961,10 +1058,14 @@ const PortfolioAcoes: React.FC = () => {
                         }}
                         fontSize={10}
                         stroke="#374151"
+                        // Propriedades para estabilizar
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(value) => Number(value).toFixed(1)}
+                        allowDecimals={false}
+                        domain={[0, 26]}
                       />
                       <Tooltip
-                        wrapperStyle={{ zIndex: 9999 }}
-                        allowEscapeViewBox={{ x: true, y: true }}
+                        cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
                         content={({ active, payload, label, coordinate }) => {
                           if (!active || !payload || !payload.length) return null;
 
@@ -980,95 +1081,98 @@ const PortfolioAcoes: React.FC = () => {
                           const severidadeValue = Number(payload[0].value);
 
                           return (
-                            <DynamicTooltip 
+                            <CustomTooltip 
                               active={active} 
                               payload={payload} 
                               label={label}
                               coordinate={coordinate}
-                              offset={{ x: 1, y: 1 }}
                             >
-                              <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[300px] max-w-[500px]">
-                                {/* Cabeçalho com informações da ação */}
-                                <div className="border-b border-gray-200 pb-3 mb-3">
-                                  <h4 className="font-semibold text-gray-900 text-sm">{String(label)}</h4>
-                                  <div className="flex justify-between items-center mt-1">
-                                    <span className="text-xs text-gray-600">Média de Severidade:</span>
-                                    <span className="text-sm font-medium text-gray-900">{severidadeValue.toFixed(2)}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center mt-1">
-                                    <span className="text-xs text-gray-600">Conformidade:</span>
-                                    <span className="text-sm font-medium text-gray-900">
-                                      {severityToPercent(severidadeValue).toFixed(0)}%
-                                    </span>
+                              <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[300px] max-w-[500px] pointer-events-none">
+                              {/* Cabeçalho com informações da ação */}
+                              <div className="border-b border-gray-200 pb-3 mb-3">
+                                <h4 className="font-semibold text-gray-900 text-sm">{String(label)}</h4>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-xs text-gray-600">Média de Severidade:</span>
+                                  <span className="text-sm font-medium text-gray-900">{severidadeValue.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-xs text-gray-600">Conformidade:</span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {severityToPercent(severidadeValue).toFixed(0)}%
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Lista de riscos associados */}
+                              {riscosDetalhados && riscosDetalhados.length > 0 && (
+                                <div>
+                                  <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
+                                    Riscos Associados ({riscosDetalhados.length})
+                                  </h5>
+                                  <div className="space-y-2">
+                                    {riscosDetalhados.map((risco, index) => (
+                                      <div
+                                        key={risco.id || index}
+                                        className="bg-gray-50 rounded-lg p-2 border border-gray-100"
+                                      >
+                                        <div className="flex justify-between items-start mb-1">
+                                          <h6 className="text-xs font-medium text-gray-900 flex-1 pr-2">
+                                            {risco.desc_risco}
+                                          </h6>
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-xs font-medium text-gray-700">
+                                              {risco.severidade.toFixed(1)}
+                                            </span>
+                                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                            <span className="text-xs font-medium text-gray-700">
+                                              {severityToPercent(risco.severidade).toFixed(0)}%
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Barra de severidade */}
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                          <div
+                                            className="h-1.5 rounded-full"
+                                            style={{ 
+                                              width: `${severityToPercent(risco.severidade)}%`,
+                                              backgroundColor: (
+                                                risco.severidade >= 20 ? '#dc2626' :  // Vermelho - Muito Alto
+                                                risco.severidade >= 10 ? '#ea580c' :  // Laranja - Alto
+                                                risco.severidade >= 5 ? '#ca8a04' :   // Amarelo - Moderado
+                                                '#16a34a'                             // Verde - Baixo
+                                              )
+                                            }}
+                                          ></div>
+                                        </div>
+
+                                        {/* Informações adicionais */}
+                                        {(risco.desc_natureza || risco.desc_categoria || risco.desc_subcategoria) && (
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {risco.desc_natureza && (
+                                              <span className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
+                                                {risco.desc_natureza}
+                                              </span>
+                                            )}
+                                            {risco.desc_categoria && (
+                                              <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded">
+                                                {risco.desc_categoria}
+                                              </span>
+                                            )}
+                                            {risco.desc_subcategoria && (
+                                              <span className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
+                                                {risco.desc_subcategoria}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
-
-                                {/* Lista de riscos associados */}
-                                {riscosDetalhados && riscosDetalhados.length > 0 && (
-                                  <div>
-                                    <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
-                                      Riscos Associados ({riscosDetalhados.length})
-                                    </h5>
-                                    <div className="space-y-2">
-                                      {riscosDetalhados.map((risco, index) => (
-                                        <div
-                                          key={risco.id || index}
-                                          className="bg-gray-50 rounded-lg p-2 border border-gray-100"
-                                        >
-                                          <div className="flex justify-between items-start mb-1">
-                                            <h6 className="text-xs font-medium text-gray-900 flex-1 pr-2">
-                                              {risco.desc_risco}
-                                            </h6>
-                                            <div className="flex items-center space-x-2">
-                                              <span className="text-xs font-medium text-gray-700">
-                                                {risco.severidade.toFixed(1)}
-                                              </span>
-                                              <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                              <span className="text-xs font-medium text-gray-700">
-                                                {severityToPercent(risco.severidade).toFixed(0)}%
-                                              </span>
-                                            </div>
-                                          </div>
-
-                                          {/* Barra de conformidade */}
-                                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                            <div
-                                              className={`h-1.5 rounded-full ${
-                                                severityToPercent(risco.severidade) >= 80 ? 'bg-green-500' :
-                                                severityToPercent(risco.severidade) >= 60 ? 'bg-yellow-500' :
-                                                severityToPercent(risco.severidade) >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                                              }`}
-                                              style={{ width: `${severityToPercent(risco.severidade)}%` }}
-                                            ></div>
-                                          </div>
-
-                                          {/* Informações adicionais */}
-                                          {(risco.desc_natureza || risco.desc_categoria || risco.desc_subcategoria) && (
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                              {risco.desc_natureza && (
-                                                <span className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">
-                                                  {risco.desc_natureza}
-                                                </span>
-                                              )}
-                                              {risco.desc_categoria && (
-                                                <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded">
-                                                  {risco.desc_categoria}
-                                                </span>
-                                              )}
-                                              {risco.desc_subcategoria && (
-                                                <span className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
-                                                  {risco.desc_subcategoria}
-                                                </span>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+                              )}
                               </div>
-                            </DynamicTooltip>
+                            </CustomTooltip>
                           );
                         }}
                       />
@@ -1076,55 +1180,60 @@ const PortfolioAcoes: React.FC = () => {
                         Reduz ligeiramente a largura de cada barra para melhorar a densidade visual.
                         Usamos barSize fixo (18px) ao invés de apenas maxBarSize.
                       */}
-                      <Bar dataKey="severidade" radius={[2, 2, 0, 0]} barSize={16} maxBarSize={16}>
-                        {severidadeAcoes.map((entry, index) => {
-                          const getSeverityColor = (severidade: number): string => {
-                            if (severidade >= 20 && severidade <= 25) return '#dc2626'; // Vermelho - Muito Alto
-                            if (severidade >= 10 && severidade <= 19) return '#ea580c'; // Laranja - Alto
-                            if (severidade >= 5 && severidade <= 9) return '#ca8a04';   // Amarelo - Moderado
-                            if (severidade >= 1 && severidade <= 4) return '#16a34a';   // Verde - Baixo
-                            return '#6b7280'; // Cinza para valores fora do range
+                      <Bar dataKey="severidade" radius={[2, 2, 0, 0]} barSize={16} maxBarSize={16} isAnimationActive={false}>
+                        {chartData.map((entry, index) => {
+                          const getSeverityColor = (sev: number): string => {
+                            if (sev >= 20 && sev <= 25) return '#dc2626'; // Vermelho - Muito Alto
+                            if (sev >= 10 && sev <= 19) return '#ea580c'; // Laranja - Alto
+                            if (sev >= 5 && sev <= 9) return '#ca8a04';   // Amarelo - Moderado
+                            if (sev >= 1 && sev <= 4) return '#16a34a';   // Verde - Baixo
+                            return '#6b7280';
                           };
-                          
                           return (
                             <Cell 
                               key={`cell-${index}`} 
-                              fill={getSeverityColor(entry.media_severidade)}
+                              fill={getSeverityColor(entry.severidade)}
                             />
                           );
                         })}
                       </Bar>
 
-                      {/* Linhas por classificação (da barra mais alta para a direita) */}
-                      {severityLines.map(line => (
-                        <ReferenceLine
-                          key={`ref-${line.label}`}
-                          segment={[
-                            { x: line.start, y: line.value },
-                            { x: line.end,   y: line.value },
-                          ]}
-                          stroke={line.color}
-                          strokeOpacity={0.5}
-                          strokeWidth={2}
-                          strokeDasharray="6 4"
-                          ifOverflow="hidden"
-                          // isFront removido - propriedade não suportada
-                          label={{
-                            // Renderiza o rótulo acima do ponto inicial da linha
-                            content: (props: any) => {
-                              const vb = props?.viewBox as { x: number; y: number } | undefined;
-                              if (!vb) return null;
-                              return (
-                                <text x={vb.x + 4} y={vb.y - 6} fill={line.color} fontSize={11} textAnchor="start">
-                                  {line.label}
-                                </text>
-                              );
-                            },
-                          }}
-                        />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
+                      {/* Linhas por classificação (da barra mais alta para a direita) - Renderizar apenas se houver dados válidos */}
+                      {severityLines && severityLines.length > 0 && severityLines.map(line => {
+                        // Validação final antes de renderizar cada linha
+                        if (!line || !line.start || !line.end || !isFinite(line.value)) {
+                          console.warn('🚨 ReferenceLine inválida:', line);
+                          return null;
+                        }
+                        
+                        return (
+                          <ReferenceLine
+                            key={`ref-${line.label}`}
+                            segment={[
+                              { x: line.start, y: line.value },
+                              { x: line.end,   y: line.value },
+                            ]}
+                            stroke={line.color}
+                            strokeOpacity={0.5}
+                            strokeWidth={2}
+                            strokeDasharray="6 4"
+                            ifOverflow="hidden"
+                            label={{
+                              // Renderiza o rótulo acima do ponto inicial da linha
+                              content: (props: any) => {
+                                const vb = props?.viewBox as { x: number; y: number } | undefined;
+                                if (!vb || !isFinite(vb.x) || !isFinite(vb.y)) return null;
+                                return (
+                                  <text x={vb.x + 4} y={vb.y - 6} fill={line.color} fontSize={11} textAnchor="start">
+                                    {line.label}
+                                  </text>
+                                );
+                              },
+                            }}
+                          />
+                        );
+                      }).filter(Boolean)}
+                  </BarChart>
                 </div>
               </div>
             )}
@@ -1216,13 +1325,13 @@ const PortfolioAcoes: React.FC = () => {
                     <div className="overflow-x-auto">
                     {/* View por Ação */}
                     {activeView === 'acao' && (
-                      loadingSeveridadeAcao || loadingRiscosDetalhados ? (
+                      (loadingSeveridadeAcao || loadingRiscosDetalhados || loadingPortfolioData) ? (
                         <div className="p-8 text-center">
                           <p className="text-gray-500">Carregando dados...</p>
                         </div>
-                      ) : errorSeveridadeAcao ? (
+                      ) : (errorSeveridadeAcao || errorPortfolioData) ? (
                         <div className="p-8 text-center">
-                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeAcao}</p>
+                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeAcao || errorPortfolioData}</p>
                         </div>
                       ) : severidadeAcoes.length === 0 ? (
                         <div className="p-8 text-center">
@@ -1254,12 +1363,6 @@ const PortfolioAcoes: React.FC = () => {
                             {sortedSeveridadeAcoes.map((item, index) => {
                               const percent = severityToPercent(item.media_severidade);
                               const color = getSeverityHex(item.media_severidade);
-                              console.log(`Debug - Item ${index}:`, {
-                                acao: item.sigla_acao,
-                                severidade: item.media_severidade,
-                                percent,
-                                color
-                              });
                               return (
                                 <tr key={index} className="hover:bg-gray-50 align-top">
                                   <td className="px-6 py-4 text-sm font-medium text-gray-900 w-3/5">
@@ -1293,13 +1396,13 @@ const PortfolioAcoes: React.FC = () => {
 
                     {/* View por Natureza */}
                     {activeView === 'natureza' && (
-                      loadingSeveridadeNatureza || loadingRiscosDetalhados ? (
+                      (loadingSeveridadeNatureza || loadingRiscosDetalhados || loadingPortfolioData) ? (
                         <div className="p-8 text-center">
                           <p className="text-gray-500">Carregando dados...</p>
                         </div>
-                      ) : errorSeveridadeNatureza ? (
+                      ) : (errorSeveridadeNatureza || errorPortfolioData) ? (
                         <div className="p-8 text-center">
-                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeNatureza}</p>
+                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeNatureza || errorPortfolioData}</p>
                         </div>
                       ) : severidadeNatureza.length === 0 ? (
                         <div className="p-8 text-center">
@@ -1364,13 +1467,13 @@ const PortfolioAcoes: React.FC = () => {
 
                     {/* View por Categoria e Subcategoria */}
                     {activeView === 'categoria' && (
-                      loadingSeveridadeCategoria || loadingRiscosDetalhados ? (
+                      (loadingSeveridadeCategoria || loadingRiscosDetalhados || loadingPortfolioData) ? (
                         <div className="p-8 text-center">
                           <p className="text-gray-500">Carregando dados...</p>
                         </div>
-                      ) : errorSeveridadeCategoria ? (
+                      ) : (errorSeveridadeCategoria || errorPortfolioData) ? (
                         <div className="p-8 text-center">
-                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeCategoria}</p>
+                          <p className="text-red-500">Erro ao carregar dados: {errorSeveridadeCategoria || errorPortfolioData}</p>
                         </div>
                       ) : severidadeCategorias.length === 0 ? (
                         <div className="p-8 text-center">
@@ -1761,6 +1864,15 @@ const PortfolioAcoes: React.FC = () => {
         </Card>
       </div>
     </Layout>
+  );
+});
+
+// Componente wrapper principal com Provider
+const PortfolioAcoes: React.FC = () => {
+  return (
+    <PortfolioAcoesFilterProvider>
+      <PortfolioAcoesContent />
+    </PortfolioAcoesFilterProvider>
   );
 };
 

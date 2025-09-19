@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { usePortfolioAcoesFilter } from '../contexts/PortfolioAcoesFilterContext';
 
 interface SeveridadeNatureza {
   id_natureza: string;
@@ -18,6 +19,21 @@ export const useSeveridadePorNatureza = (): SeveridadePorNaturezaStats => {
   const [severidadeNatureza, setSeveridadeNatureza] = useState<SeveridadeNatureza[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const {
+    filtroSeveridade,
+    filtroAcao,
+    filtroNatureza,
+    filtroCategoria,
+    filtroSubcategoria
+  } = usePortfolioAcoesFilter();
+  
+  const getSeverityLabel = (severidade: number): string => {
+    if (severidade >= 20) return 'Muito Alto';
+    if (severidade >= 10 && severidade < 20) return 'Alto';
+    if (severidade >= 5 && severidade < 10) return 'Moderado';
+    return 'Baixo';
+  };
 
   const fetchSeveridadePorNatureza = async () => {
     try {
@@ -110,7 +126,7 @@ export const useSeveridadePorNatureza = (): SeveridadePorNaturezaStats => {
 
   useEffect(() => {
     fetchSeveridadePorNatureza();
-  }, []);
+  }, [filtroSeveridade, filtroAcao, filtroNatureza, filtroCategoria, filtroSubcategoria]);
 
   return {
     severidadeNatureza,

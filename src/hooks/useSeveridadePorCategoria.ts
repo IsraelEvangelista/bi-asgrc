@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { usePortfolioAcoesFilter } from '../contexts/PortfolioAcoesFilterContext';
 
 interface SeveridadeCategoria {
   id: string;
@@ -22,6 +23,14 @@ export const useSeveridadePorCategoria = (): SeveridadePorCategoriaStats => {
   const [severidadeCategorias, setSeveridadeCategorias] = useState<SeveridadeCategoria[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const {
+    filtroSeveridade,
+    filtroAcao,
+    filtroNatureza,
+    filtroCategoria,
+    filtroSubcategoria
+  } = usePortfolioAcoesFilter();
 
   const fetchSeveridadePorCategoria = async () => {
     try {
@@ -172,7 +181,7 @@ export const useSeveridadePorCategoria = (): SeveridadePorCategoriaStats => {
 
   useEffect(() => {
     fetchSeveridadePorCategoria();
-  }, []);
+  }, [filtroSeveridade, filtroAcao, filtroNatureza, filtroCategoria, filtroSubcategoria]);
 
   return {
     severidadeCategorias,
