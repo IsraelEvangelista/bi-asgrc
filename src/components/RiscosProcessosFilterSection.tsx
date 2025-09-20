@@ -76,7 +76,7 @@ const RiscosProcessosFilterSection: React.FC<RiscosProcessosFilterSectionProps> 
 
       // Extrair macroprocessos únicos que têm dados reais
       const macroprocessosUnicos = new Map<string, string>();
-      processosComRiscos?.forEach(item => {
+      processosComRiscos?.forEach((item: any) => {
         const macro = item.processo?.macroprocesso;
         if (macro?.id && macro?.macroprocesso) {
           macroprocessosUnicos.set(macro.id, macro.macroprocesso);
@@ -98,7 +98,7 @@ const RiscosProcessosFilterSection: React.FC<RiscosProcessosFilterSectionProps> 
 
       // Buscar processos que realmente existem nos dados de riscos
       const processosUnicos = new Map<string, string>();
-      processosComRiscos?.forEach(item => {
+      processosComRiscos?.forEach((item: any) => {
         const proc = item.processo;
         if (proc?.id && proc?.processo) {
           processosUnicos.set(proc.id, proc.processo);
@@ -144,7 +144,7 @@ const RiscosProcessosFilterSection: React.FC<RiscosProcessosFilterSectionProps> 
       }
 
       const responsaveisUnicos = new Map<string, string>();
-      responsaveisRiscos?.forEach(item => {
+      responsaveisRiscos?.forEach((item: any) => {
         const resp = item.responsavel;
         if (resp?.id && resp?.sigla_area) {
           responsaveisUnicos.set(resp.id, resp.sigla_area);
@@ -171,7 +171,7 @@ const RiscosProcessosFilterSection: React.FC<RiscosProcessosFilterSectionProps> 
       }
 
       const acoesUnicas = new Map<string, string>();
-      acoesRiscos?.forEach(item => {
+      acoesRiscos?.forEach((item: any) => {
         const acao = item.acao;
         if (acao?.id && acao?.acao) {
           acoesUnicas.set(acao.id, acao.acao);
