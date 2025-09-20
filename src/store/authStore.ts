@@ -83,39 +83,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (email: string, password: string) => {
     try {
-      console.log('🔐 signIn: Iniciando processo de login para:', email.replace(/(.{2}).*(@.*)/, '$1***$2'));
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('🔐 signIn: Resposta do Supabase:', {
-        hasUser: !!data.user,
-        hasSession: !!data.session,
-        error: error?.message
-      });
-
       if (error) {
-        console.error('❌ signIn: Erro de autenticação:', error);
         return { error };
       }
 
       if (data.user && data.session) {
-        console.log('✅ signIn: Login bem-sucedido, atualizando estado...');
         set({ user: data.user, session: data.session });
-        
-        console.log('👤 signIn: Carregando perfil do usuário...');
-        // Load user profile after successful login
         await get().loadUserProfile();
-        console.log('✅ signIn: Processo de login concluído com sucesso');
-      } else {
-        console.warn('⚠️ signIn: Login sem dados de usuário ou sessão');
       }
 
       return { error };
     } catch (err) {
-      console.error('💥 signIn: Erro inesperado durante o login:', err);
       return { error: new Error('Erro interno durante o login') };
     }
   },
@@ -195,7 +178,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: 'Erro inesperado ao criar usuário.'
       };
     } catch (error) {
-      console.error('Erro no signUp:', error);
       return {
         error: 'Erro interno do sistema. Tente novamente mais tarde.'
       };

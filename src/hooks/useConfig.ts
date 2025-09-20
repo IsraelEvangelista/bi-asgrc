@@ -316,19 +316,41 @@ export const useConfig = () => {
       setLoading(true);
       clearError();
 
-      const [areasResult, naturezasResult, categoriasResult, subcategoriasResult, conceitosResult] = await Promise.all([
-        supabase.from('003_areas_gerencias').select('id, ativa'),
-        supabase.from('010_natureza').select('id, ativa'),
-        supabase.from('011_categoria').select('id, ativa'),
-        supabase.from('012_subcategoria').select('id, ativa'),
-        supabase.from('020_conceitos').select('id, ativo')
-      ]);
+      // Fazer queries individuais com tratamento de erro específico
+      const areasResult = await supabase.from('003_areas_gerencias').select('id, ativa');
+      const naturezasResult = await supabase.from('010_natureza').select('id, ativa');
+      
+      // Para tabelas que podem não existir, usar try-catch individual
+      let categoriasResult = { data: [], error: null };
+      let subcategoriasResult = { data: [], error: null };
+      let conceitosResult = { data: [], error: null };
+      
+      try {
+        categoriasResult = await supabase.from('011_categoria').select('id, ativa');
+      } catch (err) {
+        console.warn('Tabela 011_categoria não disponível:', err);
+      }
+      
+      try {
+        subcategoriasResult = await supabase.from('012_subcategoria').select('id, ativa');
+      } catch (err) {
+        console.warn('Tabela 012_subcategoria não disponível:', err);
+      }
+      
+      try {
+        conceitosResult = await supabase.from('020_conceitos').select('id, ativo');
+      } catch (err) {
+        console.warn('Tabela 020_conceitos não disponível:', err);
+      }
 
+      // Verificar apenas erros das tabelas essenciais
       if (areasResult.error) throw areasResult.error;
       if (naturezasResult.error) throw naturezasResult.error;
-      if (categoriasResult.error) throw categoriasResult.error;
-      if (subcategoriasResult.error) throw subcategoriasResult.error;
-      if (conceitosResult.error) throw conceitosResult.error;
+      
+      // Log de warnings para tabelas opcionais
+      if (categoriasResult.error) console.warn('Erro ao acessar categorias:', categoriasResult.error.message);
+      if (subcategoriasResult.error) console.warn('Erro ao acessar subcategorias:', subcategoriasResult.error.message);
+      if (conceitosResult.error) console.warn('Erro ao acessar conceitos:', conceitosResult.error.message);
 
       const areas = areasResult.data || [];
       const naturezas = naturezasResult.data || [];

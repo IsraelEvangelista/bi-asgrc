@@ -1,67 +1,379 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Layout from '../components/Layout';
-import { AlertTriangle, Filter, Workflow, Users, TrendingUp, PieChart, Plus, Edit, Trash2, ChevronUp, ChevronDown, Settings, CheckCircle, FileText, Shield } from 'lucide-react';
+import RiscosProcessosFilterSection from '../components/RiscosProcessosFilterSection';
+import { AlertTriangle, Filter, Workflow, Users, TrendingUp, PieChart, Plus, Edit, Trash2, ChevronUp, ChevronDown, Settings, CheckCircle, FileText, Shield, X } from 'lucide-react';
 
-import { useRiscosCards } from '../hooks/useRiscosCards';
-import { useRiscosPorCategoria } from '../hooks/useRiscosPorCategoria';
-import { useRiscosPorSituacao } from '../hooks/useRiscosPorSituacao';
-import { useRiscosPorPlanoResposta } from '../hooks/useRiscosPorPlanoResposta';
-import { useRiscosPorStatusAcao } from '../hooks/useRiscosPorStatusAcao';
+// import { useRiscosCards } from '../hooks/useRiscosCards';
+// Removidos hooks agregados; usaremos agregação local a partir da tabela base
 import { useRiscosProcessosTrabalhoData } from '../hooks/useRiscosProcessosTrabalhoData';
 
 // Componente interno que usa o contexto de filtros
 const RiscosProcessosTrabalhoContent: React.FC = () => {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [resetFilters, setResetFilters] = useState(false);
 
-  // Dados simulados para os gráficos
-  const dadosNivelRiscoOriginal = [
-    { label: 'Alto', value: 15, color: '#ef4444' },
-    { label: 'Médio', value: 25, color: '#f59e0b' },
-    { label: 'Baixo', value: 10, color: '#10b981' }
-  ];
+  // Estado de filtros gerais (bloco de filtros)
+  const [filtrosGerais, setFiltrosGerais] = useState<{
+    macroprocessoId: string;
+    processoId: string;
+    subprocessoId: string;
+    responsavelId: string;
+    acaoId: string;
+    situacaoRisco: string;
+  }>({ macroprocessoId: '', processoId: '', subprocessoId: '', responsavelId: '', acaoId: '', situacaoRisco: '' });
+  
+  // Estados para filtragem dinâmica por clique
+  const [filtroNivelRiscoSelecionado, setFiltroNivelRiscoSelecionado] = useState<string | null>(null);
+  const [filtroSituacaoRiscoSelecionado, setFiltroSituacaoRiscoSelecionado] = useState<string | null>(null);
+  const [filtroPlanoRespostaSelecionado, setFiltroPlanoRespostaSelecionado] = useState<string | null>(null);
+  const [filtroStatusAcaoSelecionado, setFiltroStatusAcaoSelecionado] = useState<string | null>(null);
+  const [linhaTabelaSelecionada, setLinhaTabelaSelecionada] = useState<string | null>(null);
+  
+  // Estados para filtros dinâmicos por linha da tabela
+  const [filtrosLinhaDinamica, setFiltrosLinhaDinamica] = useState<{
+    processo: string | null;
+    risco: string | null;
+    acao: string | null;
+    responsavel_risco: string | null;
+    nivel_risco: string | null;
+    nivel_risco_tratado: string | null;
+    resposta_risco: string | null;
+  } | null>(null);
 
-  const dadosSituacaoRiscoOriginal = [
-    { label: 'Identificado', value: 20, color: '#3b82f6' },
-    { label: 'Em Análise', value: 15, color: '#f59e0b' },
-    { label: 'Tratado', value: 15, color: '#10b981' }
-  ];
+  // Função para limpar todos os filtros
+  const limparTodosFiltros = () => {
+    // Resetar filtros gerais
+    setFiltrosGerais({
+      macroprocessoId: '',
+      processoId: '',
+      subprocessoId: '',
+      responsavelId: '',
+      acaoId: '',
+      situacaoRisco: ''
+    });
+    
+    // Resetar filtros dinâmicos
+    setFiltroNivelRiscoSelecionado(null);
+    setFiltroSituacaoRiscoSelecionado(null);
+    setFiltroPlanoRespostaSelecionado(null);
+    setFiltroStatusAcaoSelecionado(null);
+    setLinhaTabelaSelecionada(null);
+    setFiltrosLinhaDinamica(null);
+    
+    // Ativar reset nos filtros do componente
+    setResetFilters(true);
+    setTimeout(() => setResetFilters(false), 100);
+  };
 
-  const dadosPlanoRespostaOriginal = [
-    { label: 'Aceitar', value: 8, color: '#10b981' },
-    { label: 'Mitigar', value: 30, color: '#f59e0b' },
-    { label: 'Transferir', value: 7, color: '#3b82f6' },
-    { label: 'Evitar', value: 5, color: '#ef4444' }
-  ];
+  const toggleFilterExpansion = () => {
+    setIsFilterExpanded(!isFilterExpanded);
+  };
 
-  // Aplicar filtragem cruzada nos dados dos gráficos
-  const dadosNivelRisco = dadosNivelRiscoOriginal;
-  const dadosSituacaoRisco = dadosSituacaoRiscoOriginal;
-  const { quantidadeProcessos, quantidadeRiscos, quantidadeAcoes, loading, error } = useRiscosCards();
+  const handleApplyFiltrosGerais = (payload: {
+    macroprocessoId: string;
+    processoId: string;
+    subprocessoId: string;
+    responsavelId: string;
+    acaoId: string;
+    situacaoRisco: string;
+  }) => {
+    setFiltrosGerais(payload);
+    setIsFilterExpanded(false);
+  };
+  
+  // Função para aplicar filtro por clique em segmento
+  const aplicarFiltroPorSegmento = (tipo: string, valor: string, graficoId: string) => {
+    switch (tipo) {
+      case 'nivel_risco':
+        if (filtroNivelRiscoSelecionado === valor) {
+          setFiltroNivelRiscoSelecionado(null);
+        } else {
+          setFiltroNivelRiscoSelecionado(valor);
+        }
+        break;
+        
+      case 'situacao_risco':
+        if (filtroSituacaoRiscoSelecionado === valor) {
+          setFiltroSituacaoRiscoSelecionado(null);
+        } else {
+          setFiltroSituacaoRiscoSelecionado(valor);
+        }
+        break;
+        
+      case 'plano_resposta':
+        if (filtroPlanoRespostaSelecionado === valor) {
+          setFiltroPlanoRespostaSelecionado(null);
+        } else {
+          setFiltroPlanoRespostaSelecionado(valor);
+        }
+        break;
+        
+      case 'status_acao':
+        if (filtroStatusAcaoSelecionado === valor) {
+          setFiltroStatusAcaoSelecionado(null);
+        } else {
+          setFiltroStatusAcaoSelecionado(valor);
+        }
+        break;
+    }
+  };
+  
+  // Função para aplicar filtro por clique em linha da tabela
+  const aplicarFiltroPorLinha = (identificadorLinha: string, dadosLinha: any) => {
+    if (linhaTabelaSelecionada === identificadorLinha) {
+      // Remover todos os filtros
+      setLinhaTabelaSelecionada(null);
+      setFiltrosLinhaDinamica(null);
+      setFiltroNivelRiscoSelecionado(null);
+      setFiltroSituacaoRiscoSelecionado(null);
+      setFiltroPlanoRespostaSelecionado(null);
+    } else {
+      // Aplicar filtros de todos os campos da linha
+      setLinhaTabelaSelecionada(identificadorLinha);
+      setFiltrosLinhaDinamica({
+        processo: dadosLinha.processo || null,
+        risco: dadosLinha.risco || null,
+        acao: dadosLinha.acao || null,
+        responsavel_risco: dadosLinha.responsavel_risco || null,
+        nivel_risco: dadosLinha.nivel_risco || null,
+        nivel_risco_tratado: dadosLinha.nivel_risco_tratado || null,
+        resposta_risco: dadosLinha.resposta_risco || null
+      });
+      
+      // Sincronizar com filtros dinâmicos dos gráficos
+      setFiltroNivelRiscoSelecionado(dadosLinha.nivel_risco || null);
+      setFiltroSituacaoRiscoSelecionado(dadosLinha.situacao_risco || null);
+      setFiltroPlanoRespostaSelecionado(dadosLinha.resposta_risco || null);
+    }
+  };
+
+
+  // Base de dados da tabela
+  const { dados: dadosTabela, loading: loadingTabela, error: errorTabela } = useRiscosProcessosTrabalhoData();
+  
+
+  // Aplicar filtros gerais (bloco de filtros) - VERSÃO CORRIGIDA COM COMPARAÇÃO DE STRINGS
+  const baseGeral = useMemo(() => {
+    let arr = [...dadosTabela];
+    const { macroprocessoId, processoId, subprocessoId, responsavelId, acaoId, situacaoRisco } = filtrosGerais;
+    
+    // Aplicar cada filtro apenas se não estiver vazio - usando String() para comparações
+    if (macroprocessoId) {
+      arr = arr.filter(i => String(i.id_macroprocesso) === String(macroprocessoId));
+    }
+    if (processoId) {
+      arr = arr.filter(i => String(i.id_processo) === String(processoId));
+    }
+    if (subprocessoId) {
+      arr = arr.filter(i => String(i.id_subprocesso) === String(subprocessoId));
+    }
+    if (responsavelId) {
+      arr = arr.filter(i => String(i.responsavel_processo_id) === String(responsavelId));
+    }
+    if (acaoId) {
+      arr = arr.filter(i => String(i.id_acao_controle) === String(acaoId));
+    }
+    if (situacaoRisco) {
+      arr = arr.filter(i => (i.situacao_risco || '').toLowerCase() === situacaoRisco.toLowerCase());
+    }
+    
+    return arr;
+  }, [dadosTabela, filtrosGerais]);
+
+  // Combinar filtros dinâmicos (complementares aos gerais)
+  const baseFiltrada = useMemo(() => {
+    let arr = [...baseGeral];
+    
+    // Filtros dinâmicos por linha da tabela têm prioridade
+    if (filtrosLinhaDinamica) {
+      if (filtrosLinhaDinamica.processo) {
+        arr = arr.filter(i => (i.processo || '').toLowerCase() === filtrosLinhaDinamica.processo!.toLowerCase());
+      }
+      if (filtrosLinhaDinamica.risco) {
+        arr = arr.filter(i => (i.risco || '').toLowerCase() === filtrosLinhaDinamica.risco!.toLowerCase());
+      }
+      if (filtrosLinhaDinamica.acao) {
+        arr = arr.filter(i => (i.acao || '').toLowerCase() === filtrosLinhaDinamica.acao!.toLowerCase());
+      }
+      if (filtrosLinhaDinamica.responsavel_risco) {
+        arr = arr.filter(i => (i.responsavel_risco || '').toLowerCase() === filtrosLinhaDinamica.responsavel_risco!.toLowerCase());
+      }
+      if (filtrosLinhaDinamica.nivel_risco) {
+        arr = arr.filter(i => (i.nivel_risco || '').toLowerCase() === filtrosLinhaDinamica.nivel_risco!.toLowerCase());
+      }
+      if (filtrosLinhaDinamica.nivel_risco_tratado) {
+        arr = arr.filter(i => (i.nivel_risco_tratado || '').toLowerCase() === filtrosLinhaDinamica.nivel_risco_tratado!.toLowerCase());
+      }
+      if (filtrosLinhaDinamica.resposta_risco) {
+        arr = arr.filter(i => (i.resposta_risco || '').toLowerCase() === filtrosLinhaDinamica.resposta_risco!.toLowerCase());
+      }
+    } else {
+      // Filtros dinâmicos individuais dos gráficos
+      if (filtroNivelRiscoSelecionado) {
+        arr = arr.filter(i => (i.nivel_risco || '').toLowerCase() === filtroNivelRiscoSelecionado.toLowerCase());
+      }
+      if (filtroSituacaoRiscoSelecionado) {
+        arr = arr.filter(i => (i.situacao_risco || '').toLowerCase() === filtroSituacaoRiscoSelecionado.toLowerCase());
+      }
+      if (filtroPlanoRespostaSelecionado) {
+        arr = arr.filter(i => (i.plano_resposta_risco || i.resposta_risco || '').toLowerCase() === filtroPlanoRespostaSelecionado.toLowerCase());
+      }
+    }
+    
+    return arr;
+  }, [baseGeral, filtrosLinhaDinamica, filtroNivelRiscoSelecionado, filtroSituacaoRiscoSelecionado, filtroPlanoRespostaSelecionado]);
+
+  // Contadores locais afetados por TODOS os filtros (gerais + dinâmicos)
+  const { quantidadeProcessos, quantidadeRiscos, quantidadeAcoes } = useMemo(() => {
+    const fonte = baseFiltrada; // já inclui filtros gerais + dinâmicos
+    const processos = new Set<string>();
+    const riscos = new Set<string>();
+    const acoes = new Set<string>();
+    fonte.forEach(i => {
+      if (i.id_processo) processos.add(String(i.id_processo));
+      if (i.id_risco) riscos.add(String(i.id_risco));
+      if (i.id_acao_controle) acoes.add(String(i.id_acao_controle));
+    });
+    return {
+      quantidadeProcessos: processos.size,
+      quantidadeRiscos: riscos.size,
+      quantidadeAcoes: acoes.size
+    };
+  }, [baseFiltrada]);
+
+  // Utilitários de deduplicação
+  const distinctByRisk = (rows: any[]) => {
+    const map = new Map<string, any>();
+    for (const r of rows) {
+      const k = r.id_risco ? String(r.id_risco) : '';
+      if (!k) continue;
+      const prev = map.get(k);
+      if (!prev) {
+        map.set(k, r);
+      } else if (!prev.situacao_risco && r.situacao_risco) {
+        map.set(k, r);
+      }
+    }
+    return Array.from(map.values());
+  };
+
+  const distinctByAction = (rows: any[]) => {
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const r of rows) {
+      const k = r.id_acao_controle ? String(r.id_acao_controle) : '';
+      if (!k) continue;
+      if (!seen.has(k)) { seen.add(k); out.push(r); }
+    }
+    return out;
+  };
+
+  const dedupeTableRows = (rows: any[]) => {
+    const keyOf = (r: any) => [
+      r.processo || '',
+      r.risco || '',
+      r.acao || '',
+      r.responsavel_risco || '',
+      r.nivel_risco || '',
+      r.nivel_risco_tratado || '',
+      r.resposta_risco || ''
+    ].map((v: string) => v.trim().toLowerCase()).join('|');
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const r of rows) {
+      const k = keyOf(r);
+      if (!seen.has(k)) { seen.add(k); out.push(r); }
+    }
+    return out;
+  };
+
+  // Agregações corrigidas com deduplicação
+  const nivelAgg = useMemo(() => {
+    const base = distinctByRisk(baseFiltrada);
+    const cont: Record<string, number> = {};
+    base.forEach(item => {
+      const key = item.nivel_risco || 'Não informado';
+      cont[key] = (cont[key] || 0) + 1;
+    });
+    const total = Object.values(cont).reduce((a, b) => a + b, 0) || 0;
+    return Object.entries(cont).map(([nivel, quantidade]) => ({
+      nivel_risco: nivel,
+      quantidade,
+      percentual: total > 0 ? Math.round((quantidade / total) * 100) : 0,
+    })).sort((a,b) => b.quantidade - a.quantidade);
+  }, [baseFiltrada]);
+
+  const situacaoAgg = useMemo(() => {
+    const base = distinctByRisk(baseFiltrada);
+    const cont: Record<string, number> = {};
+    base.forEach(item => {
+      const key = item.situacao_risco || 'Não informado';
+      cont[key] = (cont[key] || 0) + 1;
+    });
+    const total = Object.values(cont).reduce((a, b) => a + b, 0) || 0;
+    return Object.entries(cont).map(([situacao_risco, quantidade]) => ({
+      situacao_risco,
+      quantidade,
+      percentual: total > 0 ? Math.round((quantidade / total) * 100) : 0,
+    })).sort((a,b) => b.quantidade - a.quantidade);
+  }, [baseFiltrada]);
+
+  const planoAgg = useMemo(() => {
+    const base = distinctByAction(baseFiltrada);
+    const cont: Record<string, number> = {};
+    base.forEach(item => {
+      const key = item.plano_resposta_risco || item.resposta_risco || 'Não informado';
+      cont[key] = (cont[key] || 0) + 1;
+    });
+    const total = Object.values(cont).reduce((a, b) => a + b, 0) || 0;
+    return Object.entries(cont).map(([plano_resposta_risco, total_acoes]) => ({
+      plano_resposta_risco,
+      total_acoes,
+      percentual: total > 0 ? Math.round((total_acoes / total) * 100) : 0,
+    })).sort((a,b) => b.total_acoes - a.total_acoes);
+  }, [baseFiltrada]);
+
+  // Base deduplicada para a tabela
+  const baseTabelaDedupe = useMemo(() => dedupeTableRows(baseFiltrada), [baseFiltrada]);
 
   // Função para lidar com cliques fora dos elementos interativos
-  const handleContainerClick = (e: React.MouseEvent) => {
+const handleContainerClick = (e: React.MouseEvent) => {
     // Verificar se o clique foi em um elemento interativo (gráfico ou tabela)
     const target = e.target as HTMLElement;
     const isInteractiveElement = target.closest('[data-interactive="true"]') || 
                                 target.closest('path') || 
                                 target.closest('tr[data-interactive="true"]');
     
-    // Se não foi em um elemento interativo e há filtro ativo, limpar filtro
-    if (!isInteractiveElement && false) {
-      // clearFilter();
+    // Se não foi em um elemento interativo e há filtro ativo, limpar todos os filtros
+    if (!isInteractiveElement && (filtroNivelRiscoSelecionado || filtroSituacaoRiscoSelecionado || 
+        filtroPlanoRespostaSelecionado || filtroStatusAcaoSelecionado || linhaTabelaSelecionada || filtrosLinhaDinamica)) {
+      setFiltroNivelRiscoSelecionado(null);
+      setFiltroSituacaoRiscoSelecionado(null);
+      setFiltroPlanoRespostaSelecionado(null);
+      setFiltroStatusAcaoSelecionado(null);
+      setLinhaTabelaSelecionada(null);
+      setFiltrosLinhaDinamica(null);
     }
   };
-  const { dados: dadosCategoria, total: totalCategoria, loading: loadingCategoria } = useRiscosPorCategoria();
-  const { dados: dadosSituacao, total: totalSituacao, loading: loadingSituacao } = useRiscosPorSituacao();
-  const { dados: dadosPlanoResposta, total: totalPlanoResposta, loading: loadingPlanoResposta } = useRiscosPorPlanoResposta();
-  const { dados: dadosStatusAcao, total: totalStatusAcao, loading: loadingStatusAcao } = useRiscosPorStatusAcao();
-  const { dados: dadosTabela, loading: loadingTabela, error: errorTabela } = useRiscosProcessosTrabalhoData();
+  // Removidos hooks agregados e memos baseados neles; usaremos nivelAgg, situacaoAgg e planoAgg
   
-  // Aplicar filtragem nos dados após sua declaração
-  const dadosStatusAcaoFiltrados = dadosStatusAcao;
-  const dadosCategoriaFiltrados = dadosCategoria;
-  const dadosSituacaoFiltrados = dadosSituacao;
-  const dadosPlanoRespostaFiltrados = dadosPlanoResposta;
+  
+  // Filtrar dados da tabela baseado na linha selecionada
+  const dadosTabelaFiltrados = React.useMemo(() => {
+    const fonte = baseTabelaDedupe;
+    if (!linhaTabelaSelecionada) return fonte;
+    const linhaSelecionada = fonte.find((_, index) => {
+      const identificadorLinha = `${_.processo || 'N/A'}-${_.risco || 'N/A'}-${index}`;
+      return identificadorLinha === linhaTabelaSelecionada;
+    });
+    if (!linhaSelecionada) return fonte;
+    return fonte.filter(item => 
+      item.processo === linhaSelecionada.processo ||
+      item.risco === linhaSelecionada.risco ||
+      item.nivel_risco === linhaSelecionada.nivel_risco
+    );
+  }, [baseTabelaDedupe, linhaTabelaSelecionada]);
 
   return (
     <Layout>
@@ -69,25 +381,58 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
         className="p-6 space-y-8"
         onClick={handleContainerClick}
       >
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Riscos de Processos de Trabalho</h1>
-                <p className="text-gray-600 mt-1">
-                  Identificação, análise e monitoramento de riscos nos processos organizacionais
-                </p>
-              </div>
+
+        {/* Header + Filtros embutidos */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="flex justify-between items-center p-4 bg-gray-50 border-b border-gray-100">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Riscos de Processos de Trabalho</h1>
+              <p className="text-gray-600">Identificação, análise e monitoramento de riscos nos processos organizacionais</p>
             </div>
-            <button 
-              onClick={() => setFilterModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </button>
+            
+            {/* Botões de Filtro */}
+            <div className="flex items-center gap-2">
+              {/* Verificar se há filtros ativos */}
+              {(filtrosGerais.macroprocessoId || filtrosGerais.processoId || filtrosGerais.subprocessoId ||
+                filtrosGerais.responsavelId || filtrosGerais.acaoId || filtrosGerais.situacaoRisco) && (
+                <button
+                  onClick={() => {
+                    limparTodosFiltros();
+                    setIsFilterExpanded(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-sm text-sm"
+                >
+                  <X className="h-4 w-4" />
+                  Limpar
+                </button>
+              )}
+              <button
+                onClick={toggleFilterExpansion}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 shadow-sm text-sm ${
+                  isFilterExpanded 
+                    ? 'bg-blue-700 text-white' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                <Filter className="h-4 w-4" />
+                Filtros
+                {isFilterExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          {/* Seção de filtros expansível */}
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            isFilterExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="p-6 bg-white">
+              <RiscosProcessosFilterSection
+                isExpanded={true}
+                onToggle={toggleFilterExpansion}
+                embedded
+                resetFilters={resetFilters}
+                onApply={handleApplyFiltrosGerais}
+              />
+            </div>
           </div>
         </div>
 
@@ -95,94 +440,122 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
         <div className="grid grid-cols-4 gap-6">
           {/* Coluna 1 - 3 cards verticais */}
           <div className="h-full flex flex-col justify-between space-y-3">
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 relative z-10 flex-1">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg border border-blue-300 p-4 relative z-10 flex-1 text-white">
                 <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110">
-                    <Workflow className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-white/20 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110 backdrop-blur-sm">
+                    <Workflow className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Quantidade de Processos Estruturados</h3>
-                    <p className="text-2xl font-bold text-blue-600">{loading ? '...' : quantidadeProcessos}</p>
+                    <h3 className="font-semibold text-white">Quantidade de Processos Estruturados</h3>
+                    <p className="text-2xl font-bold text-white">{loadingTabela ? '...' : quantidadeProcessos}</p>
                   </div>
                 </div>
-                <FileText className="h-8 w-8 text-blue-500" />
+                <FileText className="h-8 w-8 text-white" />
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 relative z-10 flex-1">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg border border-blue-300 p-4 relative z-10 flex-1 text-white">
                 <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110">
-                    <AlertTriangle className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-white/20 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110 backdrop-blur-sm">
+                    <AlertTriangle className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Quantidade de Riscos de Trabalho</h3>
-                    <p className="text-2xl font-bold text-blue-600">{loading ? '...' : quantidadeRiscos}</p>
+                    <h3 className="font-semibold text-white">Quantidade de Riscos de Trabalho</h3>
+                    <p className="text-2xl font-bold text-white">{loadingTabela ? '...' : quantidadeRiscos}</p>
                   </div>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-blue-500" />
+                <AlertTriangle className="h-8 w-8 text-white" />
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 relative z-10 flex-1">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg border border-blue-300 p-4 relative z-10 flex-1 text-white">
                 <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-white/20 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110 backdrop-blur-sm">
+                    <CheckCircle className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Quantidade de Ações de Controle</h3>
-                    <p className="text-2xl font-bold text-blue-600">{loading ? '...' : quantidadeAcoes}</p>
+                    <h3 className="font-semibold text-white">Quantidade de Ações de Controle</h3>
+                    <p className="text-2xl font-bold text-white">{loadingTabela ? '...' : quantidadeAcoes}</p>
                   </div>
                 </div>
-                <Shield className="h-8 w-8 text-blue-500" />
+                <Shield className="h-8 w-8 text-white" />
                 </div>
             </div>
           </div>
 
+          {/* Linha 2 - 4 colunas iguais */}
           {/* Coluna 2 - Gráfico de pizza 1 */}
           <div className="relative z-10 bg-white rounded-lg shadow-lg border border-gray-200 p-6 flex flex-col h-full">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Nível do Risco Inerente</h3>
               <div className="flex items-center justify-center h-64 overflow-visible">
                 <div className="relative w-72 h-72 overflow-visible">
-                  {!loadingCategoria && dadosCategoria.length > 0 ? (
+                  {loadingTabela ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500">Carregando...</p>
+                      </div>
+                    </div>
+                  ) : nivelAgg.length > 0 ? (
                     <>
                       {/* Gráfico de pizza dinâmico baseado nos dados reais */}
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
                         {(() => {
-                          let cumulativePercentage = 0;
                           const coresPorNivel: { [key: string]: string } = {
                             'Muito Alto': '#FF6961',
                             'Alto': '#FFA500', 
                             'Moderado': '#FFD700',
                             'Baixo': '#77DD77'
                           };
-                          
-                          return dadosCategoriaFiltrados.map((item, index) => {
+
+                          // Caso 100%: renderizar donut completo
+                          if (nivelAgg.length === 1) {
+                            const item = nivelAgg[0];
+                            const outerRadius = 90;
+                            const innerRadius = 30;
+                            const isOtherFiltered = filtroNivelRiscoSelecionado !== null && filtroNivelRiscoSelecionado !== item.nivel_risco;
+                            return (
+                              <g key={item.nivel_risco}>
+                                <circle
+                                  cx="140"
+                                  cy="140"
+                                  r={outerRadius}
+                                  fill={coresPorNivel[item.nivel_risco] || '#9CA3AF'}
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${isOtherFiltered ? 'opacity-50' : 'opacity-100'} hover:opacity-80`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    aplicarFiltroPorSegmento('nivel_risco', item.nivel_risco, 'grafico-nivel-risco');
+                                  }}
+                                  data-interactive="true"
+                                />
+                                <circle cx="140" cy="140" r={innerRadius} fill="white" />
+                              </g>
+                            );
+                          }
+
+                          let cumulativePercentage = 0;
+                          return nivelAgg.map((item, index) => {
                             const percentage = item.percentual;
                             const startAngle = (cumulativePercentage / 100) * 360;
                             const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
-                            
                             const startAngleRad = (startAngle - 90) * (Math.PI / 180);
                             const endAngleRad = (endAngle - 90) * (Math.PI / 180);
-                            
                             const largeArcFlag = percentage > 50 ? 1 : 0;
-                            
-                            // Aumentando o raio para restaurar a espessura original
                             const outerRadius = 90;
                             const innerRadius = 30;
-                            
                             const x1Outer = 140 + outerRadius * Math.cos(startAngleRad);
                             const y1Outer = 140 + outerRadius * Math.sin(startAngleRad);
                             const x2Outer = 140 + outerRadius * Math.cos(endAngleRad);
                             const y2Outer = 140 + outerRadius * Math.sin(endAngleRad);
-                            
                             const x1Inner = 140 + innerRadius * Math.cos(startAngleRad);
                             const y1Inner = 140 + innerRadius * Math.sin(startAngleRad);
                             const x2Inner = 140 + innerRadius * Math.cos(endAngleRad);
                             const y2Inner = 140 + innerRadius * Math.sin(endAngleRad);
-                            
                             const pathData = [
                               `M ${x1Inner} ${y1Inner}`,
                               `L ${x1Outer} ${y1Outer}`,
@@ -191,12 +564,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                               `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}`,
                               'Z'
                             ].join(' ');
-                            
                             cumulativePercentage += percentage;
-                            
-                            const isCurrentFiltered = false;
-                            const isOtherFiltered = false;
-                            
+                            const isOtherFiltered = filtroNivelRiscoSelecionado !== null && filtroNivelRiscoSelecionado !== item.nivel_risco;
                             return (
                               <path
                                 key={item.nivel_risco}
@@ -204,12 +573,10 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 fill={coresPorNivel[item.nivel_risco] || '#9CA3AF'}
                                 stroke="white"
                                 strokeWidth="2"
-                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
-                                  isOtherFiltered ? 'opacity-50' : 'opacity-100'
-                                } hover:opacity-80`}
+                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${isOtherFiltered ? 'opacity-50' : 'opacity-100'} hover:opacity-80`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // toggleFilter('chart', 'nivel_risco', item.nivel_risco, 'grafico-nivel-risco');
+                                  aplicarFiltroPorSegmento('nivel_risco', item.nivel_risco, 'grafico-nivel-risco');
                                 }}
                                 data-interactive="true"
                               />
@@ -221,20 +588,15 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                         {/* Rótulos percentuais externos às seções */}
                         {(() => {
                           let cumulativePercentage = 0;
-                          
-                          return dadosCategoriaFiltrados.map((item, index) => {
+                          return nivelAgg.map((item, index) => {
                             const percentage = item.percentual;
                             const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
                             const midAngleRad = (midAngle - 90) * (Math.PI / 180);
-                            
-                            // Posição externa às seções (sem linhas de conexão)
                             const labelRadius = 125;
                             const labelX = 140 + labelRadius * Math.cos(midAngleRad);
                             const labelY = 140 + labelRadius * Math.sin(midAngleRad);
-                            
                             cumulativePercentage += percentage;
-                            
-                            return (
+                          return (
                               <text
                                 key={`label-${item.nivel_risco}`}
                                 x={labelX}
@@ -256,26 +618,23 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                       {/* Centro com somatório */}
                       <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{dadosCategoriaFiltrados.reduce((acc, item) => acc + item.quantidade, 0)}</p>
+                          <p className="text-2xl font-bold text-gray-900">{nivelAgg.reduce((acc, item) => acc + item.quantidade, 0)}</p>
                           <p className="text-sm text-gray-600">Total</p>
                         </div>
                       </div>
                     </>
                   ) : (
                     <div className="flex items-center justify-center w-full h-full">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-500">Carregando...</p>
-                      </div>
+                      <div className="text-center text-gray-500">Nenhum dado encontrado</div>
                     </div>
                   )}
                 </div>
               </div>
               <div className="space-y-2 mt-4">
-                {loadingCategoria ? (
+                {loadingTabela ? (
                   <div className="text-center text-gray-500">Carregando...</div>
-                ) : dadosCategoriaFiltrados.length > 0 ? (
-                  dadosCategoriaFiltrados.map((item, index) => {
+                ) : nivelAgg.length > 0 ? (
+                  nivelAgg.map((item, index) => {
                     // Cores específicas por nível de risco
                     const coresPorNivel: { [key: string]: string } = {
                       'Muito Alto': '#FF6961',
@@ -306,7 +665,14 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Situação do Risco</h3>
               <div className="flex items-center justify-center h-64 overflow-visible">
                 <div className="relative w-72 h-72 overflow-visible">
-                  {!loadingSituacao && dadosSituacaoFiltrados.length > 0 ? (
+                  {loadingTabela ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500">Carregando...</p>
+                      </div>
+                    </div>
+                  ) : situacaoAgg.length > 0 ? (
                     <>
                       {/* Gráfico de pizza dinâmico baseado nos dados reais */}
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
@@ -321,13 +687,13 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                           };
                           
                           // Se há apenas um item (100%), renderizar um círculo completo
-                          if (dadosSituacaoFiltrados.length === 1) {
-                            const item = dadosSituacaoFiltrados[0];
+                          if (situacaoAgg.length === 1) {
+                            const item = situacaoAgg[0];
                             const outerRadius = 90;
                             const innerRadius = 30;
                             
-                            const isCurrentFiltered = false;
-                            const isOtherFiltered = false;
+                            const isCurrentFiltered = filtroSituacaoRiscoSelecionado === item.situacao_risco;
+                            const isOtherFiltered = filtroSituacaoRiscoSelecionado !== null && filtroSituacaoRiscoSelecionado !== item.situacao_risco;
                             
                             return (
                               <g key={item.situacao_risco}>
@@ -344,7 +710,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                   } hover:opacity-80`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
+                                    aplicarFiltroPorSegmento('situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
                                   }}
                                   data-interactive="true"
                                 />
@@ -362,7 +728,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosSituacaoFiltrados.map((item, index) => {
+                          return situacaoAgg.map((item, index) => {
                             const percentage = item.percentual;
                             const startAngle = (cumulativePercentage / 100) * 360;
                             const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
@@ -396,14 +762,14 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
-                            const isCurrentFiltered = false;
-                            const isOtherFiltered = false;
+                            const isCurrentFiltered = filtroSituacaoRiscoSelecionado === item.situacao_risco;
+                            const isOtherFiltered = filtroSituacaoRiscoSelecionado !== null && filtroSituacaoRiscoSelecionado !== item.situacao_risco;
                             
                             return (
                               <path
                                 key={item.situacao_risco}
                                 d={pathData}
-                                fill={coresPorSituacao[item.situacao_risco] || '#9CA3AF'}
+                                fill={coresPorSituacao[item.situacao_risco] || '#3B82F6'}
                                 stroke="white"
                                 strokeWidth="2"
                                 className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
@@ -411,7 +777,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 } hover:opacity-80`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // toggleFilter('chart', 'situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
+                                  aplicarFiltroPorSegmento('situacao_risco', item.situacao_risco, 'grafico-situacao-risco');
                                 }}
                                 data-interactive="true"
                               />
@@ -423,8 +789,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                         {/* Rótulos percentuais externos às seções */}
                         {(() => {
                           // Para um único item, posicionar o rótulo no topo
-                          if (dadosSituacao.length === 1) {
-                            const item = dadosSituacao[0];
+                          if (situacaoAgg.length === 1) {
+                            const item = situacaoAgg[0];
                             return (
                               <text
                                 key={`label-${item.situacao_risco}`}
@@ -444,7 +810,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosSituacaoFiltrados.map((item, index) => {
+                          return situacaoAgg.map((item, index) => {
                             const percentage = item.percentual;
                             const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
                             const midAngleRad = (midAngle - 90) * (Math.PI / 180);
@@ -477,26 +843,23 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                       {/* Centro com somatório */}
                       <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{dadosSituacaoFiltrados.reduce((acc, item) => acc + item.quantidade, 0)}</p>
+                          <p className="text-2xl font-bold text-gray-900">{situacaoAgg.reduce((acc, item) => acc + item.quantidade, 0)}</p>
                           <p className="text-sm text-gray-600">Total</p>
                         </div>
                       </div>
                     </>
                   ) : (
                     <div className="flex items-center justify-center w-full h-full">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-500">Carregando...</p>
-                      </div>
+                      <div className="text-center text-gray-500">Nenhum dado encontrado</div>
                     </div>
                   )}
                 </div>
               </div>
               <div className="space-y-2 mt-4">
-                {loadingSituacao ? (
+                {loadingTabela ? (
                   <div className="text-center text-gray-500">Carregando...</div>
-                ) : dadosSituacaoFiltrados.length > 0 ? (
-                  dadosSituacaoFiltrados.map((item, index) => {
+                ) : situacaoAgg.length > 0 ? (
+                  situacaoAgg.map((item, index) => {
                     const coresPorSituacao: { [key: string]: string } = {
                       'Em Análise': 'bg-blue-800',
                       'Aprovado': 'bg-blue-600', 
@@ -528,35 +891,52 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Plano de Resposta do Risco</h3>
               <div className="flex items-center justify-center h-64 overflow-visible">
                 <div className="relative w-72 h-72 overflow-visible">
-                  {!loadingStatusAcao && dadosStatusAcaoFiltrados.length > 0 ? (
+                  {loadingTabela ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500">Carregando...</p>
+                      </div>
+                    </div>
+                  ) : planoAgg.length > 0 ? (
                     <>
                       {/* Gráfico de pizza dinâmico baseado nos dados reais */}
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
                         {(() => {
-                          const coresPorStatus: { [key: string]: string } = {
-                            'Não iniciada': '#60A5FA',
-                            'Concluído': '#10B981', 
-                            'Em andamento': '#FDE047',
-                            'Atrasado': '#EF4444'
-                          };
-                          
+                    const normalize = (s: string) => (s || 'Não informado').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    const colorForPlano = (label: string) => {
+                      const k = normalize(label);
+                      const map: { [key: string]: string } = {
+                        'nao iniciada': '#9CA3AF',
+                        'em andamento': '#F59E0B',
+                        'atrasado': '#DC2626',
+                        'concluido': '#059669',
+                        'concluida': '#059669',
+                        'aceitar': '#10B981',
+                        'mitigar': '#F59E0B',
+                        'transferir': '#3B82F6',
+                        'evitar': '#EF4444',
+                        'nao informado': '#9CA3AF'
+                      };
+                      return map[k] || '#9CA3AF';
+                    };
                           // Se há apenas um item (100%), renderizar um círculo completo
-                          if (dadosStatusAcaoFiltrados.length === 1) {
-                            const item = dadosStatusAcaoFiltrados[0];
+                          if (planoAgg.length === 1) {
+                            const item = planoAgg[0];
                             const outerRadius = 90;
                             const innerRadius = 30;
                             
-                            const isCurrentFiltered = false;
-                            const isOtherFiltered = false;
+                            const isCurrentFiltered = filtroPlanoRespostaSelecionado === item.plano_resposta_risco;
+                            const isOtherFiltered = filtroPlanoRespostaSelecionado !== null && filtroPlanoRespostaSelecionado !== item.plano_resposta_risco;
                             
                             return (
-                              <g key={item.status_acao}>
+                              <g key={item.plano_resposta_risco}>
                                 {/* Círculo externo */}
                                 <circle
                                   cx="140"
                                   cy="140"
                                   r={outerRadius}
-                                  fill={coresPorStatus[item.status_acao] || '#60A5FA'}
+                                  fill={colorForPlano(item.plano_resposta_risco)}
                                   stroke="white"
                                   strokeWidth="2"
                                   className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
@@ -564,7 +944,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                   } hover:opacity-80`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
+                                    aplicarFiltroPorSegmento('plano_resposta', item.plano_resposta_risco, 'grafico-plano-resposta');
                                   }}
                                   data-interactive="true"
                                 />
@@ -582,8 +962,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosStatusAcaoFiltrados.map((item, index) => {
-                            const totalFiltrado = dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0);
+                          return planoAgg.map((item, index) => {
+                            const totalFiltrado = planoAgg.reduce((acc, item) => acc + item.total_acoes, 0);
                             const percentage = totalFiltrado > 0 ? (item.total_acoes / totalFiltrado) * 100 : 0;
                             const startAngle = (cumulativePercentage / 100) * 360;
                             const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
@@ -617,14 +997,14 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             
                             cumulativePercentage += percentage;
                             
-                            const isCurrentFiltered = false;
-                            const isOtherFiltered = false;
+                            const isCurrentFiltered = filtroPlanoRespostaSelecionado === item.plano_resposta_risco;
+                            const isOtherFiltered = filtroPlanoRespostaSelecionado !== null && filtroPlanoRespostaSelecionado !== item.plano_resposta_risco;
                             
                             return (
                               <path
-                                key={item.status_acao}
+                                key={item.plano_resposta_risco}
                                 d={pathData}
-                                fill={coresPorStatus[item.status_acao] || '#60A5FA'}
+                                fill={colorForPlano(item.plano_resposta_risco)}
                                 stroke="white"
                                 strokeWidth="2"
                                 className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${
@@ -632,7 +1012,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                                 } hover:opacity-80`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // toggleFilter('chart', 'status_acao', item.status_acao, 'grafico-status-acao');
+                                  aplicarFiltroPorSegmento('plano_resposta', item.plano_resposta_risco, 'grafico-plano-resposta');
                                 }}
                                 data-interactive="true"
                               />
@@ -644,13 +1024,13 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                         {/* Rótulos percentuais externos às seções */}
                         {(() => {
                           // Para um único item, posicionar o rótulo no topo
-                          if (dadosStatusAcaoFiltrados.length === 1) {
-                            const item = dadosStatusAcaoFiltrados[0];
-                            const totalFiltrado = dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0);
+                          if (planoAgg.length === 1) {
+                            const item = planoAgg[0];
+                            const totalFiltrado = planoAgg.reduce((acc, item) => acc + item.total_acoes, 0);
                             const percentage = totalFiltrado > 0 ? (item.total_acoes / totalFiltrado) * 100 : 0;
                             return (
                               <text
-                                key={`label-${item.status_acao}`}
+                                key={`label-${item.plano_resposta_risco}`}
                                 x="140"
                                 y="15"
                                 textAnchor="middle"
@@ -667,8 +1047,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                           // Para múltiplos itens, usar a lógica original
                           let cumulativePercentage = 0;
                           
-                          return dadosStatusAcaoFiltrados.map((item, index) => {
-                            const totalFiltrado = dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0);
+                          return planoAgg.map((item, index) => {
+                            const totalFiltrado = planoAgg.reduce((acc, item) => acc + item.total_acoes, 0);
                             const percentage = totalFiltrado > 0 ? (item.total_acoes / totalFiltrado) * 100 : 0;
                             const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
                             const midAngleRad = (midAngle - 90) * (Math.PI / 180);
@@ -681,7 +1061,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                             
                             return (
                               <text
-                                key={`label-${item.status_acao}`}
+                                key={`label-${item.plano_resposta_risco}`}
                                 x={labelX}
                                 y={labelY}
                                 textAnchor="middle"
@@ -701,7 +1081,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                       {/* Centro com somatório */}
                       <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{dadosStatusAcaoFiltrados.reduce((acc, item) => acc + item.total_acoes, 0)}</p>
+                          <p className="text-2xl font-bold text-gray-900">{planoAgg.reduce((acc, item) => acc + item.total_acoes, 0)}</p>
                           <p className="text-sm text-gray-600">Total</p>
                         </div>
                       </div>
@@ -717,24 +1097,31 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-2 mt-4">
-                {loadingStatusAcao ? (
+                {loadingTabela ? (
                   <div className="text-center text-gray-500">Carregando...</div>
-                ) : dadosStatusAcaoFiltrados.length > 0 ? (
-                  dadosStatusAcaoFiltrados.map((item, index) => {
-                    const coresPorStatus: { [key: string]: string } = {
-                      'Não iniciada': '#60A5FA',
-                      'Concluído': '#10B981', 
-                      'Em andamento': '#FDE047',
-                      'Atrasado': '#EF4444'
+                ) : planoAgg.length > 0 ? (
+                  planoAgg.map((item, index) => {
+                    const normalizeLegend = (s: string) => (s || 'Não informado').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    const mapLegend: { [key: string]: string } = {
+                      'nao iniciada': '#9CA3AF',
+                      'em andamento': '#F59E0B',
+                      'atrasado': '#DC2626',
+                      'concluido': '#059669',
+                      'concluida': '#059669',
+                      'aceitar': '#10B981',
+                      'mitigar': '#F59E0B',
+                      'transferir': '#3B82F6',
+                      'evitar': '#EF4444',
+                      'nao informado': '#9CA3AF'
                     };
-                    const corClasse = coresPorStatus[item.status_acao] || '#60A5FA';
-                    const percentage = totalStatusAcao > 0 ? Math.round((item.total_acoes / totalStatusAcao) * 100) : 0;
+                    const corClasse = mapLegend[normalizeLegend(item.plano_resposta_risco)] || '#9CA3AF';
+                    const percentage = planoAgg.reduce((acc, it) => acc + it.total_acoes, 0) > 0 ? Math.round((item.total_acoes / planoAgg.reduce((acc, it) => acc + it.total_acoes, 0)) * 100) : 0;
                     
                     return (
-                      <div key={item.status_acao} className="flex items-center justify-between">
+                      <div key={item.plano_resposta_risco} className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: corClasse}}></div>
-                          <span className="text-sm text-gray-700">{item.status_acao}</span>
+                          <span className="text-sm text-gray-700">{item.plano_resposta_risco}</span>
                         </div>
                         <span className="text-sm font-medium text-gray-900">{item.total_acoes} ({percentage}%)</span>
                       </div>
@@ -818,8 +1205,8 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                       Erro ao carregar dados: {errorTabela}
                     </td>
                   </tr>
-                ) : dadosTabela && dadosTabela.length > 0 ? (
-                  dadosTabela.map((item, index) => {
+                ) : dadosTabelaFiltrados && dadosTabelaFiltrados.length > 0 ? (
+                  dadosTabelaFiltrados.map((item, index) => {
                     // Função para determinar a cor do badge baseado no nível de risco
                     const getCorNivelRisco = (nivel: string) => {
                       switch (nivel?.toLowerCase()) {
@@ -837,22 +1224,24 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                       }
                     };
 
-                    // Encontrar o índice original do item na tabela completa
-                    const originalIndex = dadosTabela.findIndex(originalItem => originalItem === item);
+                    // Criar identificador único para a linha usando processo + risco
+                    const identificadorLinha = `${item.processo || 'N/A'}-${item.risco || 'N/A'}-${index}`;
                     
                     // Verificar se esta linha está filtrada
-                    const isCurrentRowFiltered = false;
-                    const isOtherRowFiltered = false;
+                    const isCurrentRowFiltered = linhaTabelaSelecionada === identificadorLinha;
+                    const isOtherRowFiltered = linhaTabelaSelecionada !== null && linhaTabelaSelecionada !== identificadorLinha;
                     
                     return (
                       <tr 
                         key={index} 
                         className={`cursor-pointer transition-all duration-200 ${
                           isOtherRowFiltered ? 'opacity-50' : 'opacity-100'
-                        } hover:bg-gray-50`}
+                        } hover:bg-gray-50 ${
+                          isCurrentRowFiltered ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // toggleFilter('table', 'table_row', originalIndex.toString(), 'tabela-riscos');
+                          aplicarFiltroPorLinha(identificadorLinha, item);
                         }}
                         data-interactive="true"
                       >
@@ -863,7 +1252,7 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
                           <div className="text-xs font-medium text-gray-900 break-words max-w-40">{item.risco || 'N/A'}</div>
                         </td>
                         <td className="px-3 py-2">
-                          <div className="text-xs text-gray-900 break-words max-w-40">{item.acao || 'N/A'}</div>
+                          <div className="text-xs text-gray-900 break-words max-w-40">{(item.acao && item.acao.trim()) ? item.acao : 'N/A'}</div>
                         </td>
                         <td className="px-3 py-2">
                           <div className="text-xs text-gray-900 break-words max-w-32">{item.responsavel_risco || 'N/A'}</div>

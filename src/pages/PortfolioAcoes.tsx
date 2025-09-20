@@ -991,11 +991,11 @@ const PortfolioAcoesContent: React.FC = React.memo(() => {
         </div>
 
         {/* Linha 2: Gráfico de Barras Verticais - Diagrama de Severidade */}
-        <Card className="mb-8" style={{ position: 'relative', overflow: 'visible' }}>
+        <Card className="mb-8 relative overflow-visible">
           <CardHeader>
             <CardTitle>Severidade por Ação</CardTitle>
           </CardHeader>
-          <CardContent style={{ position: 'relative', overflow: 'visible' }}>
+          <CardContent className="relative overflow-visible">
             {(loadingSeveridadeAcao || loadingPortfolioData) ? (
               <div className="h-80 flex items-center justify-center">
                 <p className="text-gray-500">Carregando dados...</p>

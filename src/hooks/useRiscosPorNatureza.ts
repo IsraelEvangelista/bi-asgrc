@@ -372,7 +372,7 @@ export const useRiscosPorNatureza = () => {
           });
 
           // Aplicar filtros nos dados processados
-          const riscosFiltrados = aplicarFiltros(riscosProcessados, filtroSeveridade, filtroQuadrante, filtroNatureza);
+          const riscosFiltrados = aplicarFiltros(riscosProcessados, filtroSeveridade, filtroQuadrante, filtroNatureza, filtroEventoRisco, filtroResponsavelRisco);
 
           const naturezasMap = new Map<string, RiscoPorNatureza>();
 

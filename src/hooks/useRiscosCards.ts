@@ -9,7 +9,16 @@ interface RiscosCardsData {
   error: string | null;
 }
 
-export const useRiscosCards = (): RiscosCardsData => {
+interface FiltrosGerais {
+  macroprocessoId: string;
+  processoId: string;
+  subprocessoId: string;
+  responsavelId: string;
+  acaoId: string;
+  situacaoRisco: string;
+}
+
+export const useRiscosCards = (filtrosGerais?: FiltrosGerais): RiscosCardsData => {
   const [data, setData] = useState<RiscosCardsData>({
     quantidadeProcessos: 0,
     quantidadeRiscos: 0,
@@ -33,10 +42,28 @@ export const useRiscosCards = (): RiscosCardsData => {
           throw processosError;
         }
 
-        // Query para contar riscos distintos da tabela 015_riscos_x_acoes_proc_trab (campo 'id_risco')
-        const { data: riscosData, error: riscosError } = await supabase
+        // Query para contar riscos distintos com filtros aplicados
+        let riscosQuery = supabase
           .from('015_riscos_x_acoes_proc_trab')
-          .select('id_risco'); // Seleciona apenas o campo id_risco
+          .select('id_risco, id_processo, id_acao_controle, responsavel_processo, situacao_risco');
+        
+        // Aplicar filtros se fornecidos
+        if (filtrosGerais) {
+          if (filtrosGerais.processoId) {
+            riscosQuery = riscosQuery.eq('id_processo', filtrosGerais.processoId);
+          }
+          if (filtrosGerais.acaoId) {
+            riscosQuery = riscosQuery.eq('id_acao_controle', filtrosGerais.acaoId);
+          }
+          if (filtrosGerais.responsavelId) {
+            riscosQuery = riscosQuery.eq('responsavel_processo', filtrosGerais.responsavelId);
+          }
+          if (filtrosGerais.situacaoRisco) {
+            riscosQuery = riscosQuery.ilike('situacao_risco', `%${filtrosGerais.situacaoRisco}%`);
+          }
+        }
+        
+        const { data: riscosData, error: riscosError } = await riscosQuery;
         
         if (riscosError) {
           throw riscosError;
@@ -46,10 +73,25 @@ export const useRiscosCards = (): RiscosCardsData => {
         const riscosDistintos = new Set(riscosData?.map(item => item.id_risco) || []);
         const riscosCount = riscosDistintos.size;
 
-        // Query para contar ações distintas da tabela 015_riscos_x_acoes_proc_trab (campo 'id_acao_controle')
-        const { data: acoesData, error: acoesError } = await supabase
+        // Query para contar ações distintas com filtros aplicados
+        let acoesQuery = supabase
           .from('015_riscos_x_acoes_proc_trab')
-          .select('id_acao_controle'); // Seleciona apenas o campo id_acao_controle
+          .select('id_acao_controle, id_processo, responsavel_processo, situacao_risco');
+        
+        // Aplicar os mesmos filtros
+        if (filtrosGerais) {
+          if (filtrosGerais.processoId) {
+            acoesQuery = acoesQuery.eq('id_processo', filtrosGerais.processoId);
+          }
+          if (filtrosGerais.responsavelId) {
+            acoesQuery = acoesQuery.eq('responsavel_processo', filtrosGerais.responsavelId);
+          }
+          if (filtrosGerais.situacaoRisco) {
+            acoesQuery = acoesQuery.ilike('situacao_risco', `%${filtrosGerais.situacaoRisco}%`);
+          }
+        }
+        
+        const { data: acoesData, error: acoesError } = await acoesQuery;
         
         if (acoesError) {
           throw acoesError;
@@ -78,7 +120,7 @@ export const useRiscosCards = (): RiscosCardsData => {
     };
 
     fetchData();
-  }, []);
+  }, [filtrosGerais]);
 
   return data;
 };

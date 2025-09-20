@@ -1,15 +1,13 @@
 import { memo, useCallback, useState } from 'react';
-import { LogOut, User, X, Filter, FilterX } from 'lucide-react';
+import { LogOut, User, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useAuthStore } from "../store/authStore";
 import { useFilter } from '../contexts/FilterContext';
-import { useConfig } from '../hooks/useConfig';
-import MatrizRiscoFilterModal from './MatrizRiscoFilterModal';
 
 const Header: React.FC = () => {
+  const location = useLocation();
   const { user, userProfile, signOut } = useAuthStore();
   const { filtroSeveridade, filtroQuadrante, filtroNatureza, clearAllFilters } = useFilter();
-  const { naturezas } = useConfig();
-  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -60,7 +58,7 @@ const Header: React.FC = () => {
                   )}
                   {filtroNatureza && (
                     <div className="flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                      <span>Natureza: {naturezas.find(n => n.id === filtroNatureza)?.natureza || 'N/A'}</span>
+                      <span>Natureza: {filtroNatureza}</span>
                       <button
                         onClick={() => clearAllFilters()}
                         className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
@@ -103,12 +101,6 @@ const Header: React.FC = () => {
           )}
         </div>
       </div>
-      
-      {/* Modal de Filtros */}
-      <MatrizRiscoFilterModal
-        isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-      />
     </header>
   );
 };
