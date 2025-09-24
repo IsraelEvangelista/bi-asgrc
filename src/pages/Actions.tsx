@@ -133,14 +133,21 @@ const Actions: React.FC = () => {
     
     if (Array.isArray(area_executora)) {
       const siglas = area_executora.map(areaId => {
-        const area = areasExecutoras.find(a => a.id === areaId.toString());
-        return area ? area.sigla_area : `ID:${areaId}`;
+        if (areaId != null) {
+          const area = areasExecutoras.find(a => a.id === String(areaId));
+          return area ? area.sigla_area : `ID:${areaId}`;
+        }
+        return null;
       }).filter(Boolean);
       return siglas.join(', ');
     }
     
-    const area = areasExecutoras.find(a => a.id === area_executora.toString());
-    return area ? area.sigla_area : `ID:${area_executora}`;
+    if (area_executora != null) {
+      const area = areasExecutoras.find(a => a.id === String(area_executora));
+      return area ? area.sigla_area : `ID:${area_executora}`;
+    }
+    
+    return '';
   }, [areasExecutoras]);
   
   // Hook específico para dados filtrados do gráfico de barras horizontais - OTIMIZADO

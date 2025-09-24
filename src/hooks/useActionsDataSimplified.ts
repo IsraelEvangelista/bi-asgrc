@@ -178,10 +178,11 @@ export const useActionsData = (): ActionsData => {
 
           if (riskRelData) {
             const riskMap = new Map<string, string[]>();
-            riskRelData.forEach(rel => {
-              if (rel['006_matriz_riscos'] && rel['006_matriz_riscos'].eventos_riscos) {
+            riskRelData.forEach((rel: any) => {
+              const matrizRiscos = rel['006_matriz_riscos'];
+              if (matrizRiscos && typeof matrizRiscos === 'object' && matrizRiscos.eventos_riscos) {
                 const existingRisks = riskMap.get(rel.id_acao) || [];
-                existingRisks.push(rel['006_matriz_riscos'].eventos_riscos);
+                existingRisks.push(matrizRiscos.eventos_riscos);
                 riskMap.set(rel.id_acao, existingRisks);
               }
             });

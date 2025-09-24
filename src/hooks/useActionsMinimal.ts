@@ -147,20 +147,20 @@ export const useActionsMinimal = (): MinimalActionsData => {
             const riskMap = new Map<string, string[]>();
             const siglaMap = new Map<string, string>();
             
-            riskRelData.forEach(rel => {
-              if (rel['006_matriz_riscos']) {
-                const risk = rel['006_matriz_riscos'];
+            riskRelData.forEach((rel: any) => {
+              const matrizRiscos = rel['006_matriz_riscos'];
+              if (matrizRiscos && typeof matrizRiscos === 'object') {
                 
                 // Armazenar eventos_riscos
-                if (risk.eventos_riscos) {
+                if (matrizRiscos.eventos_riscos) {
                   const existingRisks = riskMap.get(rel.id_acao) || [];
-                  existingRisks.push(risk.eventos_riscos);
+                  existingRisks.push(matrizRiscos.eventos_riscos);
                   riskMap.set(rel.id_acao, existingRisks);
                 }
                 
                 // Armazenar sigla (assumindo uma ação por sigla - pegar a primeira)
-                if (risk.sigla && !siglaMap.has(rel.id_acao)) {
-                  siglaMap.set(rel.id_acao, risk.sigla);
+                if (matrizRiscos.sigla && !siglaMap.has(rel.id_acao)) {
+                  siglaMap.set(rel.id_acao, matrizRiscos.sigla);
                 }
               }
             });
