@@ -170,11 +170,16 @@ export const useActionsMinimal = (): MinimalActionsData => {
               if (riskMap.has(action.id)) {
                 const risks = riskMap.get(action.id)!;
                 action.eventos_riscos = risks.join(', ');
+                // Definir id_ref com eventos_riscos ao invés de sigla
+                action.id_ref = risks.join(', ');
               }
               
-              // Definir id_ref com a sigla do risco
+              // Manter sigla disponível se necessário para outras funcionalidades
               if (siglaMap.has(action.id)) {
-                action.id_ref = siglaMap.get(action.id)!;
+                // Não sobrescrever id_ref se já foi definido com eventos_riscos
+                if (!action.id_ref) {
+                  action.id_ref = siglaMap.get(action.id)!;
+                }
               }
             });
           }

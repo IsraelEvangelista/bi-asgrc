@@ -170,39 +170,21 @@ export const useActionsData = (): ActionsData => {
           }
         }
 
-        // 3. Buscar riscos relacionados através da tabela de relação 016_rel_acoes_riscos
+        // 3. Buscar riscos relacionados através da tabela de relação 016_rel_acoes_riscos - TEMPORARIAMENTE DESABILITADO
+        // TODO: Reabilitar após descobrir estrutura correta da tabela de riscos
+        /*
         const { data: riskRelData, error: riskError } = await supabase
           .from('016_rel_acoes_riscos')
-          .select(`
-            id_acao,
-            id_risco,
-            006_matriz_riscos (
-              eventos_riscos
-            )
-          `)
+          .select('id_acao, id_risco')
           .in('id_acao', actionIds);
 
-        if (riskError) {
-          console.warn('⚠️ Erro ao buscar relações de risco:', riskError.message);
-        } else if (riskRelData) {
+        if (riskRelData) {
           console.log('⚠️ Relações de risco buscadas:', riskRelData.length);
-          
-          const riskMap = new Map();
-          riskRelData.forEach(rel => {
-            if (rel['006_matriz_riscos'] && rel['006_matriz_riscos'].eventos_riscos) {
-              const existingRisks = riskMap.get(rel.id_acao) || [];
-              existingRisks.push(rel['006_matriz_riscos'].eventos_riscos);
-              riskMap.set(rel.id_acao, existingRisks);
-            }
-          });
-
           processedActions.forEach(action => {
-            if (riskMap.has(action.id)) {
-              const risks = riskMap.get(action.id);
-              action.eventos_riscos = risks.join(', '); // Juntar múltiplos riscos com vírgula
-            }
+            action.eventos_riscos = 'Risco em análise'; // Placeholder temporário
           });
         }
+        */
         
       } catch (relatedDataError) {
         console.warn('⚠️ Erro ao buscar dados relacionados (continuando com dados básicos):', relatedDataError);

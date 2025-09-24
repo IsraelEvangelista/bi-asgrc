@@ -24,6 +24,9 @@ const DonutChart: React.FC<DonutChartProps> = ({
   const centerY = 140;
   const outerRadius = 80;
   const innerRadius = 50;
+  
+  // Se total é zero, mostrar um círculo vazio para indicar que não há dados
+  const showEmptyState = total === 0;
 
   const generatePath = (startAngle: number, endAngle: number) => {
     const startAngleRad = (startAngle - 90) * (Math.PI / 180);
@@ -57,29 +60,53 @@ const DonutChart: React.FC<DonutChartProps> = ({
       <div className="flex flex-col items-center">
       <div className="relative w-72 h-72">
         <svg className="w-full h-full" viewBox="0 0 280 280">
-          {data.map((item, index) => {
-            const percentage = (item.value / total) * 100;
-            const startAngle = (cumulativePercentage / 100) * 360;
-            const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
-            const pathData = generatePath(startAngle, endAngle);
-            cumulativePercentage += percentage;
-
-            const isOtherFiltered = selectedSegment !== null && selectedSegment !== item.name;
-            const opacity = isOtherFiltered ? 0.5 : 1;
-
-            return (
-              <path
-                key={item.name}
-                d={pathData}
-                fill={item.color}
-                stroke="white"
+          {showEmptyState ? (
+            // Mostrar círculo vazio quando não há dados
+            <>
+              <circle
+                cx={centerX}
+                cy={centerY}
+                r={outerRadius}
+                fill="none"
+                stroke="#E5E7EB"
                 strokeWidth={2}
-                className={`drop-shadow-lg cursor-pointer transition-all duration-200 hover:opacity-80`}
-                style={{ opacity }}
-                onClick={() => onSegmentClick?.(item.name)}
+                className="drop-shadow-sm"
               />
-            );
-          })}
+              <circle
+                cx={centerX}
+                cy={centerY}
+                r={innerRadius}
+                fill="white"
+                stroke="#E5E7EB"
+                strokeWidth={2}
+              />
+            </>
+          ) : (
+            // Mostrar dados normalmente
+            data.map((item, index) => {
+              const percentage = (item.value / total) * 100;
+              const startAngle = (cumulativePercentage / 100) * 360;
+              const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
+              const pathData = generatePath(startAngle, endAngle);
+              cumulativePercentage += percentage;
+
+              const isOtherFiltered = selectedSegment !== null && selectedSegment !== item.name;
+              const opacity = isOtherFiltered ? 0.5 : 1;
+
+              return (
+                <path
+                  key={item.name}
+                  d={pathData}
+                  fill={item.color}
+                  stroke="white"
+                  strokeWidth={2}
+                  className={`drop-shadow-lg cursor-pointer transition-all duration-200 hover:opacity-80`}
+                  style={{ opacity }}
+                  onClick={() => onSegmentClick?.(item.name)}
+                />
+              );
+            })
+          )}
 
           {/* Centro com total */}
           <text
@@ -104,8 +131,8 @@ const DonutChart: React.FC<DonutChartProps> = ({
             Total
           </text>
 
-          {/* Rótulos externos */}
-          {data.map((item, index) => {
+          {/* Rótulos externos - apenas quando há dados */}
+          {!showEmptyState && data.map((item, index) => {
             const percentage = (item.value / total) * 100;
             const startAngle = data.slice(0, index).reduce((sum, d) => sum + (d.value / total) * 360, 0);
             const midAngle = startAngle + (percentage / 2) / 100 * 360;

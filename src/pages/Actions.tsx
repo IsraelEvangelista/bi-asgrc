@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -32,15 +32,18 @@ import {
 import { useOverdueActionAlerts } from '../hooks/useAlerts';
 import { useActionsMinimal as useActionsData } from '../hooks/useActionsMinimal';
 import { useRiskBarChart } from '../hooks/useRiskBarChart';
+import { useRiskActionsData } from '../hooks/useRiskActionsData';
+import { useAreasExecutoras } from '../hooks/useAreasExecutoras';
 import AlertBanner from '../components/AlertBanner';
-import DonutChart from '../components/DonutChart';
 import StatusCards from '../components/StatusCards';
 import HorizontalBarChart from '../components/HorizontalBarChart';
+import { useActionsChartData } from '../hooks/useActionsChartData';
 
 // Mock data para demonstração
 const mockActions: Action[] = [
   {
     id: '1',
+    id_ref: 'R01',
     desc_acao: 'Implementar controles de acesso ao sistema financeiro',
     area_executora: ['TI', 'Segurança'],
     acao_transversal: true,
@@ -55,6 +58,7 @@ const mockActions: Action[] = [
   },
   {
     id: '2',
+    id_ref: 'R02',
     desc_acao: 'Corrigir vulnerabilidades identificadas no sistema',
     area_executora: ['TI'],
     acao_transversal: false,
@@ -69,6 +73,7 @@ const mockActions: Action[] = [
   },
   {
     id: '3',
+    id_ref: 'R03',
     desc_acao: 'Implementar monitoramento contínuo de transações',
     area_executora: ['Auditoria', 'TI'],
     acao_transversal: true,
@@ -117,6 +122,42 @@ const Actions: React.FC = () => {
   // Hook para gráfico de barras horizontais (dados reais)
   const { data: riskBarData, loading: riskBarLoading, error: riskBarError } = useRiskBarChart();
   
+  // Hook para buscar áreas executoras disponíveis
+  const { areas: areasExecutoras, loading: areasLoading } = useAreasExecutoras();
+  
+  // Função para resolver IDs de área para sigla_area (para exibição)
+  const resolveAreaExecutora = useCallback((area_executora: any) => {
+    if (!area_executora || areasExecutoras.length === 0) {
+      return '';
+    }
+    
+    if (Array.isArray(area_executora)) {
+      const siglas = area_executora.map(areaId => {
+        const area = areasExecutoras.find(a => a.id === areaId.toString());
+        return area ? area.sigla_area : `ID:${areaId}`;
+      }).filter(Boolean);
+      return siglas.join(', ');
+    }
+    
+    const area = areasExecutoras.find(a => a.id === area_executora.toString());
+    return area ? area.sigla_area : `ID:${area_executora}`;
+  }, [areasExecutoras]);
+  
+  // Hook específico para dados filtrados do gráfico de barras horizontais - OTIMIZADO
+  const { 
+    riskData: filteredRiskData, 
+    loading: filteredRiskLoading, 
+    error: filteredRiskError 
+  } = useRiskActionsData({
+    searchTerm,
+    tipo_acao: filters.tipo_acao,
+    status: filters.status,
+    situacao: filters.situacao,
+    area_executora: filters.area_executora,
+    selectedStatus,
+    selectedPrazo
+  });
+  
   // Hook simplificado comentado temporariamente para teste
   // const { 
   //   actions: realActions, 
@@ -139,24 +180,40 @@ const Actions: React.FC = () => {
   // Usar dados reais ou fallback para mockados durante loading/erro
   const actions = realActions.length > 0 ? realActions : mockActions;
   const actionsForCharts = realActions.length > 0 ? realActions : mockActions;
+  
+  // Função para lidar com cliques fora dos elementos interativos
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Verificar se o clique foi em um elemento interativo (gráfico ou tabela)
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('[data-interactive="true"]') || 
+                                target.closest('path') || 
+                                target.closest('tr[data-interactive="true"]');
+    
+    // Se não foi em um elemento interativo e há filtro ativo, limpar todos os filtros
+    if (!isInteractiveElement && (selectedStatus || selectedPrazo)) {
+      setSelectedStatus(null);
+      setSelectedPrazo(null);
+    }
+  };
 
   const filteredActions = useMemo(() => {
     let filtered = actionsForCharts.filter(action => {
       const matchesSearch = !searchTerm ||
-        action.desc_acao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (Array.isArray(action.area_executora) ? 
-          action.area_executora.some(area => area.toLowerCase().includes(searchTerm.toLowerCase())) : 
-          action.area_executora?.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
-        action.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        action.sigla_area?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        action.eventos_riscos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        action.id_ref?.toLowerCase().includes(searchTerm.toLowerCase());
+        (action.desc_acao && action.desc_acao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (action.id && action.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (action.id_ref && action.id_ref.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesTipo = !filters.tipo_acao || action.tipo_acao === filters.tipo_acao;
       const matchesStatus = !filters.status || action.status === filters.status;
       const matchesSituacao = !filters.situacao || action.situacao === filters.situacao;
-      const matchesArea = !filters.area_executora ||
-        action.area_executora.some(area => area.toLowerCase().includes(filters.area_executora!.toLowerCase()));
+      // Filtrar por sigla_area: converter IDs de area_executora para siglas e comparar
+      const matchesArea = !filters.area_executora || (
+        Array.isArray(action.area_executora) && 
+        action.area_executora.some(areaId => {
+          const area = areasExecutoras.find(a => a.id === areaId.toString());
+          return area && area.sigla_area === filters.area_executora;
+        })
+      );
 
       // Aplicar filtros dinâmicos
       const matchesDynamicStatus = !selectedStatus || action.status === selectedStatus;
@@ -175,32 +232,33 @@ const Actions: React.FC = () => {
 
         switch (sortField) {
           case 'desc_acao':
-            aValue = a.desc_acao.toLowerCase();
-            bValue = b.desc_acao.toLowerCase();
+            aValue = (a.desc_acao || '').toLowerCase();
+            bValue = (b.desc_acao || '').toLowerCase();
             break;
           case 'id':
-            aValue = a.id;
-            bValue = b.id;
+            aValue = a.id || '';
+            bValue = b.id || '';
             break;
           case 'id_ref':
             aValue = a.id_ref || '';
             bValue = b.id_ref || '';
             break;
           case 'area_executora':
-            aValue = a.area_executora.join(', ').toLowerCase();
-            bValue = b.area_executora.join(', ').toLowerCase();
+            // Resolver IDs das áreas para siglas para ordenação
+            aValue = resolveAreaExecutora(a.area_executora).toLowerCase();
+            bValue = resolveAreaExecutora(b.area_executora).toLowerCase();
             break;
           case 'prazo_implementacao':
-            aValue = new Date(a.prazo_implementacao);
-            bValue = new Date(b.prazo_implementacao);
+            aValue = a.prazo_implementacao ? new Date(a.prazo_implementacao) : new Date(0);
+            bValue = b.prazo_implementacao ? new Date(b.prazo_implementacao) : new Date(0);
             break;
           case 'status':
-            aValue = a.status.toLowerCase();
-            bValue = b.status.toLowerCase();
+            aValue = (a.status || '').toLowerCase();
+            bValue = (b.status || '').toLowerCase();
             break;
           case 'perc_implementacao':
-            aValue = a.perc_implementacao;
-            bValue = b.perc_implementacao;
+            aValue = a.perc_implementacao || 0;
+            bValue = b.perc_implementacao || 0;
             break;
           case 'hist_created_at':
             aValue = a.hist_created_at ? new Date(a.hist_created_at) : new Date(0);
@@ -239,139 +297,65 @@ const Actions: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedStatus, selectedPrazo, filters]);
 
+  // Detectar se há filtros aplicados
+  const hasFiltersApplied = !!(
+    searchTerm ||
+    selectedStatus ||
+    selectedPrazo ||
+    Object.values(filters).some(f => f)
+  );
+
   // Alertas de ações atrasadas
   const overdueAlerts = useOverdueActionAlerts(filteredActions);
 
-  // Dados para os gráficos - usar dados filtrados
-  const statusData = useMemo(() => {
-    // Contar apenas ações com status DEFINIDO (não contar nulos/indefinidos) nos dados filtrados
-    const naoIniciada = filteredActions.filter(a => a.status === StatusAcao.NAO_INICIADA).length;
-    const emImplementacao = filteredActions.filter(a => a.status === StatusAcao.EM_IMPLEMENTACAO).length;
-    const implementada = filteredActions.filter(a => a.status === StatusAcao.IMPLEMENTADA).length;
-
-    return [
-      { name: 'Não Iniciada', value: naoIniciada, color: '#F59E0B' },
-      { name: 'Em implementação', value: emImplementacao, color: '#3B82F6' },
-      { name: 'Implementada', value: implementada, color: '#10B981' }
-    ];
-  }, [filteredActions]);
-
-  const prazoData = useMemo(() => {
-    // Filtrar EXATAMENTE como especificado: apenas 'Não iniciada' e 'Em implementação' com situação definida nos dados filtrados
-    const acoesRelevantes = filteredActions.filter(a => 
-      (a.status === StatusAcao.EM_IMPLEMENTACAO || a.status === StatusAcao.NAO_INICIADA) &&
-      (a.situacao === SituacaoAcao.NO_PRAZO || a.situacao === SituacaoAcao.ATRASADO)
-    );
+  // Usar hooks corrigidos para dados dos gráficos
+  // Para o gráfico de barras horizontais, usar dados filtrados quando há filtros aplicados
+  const riscoDataToUse = useMemo(() => {
+    let data = hasFiltersApplied ? filteredRiskData : (riskBarData || []);
     
-    const noPrazo = acoesRelevantes.filter(a => a.situacao === SituacaoAcao.NO_PRAZO).length;
-    const atrasado = acoesRelevantes.filter(a => a.situacao === SituacaoAcao.ATRASADO).length;
-
-    return [
-      { name: 'No Prazo', value: noPrazo, color: '#059669' },
-      { name: 'Atrasado', value: atrasado, color: '#DC2626' }
-    ];
-  }, [filteredActions]);
-
-  const riscoData = useMemo(() => {
-    // Riscos específicos que devem aparecer no gráfico
-    const allowedRisks = ['R01', 'R02', 'R03', 'R04', 'R05', 'R09', 'R17', 'R35'];
-    
-    // Inicializar mapa com os riscos permitidos
-    const riskMap = new Map();
-    allowedRisks.forEach(riskId => {
-      riskMap.set(riskId, {
-        riskId,
-        statusData: {
-          emImplementacao: 0,
-          implementada: 0,
-          naoIniciada: 0
-        }
-      });
-    });
-    
-    // Processar apenas ações dos dados filtrados que correspondem aos riscos permitidos
-    filteredActions.forEach(action => {
-      // Buscar sigla do risco - assumindo que está em id_ref ou pode ser extraída de eventos_riscos
-      let riskId = action.id_ref;
-      
-      // Se não tiver id_ref, tentar extrair da descrição de eventos_riscos
-      if (!riskId && action.eventos_riscos) {
-        const match = action.eventos_riscos.match(/\b(R\d{2})\b/);
-        if (match) {
-          riskId = match[1];
-        }
-      }
-      
-      // Processar apenas se for um risco permitido
-      if (riskId && allowedRisks.includes(riskId)) {
-        const risk = riskMap.get(riskId);
-        if (risk) {
-          if (action.status === StatusAcao.EM_IMPLEMENTACAO) {
-            risk.statusData.emImplementacao++;
-          } else if (action.status === StatusAcao.IMPLEMENTADA) {
-            risk.statusData.implementada++;
-          } else if (action.status === StatusAcao.NAO_INICIADA) {
-            risk.statusData.naoIniciada++;
-          }
-        }
-      }
-    });
-    
-    // Converter para array e filtrar riscos com pelo menos uma ação
-    const riskArray = Array.from(riskMap.values()).filter(risk => {
-      const total = risk.statusData.emImplementacao + risk.statusData.implementada + risk.statusData.naoIniciada;
-      return total > 0;
-    });
-    
-    // Se não tiver dados, usar mock apenas com os riscos permitidos
-    if (riskArray.length === 0) {
-      if (riskBarData && riskBarData.length > 0) {
-        // Filtrar dados do hook para mostrar apenas riscos permitidos
-        const filteredBarData = riskBarData.filter(item => allowedRisks.includes(item.riskId));
-        if (filteredBarData.length > 0) {
-          return filteredBarData;
-        }
-      }
-      
-      // Fallback para dados mock dos riscos específicos
-      const mockData = [
-        { riskId: 'R01', statusData: { emImplementacao: 3, implementada: 5, naoIniciada: 2 } },
-        { riskId: 'R02', statusData: { emImplementacao: 2, implementada: 8, naoIniciada: 1 } },
-        { riskId: 'R03', statusData: { emImplementacao: 4, implementada: 3, naoIniciada: 3 } },
-        { riskId: 'R04', statusData: { emImplementacao: 1, implementada: 6, naoIniciada: 4 } },
-        { riskId: 'R05', statusData: { emImplementacao: 5, implementada: 2, naoIniciada: 2 } },
-        { riskId: 'R09', statusData: { emImplementacao: 2, implementada: 4, naoIniciada: 1 } },
-        { riskId: 'R17', statusData: { emImplementacao: 3, implementada: 7, naoIniciada: 0 } },
-        { riskId: 'R35', statusData: { emImplementacao: 1, implementada: 3, naoIniciada: 5 } }
-      ];
-      
-      return mockData.sort((a, b) => {
-        const totalA = a.statusData.emImplementacao + a.statusData.implementada + a.statusData.naoIniciada;
-        const totalB = b.statusData.emImplementacao + b.statusData.implementada + b.statusData.naoIniciada;
-        return totalB - totalA;
-      });
+    // Validar se temos dados válidos
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return [];
     }
     
-    // Ordenar do maior para o menor pela quantidade total
-    return riskArray.sort((a, b) => {
-      const totalA = a.statusData.emImplementacao + a.statusData.implementada + a.statusData.naoIniciada;
-      const totalB = b.statusData.emImplementacao + b.statusData.implementada + b.statusData.naoIniciada;
-      return totalB - totalA;
-    });
-  }, [filteredActions, riskBarData]); // Usar dados filtrados
+    // Transformar dados para formato compatível com HorizontalBarChart
+    const processedData = data.filter(item => item && typeof item === 'object').map((item: any) => {
+      if (item.statusData && typeof item.statusData === 'object') {
+        // Formato do useRiskActionsData - já está no formato correto
+        const statusData = {
+          emImplementacao: item.statusData.emImplementacao || 0,
+          implementada: item.statusData.implementada || 0,
+          naoIniciada: item.statusData.naoIniciada || 0
+        };
+        return {
+          riskId: item.riskId || 'Desconhecido',
+          statusData,
+          total: statusData.naoIniciada + statusData.emImplementacao + statusData.implementada
+        };
+      } else {
+        // Formato do useRiskBarChart - precisa ser convertido
+        return {
+          riskId: item.risk || 'Desconhecido',
+          statusData: {
+            emImplementacao: item['Em implementação'] || 0,
+            implementada: item['Implementada'] || 0,
+            naoIniciada: item['Não Iniciada'] || 0
+          },
+          total: (item['Não Iniciada'] || 0) + (item['Em implementação'] || 0) + (item['Implementada'] || 0)
+        };
+      }
+    }).filter(item => item && item.riskId && item.statusData); // Filtrar apenas itens válidos
+    
+    // Ordenar por total do maior para o menor
+    return processedData.sort((a, b) => b.total - a.total);
+  }, [hasFiltersApplied, filteredRiskData, riskBarData]);
+  
+  const { statusData, prazoData, statusCardsData } = useActionsChartData(
+    filteredActions,
+    riskBarData,
+    hasFiltersApplied
+  );
 
-  const statusCardsData = useMemo(() => {
-    // Contar apenas ações com status DEFINIDO (não contar nulos) nos dados filtrados
-    const naoIniciada = filteredActions.filter(a => a.status === StatusAcao.NAO_INICIADA).length;
-    const emImplementacao = filteredActions.filter(a => a.status === StatusAcao.EM_IMPLEMENTACAO).length;
-    const implementada = filteredActions.filter(a => a.status === StatusAcao.IMPLEMENTADA).length;
-
-    return {
-      naoIniciada,
-      emImplementacao,
-      implementada
-    };
-  }, [filteredActions]);
 
   const toggleFilterExpansion = () => {
     setIsFilterExpanded(!isFilterExpanded);
@@ -417,7 +401,10 @@ const Actions: React.FC = () => {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6 bg-white rounded-lg shadow-sm border border-gray-200">
+      <div 
+        className="p-6 space-y-6 bg-white rounded-lg shadow-sm border border-gray-200"
+        onClick={handleContainerClick}
+      >
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -618,16 +605,25 @@ const Actions: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Área Executora
                 </label>
-                <input
-                  type="text"
-                  placeholder="Área executora"
+                <select
                   value={filters.area_executora || ''}
                   onChange={(e) => setFilters(prev => ({
                     ...prev,
                     area_executora: e.target.value || undefined
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                  disabled={areasLoading}
+                >
+                  <option value="">Todas as áreas</option>
+                  {areasExecutoras.map((area) => (
+                    <option key={area.id} value={area.sigla_area}>
+                      {area.sigla_area}
+                    </option>
+                  ))}
+                  {areasLoading && (
+                    <option disabled>Carregando áreas...</option>
+                  )}
+                </select>
               </div>
             </div>
           </div>
@@ -666,37 +662,234 @@ const Actions: React.FC = () => {
         <div className="grid grid-cols-7 gap-6">
           {/* Linha 1-3, Coluna 1-2: Gráfico de rosca - Quantitativo Percentual por Status */}
           <div className="col-span-2 row-span-3">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
-              <DonutChart
-                data={statusData}
-                title="Quantitativo Percentual por Status"
-                onSegmentClick={(segment) => {
-                  // Mapear nomes dos segmentos para valores de status
-                  const statusMap: Record<string, StatusAcao> = {
-                    'Não Iniciada': StatusAcao.NAO_INICIADA,
-                    'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
-                    'Implementada': StatusAcao.IMPLEMENTADA
-                  };
-                  
-                  const statusValue = statusMap[segment];
-                  if (selectedStatus === statusValue) {
-                    setSelectedStatus(null);
-                  } else {
-                    setSelectedStatus(statusValue);
-                  }
-                }}
-                selectedSegment={selectedStatus ? 
-                  Object.keys({
-                    'Não Iniciada': StatusAcao.NAO_INICIADA,
-                    'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
-                    'Implementada': StatusAcao.IMPLEMENTADA
-                  }).find(key => ({
-                    'Não Iniciada': StatusAcao.NAO_INICIADA,
-                    'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
-                    'Implementada': StatusAcao.IMPLEMENTADA
-                  })[key] === selectedStatus) : null
-                }
-              />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Quantitativo Percentual por Status</h3>
+              <div className="flex items-center justify-center h-64 overflow-visible flex-1">
+                <div className="relative w-72 h-72 overflow-visible">
+                  {loading ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500">Carregando...</p>
+                      </div>
+                    </div>
+                  ) : statusData.length > 0 ? (
+                    <>
+                      {/* Gráfico de pizza dinâmico baseado nos dados reais */}
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
+                        {(() => {
+                          const coresPorStatus: { [key: string]: string } = {
+                            'Não Iniciada': '#F59E0B',
+                            'Em implementação': '#3B82F6', 
+                            'Implementada': '#10B981'
+                          };
+
+                          const total = statusData.reduce((acc, item) => acc + item.value, 0);
+                          
+                          // Filtrar apenas itens com valor > 0 para renderização
+                          const validItems = statusData.filter(item => item.value > 0);
+
+                          // Caso de item único: renderizar donut completo
+                          if (validItems.length === 1) {
+                            const item = validItems[0];
+                            const outerRadius = 90;
+                            const innerRadius = 30;
+                            const isOtherFiltered = selectedStatus !== null && selectedStatus !== ({
+                              'Não Iniciada': StatusAcao.NAO_INICIADA,
+                              'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
+                              'Implementada': StatusAcao.IMPLEMENTADA
+                            })[item.name];
+                            return (
+                              <g key={item.name}>
+                                <circle
+                                  cx="140"
+                                  cy="140"
+                                  r={outerRadius}
+                                  fill={coresPorStatus[item.name] || '#9CA3AF'}
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${isOtherFiltered ? 'opacity-50' : 'opacity-100'} hover:opacity-80`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const statusValue = ({
+                                      'Não Iniciada': StatusAcao.NAO_INICIADA,
+                                      'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
+                                      'Implementada': StatusAcao.IMPLEMENTADA
+                                    })[item.name];
+                                    if (selectedStatus === statusValue) {
+                                      setSelectedStatus(null);
+                                    } else {
+                                      setSelectedStatus(statusValue);
+                                    }
+                                  }}
+                                  data-interactive="true"
+                                />
+                                <circle cx="140" cy="140" r={innerRadius} fill="white" />
+                              </g>
+                            );
+                          }
+
+                          // Para múltiplos itens: renderizar segmentos
+                          let cumulativePercentage = 0;
+                          return validItems.map((item, index) => {
+                            const percentage = (item.value / total) * 100;
+                            const startAngle = (cumulativePercentage / 100) * 360;
+                            const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
+                            const startAngleRad = (startAngle - 90) * (Math.PI / 180);
+                            const endAngleRad = (endAngle - 90) * (Math.PI / 180);
+                            const largeArcFlag = percentage > 50 ? 1 : 0;
+                            const outerRadius = 90;
+                            const innerRadius = 30;
+                            const x1Outer = 140 + outerRadius * Math.cos(startAngleRad);
+                            const y1Outer = 140 + outerRadius * Math.sin(startAngleRad);
+                            const x2Outer = 140 + outerRadius * Math.cos(endAngleRad);
+                            const y2Outer = 140 + outerRadius * Math.sin(endAngleRad);
+                            const x1Inner = 140 + innerRadius * Math.cos(startAngleRad);
+                            const y1Inner = 140 + innerRadius * Math.sin(startAngleRad);
+                            const x2Inner = 140 + innerRadius * Math.cos(endAngleRad);
+                            const y2Inner = 140 + innerRadius * Math.sin(endAngleRad);
+                            const pathData = [
+                              `M ${x1Inner} ${y1Inner}`,
+                              `L ${x1Outer} ${y1Outer}`,
+                              `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2Outer} ${y2Outer}`,
+                              `L ${x2Inner} ${y2Inner}`,
+                              `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}`,
+                              'Z'
+                            ].join(' ');
+                            cumulativePercentage += percentage;
+                            const isOtherFiltered = selectedStatus !== null && selectedStatus !== ({
+                              'Não Iniciada': StatusAcao.NAO_INICIADA,
+                              'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
+                              'Implementada': StatusAcao.IMPLEMENTADA
+                            })[item.name];
+                            return (
+                              <path
+                                key={item.name}
+                                d={pathData}
+                                fill={coresPorStatus[item.name] || '#9CA3AF'}
+                                stroke="white"
+                                strokeWidth="2"
+                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${isOtherFiltered ? 'opacity-50' : 'opacity-100'} hover:opacity-80`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const statusValue = ({
+                                    'Não Iniciada': StatusAcao.NAO_INICIADA,
+                                    'Em implementação': StatusAcao.EM_IMPLEMENTACAO,
+                                    'Implementada': StatusAcao.IMPLEMENTADA
+                                  })[item.name];
+                                  if (selectedStatus === statusValue) {
+                                    setSelectedStatus(null);
+                                  } else {
+                                    setSelectedStatus(statusValue);
+                                  }
+                                }}
+                                data-interactive="true"
+                              />
+                            );
+                          });
+                        })()
+                        }
+                        
+                        {/* Rótulos percentuais externos às seções */}
+                        {(() => {
+                          const total = statusData.reduce((acc, item) => acc + item.value, 0);
+                          
+                          // Filtrar apenas itens com valor > 0 para rótulos
+                          const validItems = statusData.filter(item => item.value > 0);
+                          
+                          // Para um único item válido, posicionar o rótulo no topo
+                          if (validItems.length === 1) {
+                            const item = validItems[0];
+                            const percentage = (item.value / total) * 100;
+                            return (
+                              <text
+                                key={`label-${item.name}`}
+                                x="140"
+                                y="15"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                className="text-xs font-bold"
+                                fill="#000000"
+                                style={{zIndex: 20, fontSize: '12px'}}
+                              >
+                                {percentage.toFixed(1)}%
+                              </text>
+                            );
+                          }
+                          
+                          // Para múltiplos itens válidos, usar a lógica original
+                          let cumulativePercentage = 0;
+                          return validItems.map((item, index) => {
+                            const percentage = (item.value / total) * 100;
+                            const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
+                            const midAngleRad = (midAngle - 90) * (Math.PI / 180);
+                            const labelRadius = 125;
+                            const labelX = 140 + labelRadius * Math.cos(midAngleRad);
+                            const labelY = 140 + labelRadius * Math.sin(midAngleRad);
+                            cumulativePercentage += percentage;
+                          return (
+                              <text
+                                key={`label-${item.name}`}
+                                x={labelX}
+                                y={labelY}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                className="text-xs font-bold"
+                                fill="#000000"
+                                style={{zIndex: 20, fontSize: '12px'}}
+                              >
+                                {percentage.toFixed(1)}%
+                              </text>
+                            );
+                          });
+                        })()
+                        }
+                      </svg>
+                      
+                      {/* Centro com somatório */}
+                      <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-gray-900">{statusData.reduce((acc, item) => acc + item.value, 0)}</p>
+                          <p className="text-sm text-gray-600">Total</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center text-gray-500">Nenhum dado encontrado</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2 mt-4">
+                {loading ? (
+                  <div className="text-center text-gray-500">Carregando...</div>
+                ) : statusData.length > 0 ? (
+                  statusData.map((item, index) => {
+                    // Cores específicas por status
+                    const coresPorStatus: { [key: string]: string } = {
+                      'Não Iniciada': '#F59E0B',
+                      'Em implementação': '#3B82F6',
+                      'Implementada': '#10B981'
+                    };
+                    const corClasse = coresPorStatus[item.name] || '#9CA3AF';
+                    const total = statusData.reduce((acc, item) => acc + item.value, 0);
+                    const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+                    
+                    return (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: corClasse}}></div>
+                          <span className="text-sm text-gray-700">{item.name}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{item.value} ({percentage}%)</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center text-gray-500">Nenhum dado encontrado</div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -709,34 +902,228 @@ const Actions: React.FC = () => {
 
           {/* Linha 1-3, Coluna 6-7: Gráfico de rosca - Quantitativo de Ações não Iniciadas por Prazo */}
           <div className="col-span-2 row-span-3">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
-              <DonutChart
-                data={prazoData}
-                title="Quantitativo de Ações não Iniciadas por Prazo"
-                onSegmentClick={(segment) => {
-                  // Mapear nomes dos segmentos para valores de filtro
-                  const prazoMap: Record<string, string> = {
-                    'No Prazo': 'no_prazo',
-                    'Atrasado': 'atrasado'
-                  };
-                  
-                  const prazoValue = prazoMap[segment];
-                  if (selectedPrazo === prazoValue) {
-                    setSelectedPrazo(null);
-                  } else {
-                    setSelectedPrazo(prazoValue);
-                  }
-                }}
-                selectedSegment={selectedPrazo ? 
-                  Object.keys({
-                    'No Prazo': 'no_prazo',
-                    'Atrasado': 'atrasado'
-                  }).find(key => ({
-                    'No Prazo': 'no_prazo',
-                    'Atrasado': 'atrasado'
-                  })[key] === selectedPrazo) : null
-                }
-              />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Quantitativo de Ações não Iniciadas por Prazo</h3>
+              <div className="flex items-center justify-center h-64 overflow-visible flex-1">
+                <div className="relative w-72 h-72 overflow-visible">
+                  {loading ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500">Carregando...</p>
+                      </div>
+                    </div>
+                  ) : prazoData.length > 0 ? (
+                    <>
+                      {/* Gráfico de pizza dinâmico baseado nos dados reais */}
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 280 280" style={{zIndex: 10}}>
+                        {(() => {
+                          const coresPorPrazo: { [key: string]: string } = {
+                            'No Prazo': '#10B981',
+                            'Atrasado': '#EF4444'
+                          };
+
+                          const total = prazoData.reduce((acc, item) => acc + item.value, 0);
+                          
+                          // Filtrar apenas itens com valor > 0 para renderização
+                          const validItems = prazoData.filter(item => item.value > 0);
+
+                          // Caso de item único: renderizar donut completo
+                          if (validItems.length === 1) {
+                            const item = validItems[0];
+                            const outerRadius = 90;
+                            const innerRadius = 30;
+                            const isOtherFiltered = selectedPrazo !== null && selectedPrazo !== ({
+                              'No Prazo': 'no_prazo',
+                              'Atrasado': 'atrasado'
+                            })[item.name];
+                            return (
+                              <g key={item.name}>
+                                <circle
+                                  cx="140"
+                                  cy="140"
+                                  r={outerRadius}
+                                  fill={coresPorPrazo[item.name] || '#9CA3AF'}
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${isOtherFiltered ? 'opacity-50' : 'opacity-100'} hover:opacity-80`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const prazoValue = ({
+                                      'No Prazo': 'no_prazo',
+                                      'Atrasado': 'atrasado'
+                                    })[item.name];
+                                    if (selectedPrazo === prazoValue) {
+                                      setSelectedPrazo(null);
+                                    } else {
+                                      setSelectedPrazo(prazoValue);
+                                    }
+                                  }}
+                                  data-interactive="true"
+                                />
+                                <circle cx="140" cy="140" r={innerRadius} fill="white" />
+                              </g>
+                            );
+                          }
+
+                          // Para múltiplos itens: renderizar segmentos
+                          let cumulativePercentage = 0;
+                          return validItems.map((item, index) => {
+                            const percentage = (item.value / total) * 100;
+                            const startAngle = (cumulativePercentage / 100) * 360;
+                            const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
+                            const startAngleRad = (startAngle - 90) * (Math.PI / 180);
+                            const endAngleRad = (endAngle - 90) * (Math.PI / 180);
+                            const largeArcFlag = percentage > 50 ? 1 : 0;
+                            const outerRadius = 90;
+                            const innerRadius = 30;
+                            const x1Outer = 140 + outerRadius * Math.cos(startAngleRad);
+                            const y1Outer = 140 + outerRadius * Math.sin(startAngleRad);
+                            const x2Outer = 140 + outerRadius * Math.cos(endAngleRad);
+                            const y2Outer = 140 + outerRadius * Math.sin(endAngleRad);
+                            const x1Inner = 140 + innerRadius * Math.cos(startAngleRad);
+                            const y1Inner = 140 + innerRadius * Math.sin(startAngleRad);
+                            const x2Inner = 140 + innerRadius * Math.cos(endAngleRad);
+                            const y2Inner = 140 + innerRadius * Math.sin(endAngleRad);
+                            const pathData = [
+                              `M ${x1Inner} ${y1Inner}`,
+                              `L ${x1Outer} ${y1Outer}`,
+                              `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2Outer} ${y2Outer}`,
+                              `L ${x2Inner} ${y2Inner}`,
+                              `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}`,
+                              'Z'
+                            ].join(' ');
+                            cumulativePercentage += percentage;
+                            const isOtherFiltered = selectedPrazo !== null && selectedPrazo !== ({
+                              'No Prazo': 'no_prazo',
+                              'Atrasado': 'atrasado'
+                            })[item.name];
+                            return (
+                              <path
+                                key={item.name}
+                                d={pathData}
+                                fill={coresPorPrazo[item.name] || '#9CA3AF'}
+                                stroke="white"
+                                strokeWidth="2"
+                                className={`drop-shadow-lg cursor-pointer transition-opacity duration-200 ${isOtherFiltered ? 'opacity-50' : 'opacity-100'} hover:opacity-80`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const prazoValue = ({
+                                    'No Prazo': 'no_prazo',
+                                    'Atrasado': 'atrasado'
+                                  })[item.name];
+                                  if (selectedPrazo === prazoValue) {
+                                    setSelectedPrazo(null);
+                                  } else {
+                                    setSelectedPrazo(prazoValue);
+                                  }
+                                }}
+                                data-interactive="true"
+                              />
+                            );
+                          });
+                        })()
+                        }
+                        
+                        {/* Rótulos percentuais externos às seções */}
+                        {(() => {
+                          const total = prazoData.reduce((acc, item) => acc + item.value, 0);
+                          
+                          // Filtrar apenas itens com valor > 0 para rótulos
+                          const validItems = prazoData.filter(item => item.value > 0);
+                          
+                          // Para um único item válido, posicionar o rótulo no topo
+                          if (validItems.length === 1) {
+                            const item = validItems[0];
+                            const percentage = (item.value / total) * 100;
+                            return (
+                              <text
+                                key={`label-${item.name}`}
+                                x="140"
+                                y="15"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                className="text-xs font-bold"
+                                fill="#000000"
+                                style={{zIndex: 20, fontSize: '12px'}}
+                              >
+                                {percentage.toFixed(1)}%
+                              </text>
+                            );
+                          }
+                          
+                          // Para múltiplos itens válidos, usar a lógica original
+                          let cumulativePercentage = 0;
+                          return validItems.map((item, index) => {
+                            const percentage = (item.value / total) * 100;
+                            const midAngle = ((cumulativePercentage + percentage / 2) / 100) * 360;
+                            const midAngleRad = (midAngle - 90) * (Math.PI / 180);
+                            const labelRadius = 125;
+                            const labelX = 140 + labelRadius * Math.cos(midAngleRad);
+                            const labelY = 140 + labelRadius * Math.sin(midAngleRad);
+                            cumulativePercentage += percentage;
+                          return (
+                              <text
+                                key={`label-${item.name}`}
+                                x={labelX}
+                                y={labelY}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                className="text-xs font-bold"
+                                fill="#000000"
+                                style={{zIndex: 20, fontSize: '12px'}}
+                              >
+                                {percentage.toFixed(1)}%
+                              </text>
+                            );
+                          });
+                        })()
+                        }
+                      </svg>
+                      
+                      {/* Centro com somatório */}
+                      <div className="absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: '120px', borderRadius: '50%', backgroundColor: 'white', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15}}>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-gray-900">{prazoData.reduce((acc, item) => acc + item.value, 0)}</p>
+                          <p className="text-xs text-gray-600 leading-tight">Ações Não Iniciadas e Em Implementação</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="text-center text-gray-500">Nenhum dado encontrado</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2 mt-4">
+                {loading ? (
+                  <div className="text-center text-gray-500">Carregando...</div>
+                ) : prazoData.length > 0 ? (
+                  prazoData.map((item, index) => {
+                    // Cores específicas por prazo
+                    const coresPorPrazo: { [key: string]: string } = {
+                      'No Prazo': '#10B981',
+                      'Atrasado': '#EF4444'
+                    };
+                    const corClasse = coresPorPrazo[item.name] || '#9CA3AF';
+                    const total = prazoData.reduce((acc, item) => acc + item.value, 0);
+                    const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+                    
+                    return (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: corClasse}}></div>
+                          <span className="text-sm text-gray-700">{item.name}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{item.value} ({percentage}%)</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center text-gray-500">Nenhum dado encontrado</div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -744,7 +1131,7 @@ const Actions: React.FC = () => {
           <div className="col-span-3 row-span-2">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
               <HorizontalBarChart
-                data={riscoData}
+                data={riscoDataToUse}
                 showTotal={true}
               />
             </div>
@@ -764,6 +1151,92 @@ const Actions: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Paginação */}
+        {filteredTotalPages > 1 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex justify-between flex-1 sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setCurrentPage(Math.min(filteredTotalPages, currentPage + 1))}
+                  disabled={currentPage === filteredTotalPages}
+                  className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Próxima
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Mostrando{' '}
+                    <span className="font-medium">{((currentPage - 1) * 50) + 1}</span>
+                    {' '}até{' '}
+                    <span className="font-medium">
+                      {Math.min(currentPage * 50, filteredTotalCount)}
+                    </span>
+                    {' '}de{' '}
+                    <span className="font-medium">{filteredTotalCount}</span>
+                    {' '}resultados
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                    
+                    {/* Números das páginas */}
+                    {Array.from({ length: Math.min(5, filteredTotalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (filteredTotalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= filteredTotalPages - 2) {
+                        pageNumber = filteredTotalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            pageNumber === currentPage
+                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={() => setCurrentPage(Math.min(filteredTotalPages, currentPage + 1))}
+                      disabled={currentPage === filteredTotalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Actions List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -862,6 +1335,7 @@ const Actions: React.FC = () => {
                       className={`hover:bg-gray-50 ${
                         isOverdue ? 'bg-red-50 border-l-4 border-red-500' : ''
                       }`}
+                      data-interactive="true"
                     >
                       <td className="px-3 py-4">
                         <div className="flex items-start gap-3">
@@ -903,18 +1377,15 @@ const Actions: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-2 py-4">
-                        <Link
-                          to={`/riscos/${action.id_risco || action.id_ref}`}
-                           className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                         >
-                           {action.id_ref || 'N/A'}
-                        </Link>
+                        <span className="text-sm text-blue-600 font-medium">
+                          {action.id_ref || 'N/A'}
+                        </span>
                       </td>
                       <td className="px-2 py-4">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-gray-400" />
                           <span className="text-sm text-gray-900 break-words leading-relaxed">
-                            {action.sigla_area || (Array.isArray(action.area_executora) ? action.area_executora.join(', ') : action.area_executora)}
+                            {resolveAreaExecutora(action.area_executora)}
                           </span>
                         </div>
                       </td>
@@ -994,89 +1465,6 @@ const Actions: React.FC = () => {
             </div>
           )}
 
-          {/* Paginação */}
-          {filteredTotalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-              <div className="flex justify-between flex-1 sm:hidden">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Anterior
-                </button>
-                <button
-                  onClick={() => setCurrentPage(Math.min(filteredTotalPages, currentPage + 1))}
-                  disabled={currentPage === filteredTotalPages}
-                  className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Próxima
-                </button>
-              </div>
-              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Mostrando{' '}
-                    <span className="font-medium">{((currentPage - 1) * 25) + 1}</span>
-                    {' '}até{' '}
-                    <span className="font-medium">
-                      {Math.min(currentPage * 25, filteredTotalCount)}
-                    </span>
-                    {' '}de{' '}
-                    <span className="font-medium">{filteredTotalCount}</span>
-                    {' '}resultados
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                    </button>
-                    
-                    {/* Números das páginas */}
-                    {Array.from({ length: Math.min(5, filteredTotalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (filteredTotalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= filteredTotalPages - 2) {
-                        pageNumber = filteredTotalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNumber}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            pageNumber === currentPage
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNumber}
-                        </button>
-                      );
-                    })}
-                    
-                    <button
-                      onClick={() => setCurrentPage(Math.min(filteredTotalPages, currentPage + 1))}
-                      disabled={currentPage === filteredTotalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </Layout>

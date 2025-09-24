@@ -34,86 +34,101 @@ const HorizontalBarChart: React.FC<HorizontalBarChartProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">{title}</h3>
       )}
       <div className="flex-1 space-y-4">
-        {data.map((risk) => {
-          const { riskId, statusData } = risk;
-          const total = statusData.emImplementacao + statusData.implementada + statusData.naoIniciada;
-          const maxBarWidth = maxValue > 0 ? 100 : 0;
-
-          return (
-            <div key={riskId} className="flex items-center space-x-3">
-              {/* Label - ID do Risco */}
-              <div className="w-16 text-sm font-bold text-gray-700 text-center">
-                {riskId}
-              </div>
-
-              {/* Barra Segmentada */}
-              <div className="flex-1 bg-gray-100 rounded-full h-6 relative overflow-hidden">
-                <div className="flex h-full rounded-full">
-                  {/* Segmento: Em implementação (Azul) */}
-                  {statusData.emImplementacao > 0 && (
-                    <div
-                      className="h-full transition-all duration-500 flex items-center justify-end pr-1"
-                      style={{
-                        width: `${(statusData.emImplementacao / maxValue) * maxBarWidth}%`,
-                        backgroundColor: '#3B82F6',
-                        minWidth: statusData.emImplementacao > 0 ? '20px' : '0'
-                      }}
-                    >
-                      {statusData.emImplementacao > 0 && (
-                        <span className="text-xs font-medium text-white drop-shadow-sm">
-                          {statusData.emImplementacao}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Segmento: Implementada (Verde) */}
-                  {statusData.implementada > 0 && (
-                    <div
-                      className="h-full transition-all duration-500 flex items-center justify-end pr-1"
-                      style={{
-                        width: `${(statusData.implementada / maxValue) * maxBarWidth}%`,
-                        backgroundColor: '#10B981',
-                        minWidth: statusData.implementada > 0 ? '20px' : '0'
-                      }}
-                    >
-                      {statusData.implementada > 0 && (
-                        <span className="text-xs font-medium text-white drop-shadow-sm">
-                          {statusData.implementada}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Segmento: Não Iniciada (Amarelo) */}
-                  {statusData.naoIniciada > 0 && (
-                    <div
-                      className="h-full transition-all duration-500 flex items-center justify-end pr-1"
-                      style={{
-                        width: `${(statusData.naoIniciada / maxValue) * maxBarWidth}%`,
-                        backgroundColor: '#F59E0B',
-                        minWidth: statusData.naoIniciada > 0 ? '20px' : '0'
-                      }}
-                    >
-                      {statusData.naoIniciada > 0 && (
-                        <span className="text-xs font-medium text-white drop-shadow-sm">
-                          {statusData.naoIniciada}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Total */}
-              {showTotal && (
-                <div className="w-12 text-sm font-bold text-gray-900 text-right">
-                  {total}
-                </div>
-              )}
+        {data.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="text-center text-gray-500">
+              <p className="text-sm">Nenhum dado encontrado com os filtros aplicados</p>
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          data.map((risk) => {
+            const { riskId, statusData } = risk;
+            const total = statusData.emImplementacao + statusData.implementada + statusData.naoIniciada;
+            const maxBarWidth = maxValue > 0 ? 100 : 0;
+
+            return (
+              <div key={riskId} className="flex items-center space-x-3">
+                {/* Label - ID do Risco */}
+                <div className="w-16 text-sm font-bold text-gray-700 text-center">
+                  {riskId}
+                </div>
+
+                {/* Barra Segmentada */}
+                <div className="flex-1 bg-gray-100 rounded-full h-6 relative overflow-hidden">
+                  {total === 0 ? (
+                    /* Barra vazia com indicador de filtro */
+                    <div className="flex items-center justify-center h-full">
+                      <span className="text-xs text-gray-400 italic">Sem dados com filtros aplicados</span>
+                    </div>
+                  ) : (
+                    <div className="flex h-full rounded-full">
+                      {/* Segmento: Em implementação (Azul) */}
+                      {statusData.emImplementacao > 0 && (
+                        <div
+                          className="h-full transition-all duration-500 flex items-center justify-end pr-1"
+                          style={{
+                            width: `${(statusData.emImplementacao / maxValue) * maxBarWidth}%`,
+                            backgroundColor: '#3B82F6',
+                            minWidth: statusData.emImplementacao > 0 ? '20px' : '0'
+                          }}
+                        >
+                          {statusData.emImplementacao > 0 && (
+                            <span className="text-xs font-medium text-white drop-shadow-sm">
+                              {statusData.emImplementacao}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Segmento: Implementada (Verde) */}
+                      {statusData.implementada > 0 && (
+                        <div
+                          className="h-full transition-all duration-500 flex items-center justify-end pr-1"
+                          style={{
+                            width: `${(statusData.implementada / maxValue) * maxBarWidth}%`,
+                            backgroundColor: '#10B981',
+                            minWidth: statusData.implementada > 0 ? '20px' : '0'
+                          }}
+                        >
+                          {statusData.implementada > 0 && (
+                            <span className="text-xs font-medium text-white drop-shadow-sm">
+                              {statusData.implementada}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Segmento: Não Iniciada (Amarelo) */}
+                      {statusData.naoIniciada > 0 && (
+                        <div
+                          className="h-full transition-all duration-500 flex items-center justify-end pr-1"
+                          style={{
+                            width: `${(statusData.naoIniciada / maxValue) * maxBarWidth}%`,
+                            backgroundColor: '#F59E0B',
+                            minWidth: statusData.naoIniciada > 0 ? '20px' : '0'
+                          }}
+                        >
+                          {statusData.naoIniciada > 0 && (
+                            <span className="text-xs font-medium text-white drop-shadow-sm">
+                              {statusData.naoIniciada}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Total */}
+                {showTotal && (
+                  <div className="w-12 text-sm font-bold text-gray-900 text-right">
+                    {total}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
