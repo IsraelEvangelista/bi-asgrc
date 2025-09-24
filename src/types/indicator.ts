@@ -19,54 +19,45 @@ export enum StatusImplementacao {
   IMPLEMENTADO = 'Implementado'
 }
 
-// Interface principal do Indicador
+// Interface principal do Indicador (Tabela Dimensão)
 export interface Indicator {
   id: string;
   id_risco: string;
   responsavel_risco: string;
   indicador_risco: string;
   situacao_indicador: SituacaoIndicador;
-  justificativa_observacao?: string;
-  impacto_n_implementacao?: string;
-  meta_desc?: string;
+  meta_efetiva?: number; // meta_efetiva instead of meta_desc
   tolerancia: Tolerancia;
   limite_tolerancia?: string;
   tipo_acompanhamento?: string;
-  resultado_mes?: number;
   apuracao?: string;
   created_at: string;
   updated_at: string;
 }
 
-// Interface para criação de indicador
+// Interface para criação de indicador (Tabela Dimensão)
 export interface CreateIndicatorInput {
   id_risco: string;
   responsavel_risco: string;
   indicador_risco: string;
   situacao_indicador: SituacaoIndicador;
-  justificativa_observacao?: string;
-  impacto_n_implementacao?: string;
-  meta_desc?: string;
+  meta_efetiva?: number;
   tolerancia: Tolerancia;
   limite_tolerancia?: string;
   tipo_acompanhamento?: string;
-  resultado_mes?: number;
   apuracao?: string;
 }
 
-// Interface para atualização de indicador
+// Interface para atualização de indicador (Tabela Dimensão)
 export interface UpdateIndicatorInput {
   id_risco?: string;
   responsavel_risco?: string;
   indicador_risco?: string;
   situacao_indicador?: SituacaoIndicador;
-  justificativa_observacao?: string;
-  impacto_n_implementacao?: string;
-  meta_desc?: string;
+  meta_efetiva?: number;
   tolerancia?: Tolerancia;
   limite_tolerancia?: string;
   tipo_acompanhamento?: string;
-  resultado_mes?: number;
   apuracao?: string;
 }
 
@@ -81,20 +72,50 @@ export interface IndicatorFilters {
   periodo_fim?: string;
 }
 
-// Interface para dados do formulário
-export interface IndicatorFormData {
+// Interface combinada para views (Join entre Dimensão e Fato)
+export interface IndicatorWithHistory {
+  // Dados da tabela dimensão (008)
+  id: string;
   id_risco: string;
   responsavel_risco: string;
   indicador_risco: string;
   situacao_indicador: SituacaoIndicador;
-  justificativa_observacao: string;
-  impacto_n_implementacao: string;
-  meta_desc: string;
+  meta_efetiva?: number;
   tolerancia: Tolerancia;
-  limite_tolerancia: string;
-  tipo_acompanhamento: string;
-  resultado_mes: number;
-  apuracao: string;
+  limite_tolerancia?: string;
+  tipo_acompanhamento?: string;
+  apuracao?: string;
+  created_at: string;
+  updated_at: string;
+
+  // Dados da tabela fato (019) - opcional (último registro)
+  historico_id?: string;
+  justificativa_observacao?: string;
+  impacto_n_implementacao?: string;
+  resultado_mes?: number;
+  data_apuracao?: string;
+  historico_created_at?: string;
+  historico_updated_at?: string;
+}
+
+// Interface para dados do formulário (separado por tabela)
+export interface IndicatorFormData {
+  // Dados da tabela dimensão (008)
+  id_risco: string;
+  responsavel_risco: string;
+  indicador_risco: string;
+  situacao_indicador: SituacaoIndicador;
+  meta_efetiva?: number;
+  tolerancia: Tolerancia;
+  limite_tolerancia?: string;
+  tipo_acompanhamento?: string;
+  apuracao?: string;
+
+  // Dados da tabela fato (019)
+  justificativa_observacao?: string;
+  impacto_n_implementacao?: string;
+  resultado_mes?: number;
+  data_apuracao?: string;
 }
 
 // Opções para dropdowns
@@ -140,16 +161,33 @@ export const getToleranceColor = (tolerance: Tolerancia): string => {
   }
 };
 
-// Interface para histórico de indicadores
+// Interface para histórico de indicadores (Tabela Fato)
 export interface IndicatorHistory {
   id: string;
-  indicator_id: string;
-  resultado_mes: number;
-  tolerancia: Tolerancia;
-  apuracao: string;
-  observacoes?: string;
-  recorded_at: string;
-  recorded_by: string;
+  id_indicador: string; // FK para tabela 008_indicadores
+  justificativa_observacao?: string;
+  impacto_n_implementacao?: string;
+  resultado_mes?: number;
+  data_apuracao: string;
+  updated_at: string;
+  created_at: string;
+}
+
+// Interface para criação de histórico (Tabela Fato)
+export interface CreateIndicatorHistoryInput {
+  id_indicador: string;
+  justificativa_observacao?: string;
+  impacto_n_implementacao?: string;
+  resultado_mes?: number;
+  data_apuracao?: string;
+}
+
+// Interface para atualização de histórico (Tabela Fato)
+export interface UpdateIndicatorHistoryInput {
+  justificativa_observacao?: string;
+  impacto_n_implementacao?: string;
+  resultado_mes?: number;
+  data_apuracao?: string;
 }
 
 // Interface para métricas de indicadores

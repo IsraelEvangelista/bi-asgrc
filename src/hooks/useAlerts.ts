@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Indicator, IndicatorAlert, Tolerancia } from '../types/indicator';
+import { IndicatorWithHistory, IndicatorAlert, Tolerancia } from '../types/indicator';
 import { Action, ActionAlert, StatusAcao } from '../types/action';
 
 export interface AlertSummary {
@@ -10,7 +10,7 @@ export interface AlertSummary {
   warningAlerts: number;
 }
 
-export const useAlerts = (indicators: Indicator[], actions: Action[]): AlertSummary => {
+export const useAlerts = (indicators: IndicatorWithHistory[], actions: Action[]): AlertSummary => {
   return useMemo(() => {
     // Gerar alertas de indicadores
     const indicatorAlerts: IndicatorAlert[] = indicators
@@ -30,7 +30,7 @@ export const useAlerts = (indicators: Indicator[], actions: Action[]): AlertSumm
     const now = new Date();
     const actionAlerts: ActionAlert[] = actions
       .filter(action => {
-        if (!action.prazo_implementacao || action.status === StatusAcao.ACOES_IMPLEMENTADAS) {
+        if (!action.prazo_implementacao || action.status === StatusAcao.IMPLEMENTADA) {
           return false;
         }
         return new Date(action.prazo_implementacao) < now;
@@ -61,7 +61,7 @@ export const useAlerts = (indicators: Indicator[], actions: Action[]): AlertSumm
   }, [indicators, actions]);
 };
 
-export const useIndicatorAlerts = (indicators: Indicator[]): IndicatorAlert[] => {
+export const useIndicatorAlerts = (indicators: IndicatorWithHistory[]): IndicatorAlert[] => {
   return useMemo(() => {
     return indicators
       .filter(indicator => indicator.tolerancia === Tolerancia.FORA_TOLERANCIA)
@@ -83,7 +83,7 @@ export const useActionAlerts = (actions: Action[]): ActionAlert[] => {
     const now = new Date();
     return actions
       .filter(action => {
-        if (!action.prazo_implementacao || action.status === StatusAcao.ACOES_IMPLEMENTADAS) {
+        if (!action.prazo_implementacao || action.status === StatusAcao.IMPLEMENTADA) {
           return false;
         }
         return new Date(action.prazo_implementacao) < now;
@@ -102,7 +102,7 @@ export const useActionAlerts = (actions: Action[]): ActionAlert[] => {
 };
 
 // Hook para alertas específicos de tolerância
-export const useToleranceAlerts = (indicators: Indicator[]) => {
+export const useToleranceAlerts = (indicators: IndicatorWithHistory[]) => {
   return useMemo(() => {
     const outOfToleranceIndicators = indicators.filter(
       indicator => indicator.tolerancia === Tolerancia.FORA_TOLERANCIA
@@ -121,7 +121,7 @@ export const useOverdueActionAlerts = (actions: Action[]) => {
   return useMemo(() => {
     const now = new Date();
     const overdueActions = actions.filter(action => {
-      if (!action.prazo_implementacao || action.status === StatusAcao.ACOES_IMPLEMENTADAS) {
+      if (!action.prazo_implementacao || action.status === StatusAcao.IMPLEMENTADA) {
         return false;
       }
       return new Date(action.prazo_implementacao) < now;

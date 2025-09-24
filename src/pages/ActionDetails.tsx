@@ -137,7 +137,7 @@ const ActionDetails: React.FC = () => {
         return <FileText className="w-4 h-4" />;
       case StatusAcao.EM_IMPLEMENTACAO:
         return <TrendingUp className="w-4 h-4" />;
-      case StatusAcao.ACOES_IMPLEMENTADAS:
+      case StatusAcao.IMPLEMENTADA:
         return <CheckCircle className="w-4 h-4" />;
       default:
         return <Activity className="w-4 h-4" />;
@@ -154,7 +154,7 @@ const ActionDetails: React.FC = () => {
 
   const getProgressColor = () => {
     if (action.situacao === SituacaoAcao.ATRASADO) return 'bg-red-500';
-    if (action.status === StatusAcao.ACOES_IMPLEMENTADAS) return 'bg-green-500';
+    if (action.status === StatusAcao.IMPLEMENTADA) return 'bg-green-500';
     if (action.perc_implementacao >= 80) return 'bg-blue-500';
     if (action.perc_implementacao >= 50) return 'bg-yellow-500';
     return 'bg-gray-400';
@@ -241,13 +241,13 @@ const ActionDetails: React.FC = () => {
                 'text-gray-700'
               }`}>
                 {action.status === StatusAcao.NAO_INICIADA ? 'Não Iniciada' :
-                 action.status === StatusAcao.EM_IMPLEMENTACAO ? 'Em Implementação' :
-                 action.status === StatusAcao.ACOES_IMPLEMENTADAS ? 'Ações Implementadas' :
+                 action.status === StatusAcao.EM_IMPLEMENTACAO ? 'Em implementação' :
+                 action.status === StatusAcao.IMPLEMENTADA ? 'Implementada' :
                  'Não definido'}
               </p>
             </div>
             <div className={getActionStatusColor(action.status)}>
-              {action.status === StatusAcao.ACOES_IMPLEMENTADAS ? <CheckCircle className="w-6 h-6" /> :
+              {action.status === StatusAcao.IMPLEMENTADA ? <CheckCircle className="w-6 h-6" /> :
                action.situacao === SituacaoAcao.ATRASADO ? <AlertTriangle className="w-6 h-6" /> :
                <Clock className="w-6 h-6" />}
             </div>

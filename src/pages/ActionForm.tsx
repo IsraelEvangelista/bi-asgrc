@@ -150,7 +150,7 @@ const ActionForm: React.FC<ActionFormProps> = ({ mode }) => {
     }
 
     // Validação de lógica de negócio
-    if (formData.status === StatusAcao.ACOES_IMPLEMENTADAS && percImplementacao < 100) {
+    if (formData.status === StatusAcao.IMPLEMENTADA && percImplementacao < 100) {
       newErrors.perc_implementacao = 'Ação concluída deve ter 100% de implementação';
     }
 
@@ -161,7 +161,7 @@ const ActionForm: React.FC<ActionFormProps> = ({ mode }) => {
     // Atualizar situação automaticamente baseada no prazo
     const prazoDate = new Date(formData.prazo_implementacao);
     const today = new Date();
-    if (prazoDate < today && formData.status !== StatusAcao.ACOES_IMPLEMENTADAS) {
+    if (prazoDate < today && formData.status !== StatusAcao.IMPLEMENTADA) {
       setFormData(prev => ({ ...prev, situacao: SituacaoAcao.ATRASADO }));
     }
 

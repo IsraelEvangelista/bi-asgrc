@@ -3,9 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Info, Target, TrendingUp, AlertTriangle } from 'lucide-react';
 import Layout from '../components/Layout';
 import {
-  Indicator,
+  IndicatorWithHistory,
   CreateIndicatorInput,
   UpdateIndicatorInput,
+  CreateIndicatorHistoryInput,
+  UpdateIndicatorHistoryInput,
   IndicatorFormData,
   SituacaoIndicador,
   Tolerancia,
@@ -29,37 +31,46 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
   const [showAlert, setShowAlert] = useState(false);
   
   const [formData, setFormData] = useState<IndicatorFormData>({
+    // Dados da tabela dimensão (008)
     id_risco: '',
     responsavel_risco: '',
     indicador_risco: '',
     situacao_indicador: SituacaoIndicador.NAO_INICIADO,
-    justificativa_observacao: '',
-    impacto_n_implementacao: '',
-    meta_desc: '',
+    meta_efetiva: 0,
     tolerancia: Tolerancia.DENTRO_TOLERANCIA,
     limite_tolerancia: '',
     tipo_acompanhamento: 'Percentual',
+    apuracao: '',
+    // Dados da tabela fato (019)
+    justificativa_observacao: '',
+    impacto_n_implementacao: '',
     resultado_mes: 0,
-    apuracao: ''
+    data_apuracao: ''
   });
 
   // Mock data para edição
-  const mockIndicator: Indicator = {
+  const mockIndicator: IndicatorWithHistory = {
+    // Dados da tabela dimensão (008)
     id: '1',
     id_risco: 'RISK-001',
     responsavel_risco: 'João Silva',
     indicador_risco: 'Taxa de Conformidade Regulatória',
     situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
-    justificativa_observacao: 'Indicador implementado com sucesso após revisão dos processos internos',
-    impacto_n_implementacao: 'Baixo impacto - Processos já estão alinhados com as regulamentações',
-    meta_desc: 'Manter conformidade regulatória acima de 95% em todas as auditorias',
+    meta_efetiva: 95,
     tolerancia: Tolerancia.DENTRO_TOLERANCIA,
     limite_tolerancia: '90%',
     tipo_acompanhamento: 'Percentual',
-    resultado_mes: 97.5,
     apuracao: 'Dezembro/2024',
     created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z'
+    updated_at: '2024-01-15T10:00:00Z',
+    // Dados da tabela fato (019)
+    historico_id: 'hist-1',
+    justificativa_observacao: 'Indicador implementado com sucesso após revisão dos processos internos',
+    impacto_n_implementacao: 'Baixo impacto - Processos já estão alinhados com as regulamentações',
+    resultado_mes: 97.5,
+    data_apuracao: '2024-12-01T10:00:00Z',
+    historico_created_at: '2024-12-01T10:00:00Z',
+    historico_updated_at: '2024-12-01T10:00:00Z'
   };
 
   const loadIndicator = useCallback(async () => {
@@ -71,23 +82,26 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
     
     if (id === '1') {
       setFormData({
+        // Dados da tabela dimensão (008)
         id_risco: mockIndicator.id_risco,
         responsavel_risco: mockIndicator.responsavel_risco,
         indicador_risco: mockIndicator.indicador_risco,
         situacao_indicador: mockIndicator.situacao_indicador,
-        justificativa_observacao: mockIndicator.justificativa_observacao || '',
-        impacto_n_implementacao: mockIndicator.impacto_n_implementacao || '',
-        meta_desc: mockIndicator.meta_desc || '',
+        meta_efetiva: mockIndicator.meta_efetiva || 0,
         tolerancia: mockIndicator.tolerancia,
         limite_tolerancia: mockIndicator.limite_tolerancia || '',
         tipo_acompanhamento: mockIndicator.tipo_acompanhamento || 'Percentual',
+        apuracao: mockIndicator.apuracao || '',
+        // Dados da tabela fato (019)
+        justificativa_observacao: mockIndicator.justificativa_observacao || '',
+        impacto_n_implementacao: mockIndicator.impacto_n_implementacao || '',
         resultado_mes: mockIndicator.resultado_mes || 0,
-        apuracao: mockIndicator.apuracao || ''
+        data_apuracao: mockIndicator.data_apuracao ? new Date(mockIndicator.data_apuracao).toISOString().split('T')[0] : ''
       });
     }
     
     setLoading(false);
-  }, [id, mockIndicator.id_risco, mockIndicator.responsavel_risco, mockIndicator.indicador_risco, mockIndicator.situacao_indicador, mockIndicator.justificativa_observacao, mockIndicator.impacto_n_implementacao, mockIndicator.meta_desc, mockIndicator.tolerancia, mockIndicator.limite_tolerancia, mockIndicator.tipo_acompanhamento, mockIndicator.resultado_mes, mockIndicator.apuracao]);
+  }, [id, mockIndicator.id_risco, mockIndicator.responsavel_risco, mockIndicator.indicador_risco, mockIndicator.situacao_indicador, mockIndicator.justificativa_observacao, mockIndicator.impacto_n_implementacao, mockIndicator.meta_efetiva, mockIndicator.tolerancia, mockIndicator.limite_tolerancia, mockIndicator.tipo_acompanhamento, mockIndicator.resultado_mes, mockIndicator.data_apuracao, mockIndicator.apuracao]);
 
   // Fixed: Remove loadIndicator dependency to prevent infinite loops
   useEffect(() => {
@@ -112,8 +126,8 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
       newErrors.indicador_risco = 'Nome do Indicador é obrigatório';
     }
 
-    if (!formData.meta_desc.trim()) {
-      newErrors.meta_desc = 'Descrição da Meta é obrigatória';
+    if (!formData.meta_efetiva && formData.meta_efetiva !== 0) {
+      newErrors.meta_efetiva = 'Meta Efetiva é obrigatória';
     }
 
     if (!formData.limite_tolerancia.trim()) {
@@ -161,13 +175,10 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
           responsavel_risco: formData.responsavel_risco,
           indicador_risco: formData.indicador_risco,
           situacao_indicador: formData.situacao_indicador,
-          justificativa_observacao: formData.justificativa_observacao,
-          impacto_n_implementacao: formData.impacto_n_implementacao,
-          meta_desc: formData.meta_desc,
+          meta_efetiva: formData.meta_efetiva,
           tolerancia: formData.tolerancia,
           limite_tolerancia: formData.limite_tolerancia,
           tipo_acompanhamento: formData.tipo_acompanhamento,
-          resultado_mes: formData.resultado_mes,
           apuracao: formData.apuracao
         };
         console.log('Criando indicador:', newIndicator);
@@ -177,13 +188,10 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
           responsavel_risco: formData.responsavel_risco,
           indicador_risco: formData.indicador_risco,
           situacao_indicador: formData.situacao_indicador,
-          justificativa_observacao: formData.justificativa_observacao,
-          impacto_n_implementacao: formData.impacto_n_implementacao,
-          meta_desc: formData.meta_desc,
+          meta_efetiva: formData.meta_efetiva,
           tolerancia: formData.tolerancia,
           limite_tolerancia: formData.limite_tolerancia,
           tipo_acompanhamento: formData.tipo_acompanhamento,
-          resultado_mes: formData.resultado_mes,
           apuracao: formData.apuracao
         };
         console.log('Atualizando indicador:', updateIndicator);
@@ -369,17 +377,17 @@ const IndicatorForm: React.FC<IndicatorFormProps> = ({ mode }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Descrição da Meta *
                 </label>
-                <textarea
-                  value={formData.meta_desc}
-                  onChange={(e) => handleInputChange('meta_desc', e.target.value)}
-                  rows={3}
+                <input
+                  type="number"
+                  value={formData.meta_efetiva}
+                  onChange={(e) => handleInputChange('meta_efetiva', Number(e.target.value))}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.meta_desc ? 'border-red-300' : 'border-gray-300'
+                    errors.meta_efetiva ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Descreva a meta do indicador"
+                  placeholder="Ex: 95"
                 />
-                {errors.meta_desc && (
-                  <p className="mt-1 text-sm text-red-600">{errors.meta_desc}</p>
+                {errors.meta_efetiva && (
+                  <p className="mt-1 text-sm text-red-600">{errors.meta_efetiva}</p>
                 )}
               </div>
 

@@ -77,7 +77,18 @@
       "mcp__archon__find_tasks",
       "mcp__archon__manage_task",
       "mcp__archon__rag_search_knowledge_base",
-      "mcp__byterover-mcp__byterover-store-knowledge"
+      "mcp__byterover-mcp__byterover-store-knowledge",
+      "mcp__archon__manage_project",
+      "mcp__archon__session_info",
+      "mcp__archon__get_project_features",
+      "mcp__archon__rag_search_code_examples",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(mkdir:*)",
+      "mcp__archon__manage_document",
+      "Bash(move:*)",
+      "Bash(dir \"D:\\Israel\\Projetos Clientes\\Projetos TRAE\\cogerh ASGRC\\.claude\")",
+      "mcp__ide__executeCode"
     ],
     "deny": [],
     "ask": []

@@ -198,6 +198,190 @@ Implementação de um conjunto abrangente de melhorias visuais e de usabilidade 
   - Implementação de efeitos 3D nos botões
   - Borda animada azul nos menus suspensos
   - Cores de mouseover em todos os elementos
+
+---
+
+## Criação da Tabela 022_fato_prazo no Supabase
+
+**Data:** Janeiro 2025  
+**Status:** Concluído  
+**Severidade:** Baixa  
+
+### Descrição da Implementação
+
+Criação da nova tabela `022_fato_prazo` no banco de dados Supabase para gerenciar os novos prazos solicitados para as ações do sistema. Esta tabela permite o controle histórico de alterações de prazo, mantendo um registro completo de todas as solicitações.
+
+### Estrutura da Tabela
+
+#### Campos Implementados
+- **`id`** (UUID): Chave primária com geração automática
+- **`id_acao`** (UUID): Chave estrangeira referenciando `009_acoes.id`
+- **`novo_prazo`** (DATE): Nova data de prazo solicitada
+- **`created_at`** (TIMESTAMP): Data e hora de criação do registro
+- **`updated_at`** (TIMESTAMP): Data e hora da última atualização
+
+#### Relacionamentos
+- **Foreign Key**: `id_acao` → `009_acoes.id` (CASCADE DELETE)
+- **Índices**: Criados para otimizar consultas por ação e data
+- **Índice Composto**: Para buscar o prazo mais recente por ação
+
+### Funcionalidades Implementadas
+
+#### 1. Controle de Versionamento
+- **Histórico Completo**: Cada novo prazo gera um registro separado
+- **Rastreabilidade**: Timestamps automáticos para auditoria
+- **Integridade**: Constraints para garantir consistência dos dados
+
+#### 2. Segurança e Permissões
+- **RLS Habilitado**: Row Level Security ativo
+- **Políticas de Acesso**: Controle granular para usuários autenticados
+- **Permissões**: Configuradas para roles `anon` e `authenticated`
+
+#### 3. Otimização de Performance
+- **Índices Estratégicos**: Para consultas frequentes
+- **Trigger Automático**: Atualização automática do campo `updated_at`
+- **Comentários**: Documentação completa dos campos
+
+### Regras de Negócio
+
+#### Fluxo de Novos Prazos
+1. **Solicitação**: Área solicita novo prazo para uma ação específica
+2. **Registro**: Criação de novo registro na tabela `022_fato_prazo`
+3. **Histórico**: Manutenção de todos os prazos anteriores
+4. **Exibição**: Campo `novo_prazo` da tabela `009_acoes` mostra sempre a data mais recente
+
+#### Comportamento do Sistema
+- **Múltiplos Registros**: Permitidos para cada ação
+- **Prazo Atual**: Sempre o mais recente por `id_acao`
+- **Fallback**: Campo pode permanecer `null` se não houver registros
+
+### Arquivos Criados
+
+- **`supabase/migrations/022_create_fato_prazo_table.sql`**
+  - Script completo de criação da tabela
+  - Definição de constraints e relacionamentos
+  - Configuração de índices e triggers
+  - Implementação de RLS e políticas de segurança
+  - Concessão de permissões adequadas
+
+### Resultado
+
+✅ **Tabela criada com sucesso no Supabase**  
+✅ **Relacionamento estabelecido com 009_acoes**  
+✅ **Índices otimizados implementados**  
+✅ **Segurança RLS configurada**  
+✅ **Permissões adequadas concedidas**  
+✅ **Documentação completa dos campos**  
+
+### Próximos Passos
+
+- Implementação das interfaces frontend para gerenciar novos prazos
+- Desenvolvimento das APIs para CRUD da tabela
+- Integração com o sistema de notificações de prazo
+
+---
+
+## Criação da Tabela 023_hist_acao no Supabase
+
+**Data:** Janeiro 2025  
+**Status:** Concluído  
+**Severidade:** Baixa  
+
+### Descrição da Implementação
+
+Criação da nova tabela `023_hist_acao` no banco de dados Supabase para normalização da estrutura de dados da tabela `009_acoes`. Esta tabela separa os conceitos de fato (dados históricos/transacionais) dos conceitos de dimensão (dados identificadores), melhorando a organização e integridade do modelo de dados.
+
+### Estrutura da Tabela
+
+#### Campos Implementados
+- **`id`** (UUID): Chave primária com geração automática
+- **`id_acao`** (UUID): Chave estrangeira referenciando `009_acoes.id`
+- **`justificativa_observacao`** (TEXT): Justificativa ou observação sobre a ação
+- **`impacto_atraso_nao_implementacao`** (TEXT): Descrição do impacto em caso de atraso ou não implementação
+- **`perc_implementacao`** (NUMERIC): Percentual de implementação da ação (0-100)
+- **`created_at`** (TIMESTAMP): Data e hora de criação do registro
+- **`updated_at`** (TIMESTAMP): Data e hora da última atualização
+
+#### Relacionamentos
+- **Foreign Key**: `id_acao` → `009_acoes.id` (CASCADE DELETE)
+- **Índices**: Criados para otimizar consultas por ação, data e percentual
+- **Constraint**: Validação do percentual entre 0 e 100
+
+### Funcionalidades Implementadas
+
+#### 1. Normalização do Modelo de Dados
+- **Separação de Conceitos**: Dados transacionais movidos para tabela específica
+- **Integridade Referencial**: Relacionamento forte com tabela de ações
+- **Histórico Completo**: Capacidade de armazenar múltiplos registros por ação
+
+#### 2. Segurança e Permissões
+- **RLS Habilitado**: Row Level Security ativo
+- **Políticas Diferenciadas**: Controle granular para usuários autenticados e anônimos
+- **Permissões Adequadas**: Configuradas para roles `anon` (SELECT) e `authenticated` (ALL)
+
+#### 3. Otimização de Performance
+- **Índices Estratégicos**: Para consultas por ação, data e percentual
+- **Trigger Automático**: Atualização automática do campo `updated_at`
+- **Documentação Completa**: Comentários detalhados em todos os campos
+
+### Regras de Negócio
+
+#### Modelo de Dados Normalizado
+1. **Tabela 009_acoes**: Mantém apenas dados identificadores (dimensão)
+2. **Tabela 023_hist_acao**: Armazena dados históricos e transacionais (fato)
+3. **Relacionamento 1:N**: Uma ação pode ter múltiplos registros históricos
+4. **Integridade**: Exclusão em cascata para manter consistência
+
+#### Validações Implementadas
+- **Percentual**: Valor entre 0 e 100 com precisão de 2 casas decimais
+- **Referência**: Validação de existência da ação referenciada
+- **Timestamps**: Controle automático de criação e atualização
+
+### Arquivos Criados
+
+- **`supabase/migrations/023_hist_acao.sql`**
+  - Script completo de criação da tabela normalizada
+  - Definição de constraints e relacionamentos
+  - Configuração de índices otimizados
+  - Implementação de RLS e políticas de segurança
+  - Trigger para atualização automática de timestamps
+  - Documentação completa com comentários
+
+### Resultado
+
+✅ **Tabela criada com sucesso no Supabase**  
+✅ **Modelo de dados normalizado implementado**  
+✅ **Relacionamento FK estabelecido com 009_acoes**  
+✅ **Índices otimizados configurados**  
+✅ **Segurança RLS implementada**  
+✅ **Permissões adequadas concedidas**  
+✅ **Validações de negócio aplicadas**  
+✅ **Documentação completa dos campos**  
+
+### Benefícios da Normalização
+
+#### Organização de Dados
+- **Separação Clara**: Conceitos de fato e dimensão bem definidos
+- **Flexibilidade**: Facilita futuras expansões do modelo
+- **Manutenibilidade**: Estrutura mais limpa e organizada
+
+#### Performance
+- **Consultas Otimizadas**: Índices específicos para cada tipo de busca
+- **Integridade**: Relacionamentos garantem consistência dos dados
+- **Escalabilidade**: Estrutura preparada para crescimento
+
+#### Desenvolvimento
+- **APIs Simplificadas**: Endpoints mais focados e específicos
+- **Manutenção**: Código mais limpo e organizizado
+- **Testes**: Validações mais precisas e confiáveis
+
+### Próximos Passos
+
+- Migração de dados existentes da tabela `009_acoes` para `023_hist_acao`
+- Atualização das APIs para utilizar a nova estrutura normalizada
+- Implementação das interfaces frontend para gerenciar histórico de ações
+- Desenvolvimento de relatórios baseados na nova estrutura
+- Criação de views para facilitar consultas complexas
   - Distribuição proporcional dos botões
   - Adição de ícones contextuais
 

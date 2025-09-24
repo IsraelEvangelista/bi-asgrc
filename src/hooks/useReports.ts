@@ -61,13 +61,23 @@ export const useReports = () => {
               id,
               indicador_risco,
               situacao_indicador,
-              resultado_mes,
-              meta_desc,
+              meta_efetiva,
               tolerancia,
+              limite_tolerancia,
               responsavel_risco,
+              tipo_acompanhamento,
               apuracao,
               created_at,
-              updated_at
+              updated_at,
+              historico_indicadores(
+                id,
+                justificativa_observacao,
+                impacto_n_implementacao,
+                resultado_mes,
+                data_apuracao,
+                created_at,
+                updated_at
+              )
             `);
           break;
 
@@ -106,7 +116,7 @@ export const useReports = () => {
           // For dashboard, we need to aggregate data from multiple tables
           const [riscos, indicadores, acoes] = await Promise.all([
             supabase.from('006_matriz_riscos').select('id, severidade').is('deleted_at', null),
-            supabase.from('008_indicadores').select('id, tolerancia'),
+            supabase.from('008_indicadores').select('id, tolerancia, meta_efetiva, limite_tolerancia'),
             supabase.from('009_acoes').select('id, status, prazo_implementacao, perc_implementacao')
           ]);
 
@@ -134,7 +144,20 @@ export const useReports = () => {
           // Combine data from all tables for audit report
           const [riscosAudit, indicadoresAudit, acoesAudit] = await Promise.all([
             supabase.from('006_matriz_riscos').select('*').is('deleted_at', null),
-            supabase.from('008_indicadores').select('*'),
+            supabase.from('008_indicadores').select(`
+              id,
+              id_risco,
+              responsavel_risco,
+              indicador_risco,
+              situacao_indicador,
+              meta_efetiva,
+              tolerancia,
+              limite_tolerancia,
+              tipo_acompanhamento,
+              apuracao,
+              created_at,
+              updated_at
+            `),
             supabase.from('009_acoes').select('*')
           ]);
 
@@ -417,7 +440,17 @@ export const useReports = () => {
         case 'indicadores_performance':
           query = supabase
             .from('008_indicadores')
-            .select('indicador_risco, situacao_indicador, resultado_mes, tolerancia')
+            .select(`
+              indicador_risco,
+              situacao_indicador,
+              meta_efetiva,
+              tolerancia,
+              limite_tolerancia,
+              historico_indicadores(
+                resultado_mes,
+                data_apuracao
+              )
+            `)
             .limit(limit);
           break;
         case 'acoes_mitigacao':

@@ -141,11 +141,14 @@ export const REPORT_COLUMNS: Record<ReportType, { key: string; label: string; ty
   indicadores_performance: [
     { key: 'indicador_risco', label: 'Indicador', type: 'text' },
     { key: 'situacao_indicador', label: 'Situação', type: 'text' },
-    { key: 'resultado_mes', label: 'Resultado do Mês', type: 'number' },
-    { key: 'meta_desc', label: 'Meta', type: 'text' },
+    { key: 'meta_efetiva', label: 'Meta Efetiva', type: 'number' },
     { key: 'tolerancia', label: 'Tolerância', type: 'text' },
+    { key: 'limite_tolerancia', label: 'Limite de Tolerância', type: 'text' },
     { key: 'responsavel_risco', label: 'Responsável', type: 'text' },
-    { key: 'apuracao', label: 'Apuração', type: 'text' }
+    { key: 'tipo_acompanhamento', label: 'Tipo de Acompanhamento', type: 'text' },
+    { key: 'apuracao', label: 'Apuração', type: 'text' },
+    { key: 'resultado_mes', label: 'Resultado do Mês', type: 'number' },
+    { key: 'data_apuracao', label: 'Data de Apuração', type: 'date' }
   ],
   acoes_mitigacao: [
     { key: 'desc_acao', label: 'Descrição da Ação', type: 'text' },

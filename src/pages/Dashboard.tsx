@@ -3,47 +3,59 @@ import { useAuthStore } from '../store/authStore';
 import Layout from '../components/Layout';
 import AlertsDashboard from '../components/AlertsDashboard';
 import { BarChart3, Shield, AlertTriangle, TrendingUp } from 'lucide-react';
-import { Indicator, Tolerancia, SituacaoIndicador } from '../types/indicator';
+import { IndicatorWithHistory, Tolerancia, SituacaoIndicador } from '../types/indicator';
 import { Action, StatusAcao, SituacaoAcao, TipoAcao } from '../types/action';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
 
   // Mock data com alertas para demonstração
-  const mockIndicators: Indicator[] = [
+  const mockIndicators: IndicatorWithHistory[] = [
     {
+      // Dados da tabela dimensão (008)
       id: '1',
       id_risco: 'RISK-001',
       responsavel_risco: 'João Silva',
       indicador_risco: 'Taxa de Satisfação do Cliente',
       situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
-      justificativa_observacao: 'Indicador crítico para avaliação da qualidade',
-      impacto_n_implementacao: 'Perda de competitividade no mercado',
-      meta_desc: 'Manter satisfação acima de 85%',
+      meta_efetiva: 85,
       tolerancia: Tolerancia.FORA_TOLERANCIA, // Alerta crítico
       limite_tolerancia: '80%',
       tipo_acompanhamento: 'Mensal',
-      resultado_mes: 78.2, // Abaixo da tolerância
       apuracao: 'Dezembro/2024',
       created_at: '2024-01-10T14:30:00Z',
-      updated_at: '2024-01-15T09:15:00Z'
+      updated_at: '2024-01-15T09:15:00Z',
+      // Dados da tabela fato (019)
+      historico_id: 'hist-1',
+      justificativa_observacao: 'Indicador crítico para avaliação da qualidade',
+      impacto_n_implementacao: 'Perda de competitividade no mercado',
+      resultado_mes: 78.2, // Abaixo da tolerância
+      data_apuracao: '2024-12-01T14:30:00Z',
+      historico_created_at: '2024-12-01T14:30:00Z',
+      historico_updated_at: '2024-12-01T14:30:00Z'
     },
     {
+      // Dados da tabela dimensão (008)
       id: '2',
       id_risco: 'RISK-002',
       responsavel_risco: 'Maria Santos',
       indicador_risco: 'Tempo de Resposta do Sistema',
       situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
-      justificativa_observacao: 'Monitoramento de performance',
-      impacto_n_implementacao: 'Degradação da experiência do usuário',
-      meta_desc: 'Manter tempo de resposta abaixo de 2s',
+      meta_efetiva: 2,
       tolerancia: Tolerancia.FORA_TOLERANCIA, // Outro alerta
       limite_tolerancia: '2s',
       tipo_acompanhamento: 'Diário',
-      resultado_mes: 3.5, // Acima da tolerância
       apuracao: 'Dezembro/2024',
       created_at: '2024-01-12T10:00:00Z',
-      updated_at: '2024-01-16T14:20:00Z'
+      updated_at: '2024-01-16T14:20:00Z',
+      // Dados da tabela fato (019)
+      historico_id: 'hist-2',
+      justificativa_observacao: 'Monitoramento de performance',
+      impacto_n_implementacao: 'Degradação da experiência do usuário',
+      resultado_mes: 3.5, // Acima da tolerância
+      data_apuracao: '2024-12-01T14:30:00Z',
+      historico_created_at: '2024-12-01T14:30:00Z',
+      historico_updated_at: '2024-12-01T14:30:00Z'
     }
   ];
 

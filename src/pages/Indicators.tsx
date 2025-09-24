@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import {
-  Indicator,
+  IndicatorWithHistory,
   IndicatorFilters,
   SituacaoIndicador,
   Tolerancia,
@@ -16,7 +16,7 @@ import AlertBanner from '../components/AlertBanner';
 import Layout from '../components/Layout';
 
 const Indicators: React.FC = () => {
-  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [indicators, setIndicators] = useState<IndicatorWithHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -26,57 +26,75 @@ const Indicators: React.FC = () => {
   });
 
   // Mock data - será substituído pela integração com Supabase
-  const mockIndicators: Indicator[] = useMemo(() => [
+  const mockIndicators: IndicatorWithHistory[] = useMemo(() => [
     {
+      // Dados da tabela dimensão (008)
       id: '1',
       id_risco: 'RISK-001',
       responsavel_risco: 'João Silva',
       indicador_risco: 'Taxa de Conformidade Regulatória',
       situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
-      justificativa_observacao: 'Indicador implementado com sucesso',
-      impacto_n_implementacao: 'Baixo impacto',
-      meta_desc: 'Manter conformidade acima de 95%',
+      meta_efetiva: 95,
       tolerancia: Tolerancia.DENTRO_TOLERANCIA,
       limite_tolerancia: '90%',
       tipo_acompanhamento: 'Mensal',
-      resultado_mes: 97.5,
       apuracao: 'Dezembro/2024',
       created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-15T10:00:00Z'
+      updated_at: '2024-01-15T10:00:00Z',
+      // Dados da tabela fato (019) - último registro
+      historico_id: 'hist-1',
+      justificativa_observacao: 'Indicador implementado com sucesso',
+      impacto_n_implementacao: 'Baixo impacto',
+      resultado_mes: 97.5,
+      data_apuracao: '2024-12-01T10:00:00Z',
+      historico_created_at: '2024-12-01T10:00:00Z',
+      historico_updated_at: '2024-12-01T10:00:00Z'
     },
     {
+      // Dados da tabela dimensão (008)
       id: '2',
       id_risco: 'RISK-002',
       responsavel_risco: 'Maria Santos',
       indicador_risco: 'Índice de Satisfação do Cliente',
       situacao_indicador: SituacaoIndicador.EM_IMPLEMENTACAO,
-      justificativa_observacao: 'Em fase de coleta de dados',
-      impacto_n_implementacao: 'Médio impacto',
-      meta_desc: 'Manter satisfação acima de 85%',
+      meta_efetiva: 85,
       tolerancia: Tolerancia.FORA_TOLERANCIA,
       limite_tolerancia: '80%',
       tipo_acompanhamento: 'Mensal',
-      resultado_mes: 78.2,
       apuracao: 'Dezembro/2024',
       created_at: '2024-01-10T14:30:00Z',
-      updated_at: '2024-01-15T09:15:00Z'
+      updated_at: '2024-01-15T09:15:00Z',
+      // Dados da tabela fato (019) - último registro
+      historico_id: 'hist-2',
+      justificativa_observacao: 'Em fase de coleta de dados',
+      impacto_n_implementacao: 'Médio impacto',
+      resultado_mes: 78.2,
+      data_apuracao: '2024-12-01T14:30:00Z',
+      historico_created_at: '2024-12-01T14:30:00Z',
+      historico_updated_at: '2024-12-01T14:30:00Z'
     },
     {
+      // Dados da tabela dimensão (008)
       id: '3',
       id_risco: 'RISK-003',
       responsavel_risco: 'Carlos Oliveira',
       indicador_risco: 'Tempo Médio de Resposta',
       situacao_indicador: SituacaoIndicador.NAO_INICIADO,
-      justificativa_observacao: 'Aguardando aprovação do orçamento',
-      impacto_n_implementacao: 'Alto impacto',
-      meta_desc: 'Manter tempo de resposta abaixo de 2 horas',
+      meta_efetiva: 2,
       tolerancia: Tolerancia.DENTRO_TOLERANCIA,
       limite_tolerancia: '3 horas',
       tipo_acompanhamento: 'Semanal',
-      resultado_mes: 1.8,
       apuracao: 'Dezembro/2024',
       created_at: '2024-01-05T16:45:00Z',
-      updated_at: '2024-01-12T11:20:00Z'
+      updated_at: '2024-01-12T11:20:00Z',
+      // Dados da tabela fato (019) - sem histórico ainda
+      historico_id: undefined,
+      justificativa_observacao: 'Aguardando aprovação do orçamento',
+      impacto_n_implementacao: 'Alto impacto',
+      resultado_mes: undefined,
+      data_apuracao: undefined,
+      historico_created_at: undefined,
+      historico_updated_at: undefined
     }
   ], []);
 

@@ -7,6 +7,154 @@
 
   VIOLATION CHECK: If you used TodoWrite first, you violated this rule. Stop and restart with Archon.
 
+# CRITICAL: USE ALL AVAILABLE TOOLS
+**SEMPRE use TODOS os subagentes e MCPs disponíveis em conjunto para máxima eficiência:**
+- **MCP Servers**: Use Archon, Byterover, Firecrawl, Context7, Playwright, IDE, TestSprite e outros em conjunto
+- **Subagentes**: Use general-purpose, frontend-developer, backend-developer, data-specialist, code-reviewer, qa-ui-ux-designer, fullstack-support, plan-reviewer conforme necessário
+- **Ferramentas Locais**: Bash, Glob, Grep, Read, Edit, Write, etc.
+- **Conhecimento**: Armazene e recupere conhecimento usando o sistema Byterover MCP
+- **Pesquisa**: Use múltiplos MCPs para pesquisa simultânea e abrangente
+
+**Estratégia de Uso Combinado:**
+1. Inicie sempre com Archon para gerenciamento de tarefas
+2. Use Byterover para armazenar/recuperar conhecimento do projeto
+3. Use Context7 para documentação atualizada de bibliotecas
+4. Use Firecrawl para pesquisa web e scraping
+5. Use Playwright para testes e automação de navegador
+6. Use TestSprite para testes automatizados
+7. Use subagentes especializados para tarefas complexas
+8. Use IDE tools para diagnóstico e execução de código
+
+**IMPORTANTE: MCPs do Supabase seguem o padrão `supabase-{nome-do-projeto}`. Identifique o projeto atual pelo nome do diretório raiz para determinar qual MCP do Supabase usar.**
+
+# MCPs Universais - Usados em Todos os Projetos
+
+## Sequential-Thinking MCP
+**Use quando precisa de processos de raciocínio encadeado:**
+- Planejamento de projetos complexos
+- Decomposição de problemas em etapas lógicas
+- Geração de fluxogramas e roadmaps
+- Tomada de decisão multi-fatorada
+- Análise de causa e efeito
+
+**Comando:** `mcp__sequential-thinking__sequentialthinking`
+
+## Byterover-MCP
+**Ideal para buscas avançadas e gerenciamento de conhecimento:**
+- Buscas em grandes conjuntos de dados
+- Filtragem contextual de informações
+- Análise e integração com fontes externas
+- Armazenamento e recuperação de conhecimento do projeto
+- Workflows que exigem dados variados e correlacionados
+
+**Comandos principais:**
+- `mcp__byterover-mcp__byterover-retrieve-knowledge` - Recuperar conhecimento
+- `mcp__byterover-mcp__byterover-store-knowledge` - Armazenar conhecimento
+
+## Web-Search-Prime (Z.ai)
+**Use quando precisa acessar informações da web em tempo real:**
+- Pesquisas de tendências atuais
+- Busca de dados públicos não disponíveis localmente
+- Verificação de informações atualizadas
+- Pesquisa de concorrência e mercado
+- Análise de tecnologias emergentes
+
+**Comando:** `mcp__web-search-prime__webSearchPrime`
+
+## Sentry MCP
+**Ative para monitoramento e auditoria de erros:**
+- Monitoramento de erros em produção
+- Análise de logs e alertas
+- Auditoria de performance e estabilidade
+- Revisão de incidentes para times DevOps/QA
+- Rastreamento de issues e resolução de problemas
+
+**Comandos principais:**
+- `mcp__sentry__search_events` - Buscar eventos e estatísticas
+- `mcp__sentry__get_issue_details` - Obter detalhes de issues
+- `mcp__sentry__analyze_issue_with_seer` - Análise de erros com IA
+
+## Stripe MCP
+**Utilize para atividades financeiras e de pagamento:**
+- Supervisão financeira e relatórios
+- Auditoria de transações e cobranças
+- Consulta de status de pagamentos
+- Gerenciamento de clientes e assinaturas
+- Análise de métricas financeiras
+
+**Comandos principais:**
+- `mcp__stripe__list_payment_intents` - Listar intenções de pagamento
+- `mcp__stripe__list_invoices` - Listar faturas
+- `mcp__stripe__list_customers` - Gerenciar clientes
+
+## Vercel MCP
+**Acessível para deploy e monitoramento de aplicações:**
+- Deploy rápido de aplicações web serverless
+- Monitoramento de performance e deployments
+- Consulta de histórico de versões
+- Gerenciamento de projetos e equipes
+- Análise de logs de build e execução
+
+**Comandos principais:**
+- `mcp__vercel__deploy_to_vercel` - Fazer deploy
+- `mcp__vercel__list_projects` - Listar projetos
+- `mcp__vercel__get_deployment_build_logs` - Ver logs de build
+
+## Context7 MCP
+**Indicado para análises contextuais e exploratórias:**
+- Análises contextuais profundas
+- Exploração de dados relacionais
+- Pesquisas de correlação entre métricas
+- Análises temporais e tendências
+- Insights de negócio e padrões
+
+**Comandos principais:**
+- `mcp__context7__resolve-library-id` - Resolver ID de biblioteca
+- `mcp__context7__get-library-docs` - Obter documentação
+
+## Playwright MCP
+**Use em automação de navegador e testes:**
+- Testes automatizados de interface web
+- Web scraping com navegação simulada
+- Interação com páginas dinâmicas
+- Geração de screenshots e relatórios visuais
+- Validação de fluxos de usuário
+
+**Comandos principais:**
+- `mcp__playwright__browser_navigate` - Navegar para URLs
+- `mcp__playwright__browser_snapshot` - Capturar estado da página
+- `mcp__playwright__browser_click` - Interagir com elementos
+
+## Firecrawl MCP
+**Recomendado para coleta de dados em larga escala:**
+- Extração massiva de informações públicas
+- Web crawling em múltiplas páginas/sistemas
+- Busca de dados em sites complexos
+- Monitoramento de concorrência em escala
+- Análise de conteúdo estruturado
+
+**Comandos principais:**
+- `mcp__firecrawl__firecrawl_search` - Pesquisa web avançada
+- `mcp__firecrawl__firecrawl_scrape` - Scraping de páginas específicas
+- `mcp__firecrawl__firecrawl_crawl` - Crawling completo de sites
+
+# Estratégia de Uso Combinado
+
+**Sempre que o contexto estourar ou precisar compactar informações:**
+
+1. **Use o comando /compact** para resumir o contexto atual
+2. **Consulte as instruções relevantes no CLAUDE.md** sobre os MCPs necessários
+3. **Priorize MCPs mais específicos** sobre os genéricos
+4. **Combine múltiplos MCPs** para resultados mais completos
+
+**Exemplo de fluxo completo:**
+- Iniciar com Archon para gerenciamento de tarefas
+- Usar Byterover para recuperar conhecimento prévio
+- Complementar com Context7 para documentação atualizada
+- Utilizar Web-Search-Prime para informações externas
+- Aplicar Sequential-Thinking para planejamento complexo
+- Testar com Playwright e monitorar com Sentry
+
 # Archon Integration & Workflow
 
 **CRITICAL: This project uses Archon MCP server for knowledge management, task tracking, and project organization. ALWAYS start with Archon MCP server task management.**
@@ -28,10 +176,29 @@
 
 ## Project Scenarios & Initialization
 
+### CRITICAL: Project Verification Rule
+**ANTES de criar qualquer novo projeto, SEMPRE verifique se já existe um projeto correspondente:**
+
+1. **Verifique o nome do diretório local** para identificar o projeto
+2. **Use heurística para comparar** com projetos existentes no Archon
+3. **Palavras-chave comuns**: ASGRC, COGERH, BI, nome do diretório atual
+4. **Só crie novo projeto** se tiver certeza que não existe um correspondente
+
+```bash
+# Passo 1: Verificar projetos existentes
+archon:find_projects(query="[palavras-chave do projeto local]")
+
+# Passo 2: Analisar resultados com heurística
+# Comparar nomes, descrições, github_repo (se existir)
+
+# Passo 3: Se não encontrar correspondência, então criar novo
+archon:manage_project(action="create", title="Nome Correto do Projeto")
+```
+
 ### Scenario 1: New Project with Archon
 
 ```bash
-# Create project container
+# SOMENTE se não existir projeto correspondente
 archon:manage_project(
   action="create",
   title="Descriptive Project Name",
@@ -44,13 +211,14 @@ archon:manage_project(
 ### Scenario 2: Existing Project - Adding Archon
 
 ```bash
-# First, analyze existing codebase thoroughly
-# Read all major files, understand architecture, identify current state
-# Then create project container
-archon:manage_project(action="create", title="Existing Project Name")
+# PRIMEIRO verifique se já existe projeto
+archon:find_projects(query="[keywords from local directory]")
 
-# Research current tech stack and create tasks for remaining work
-# Focus on what needs to be built, not what already exists
+# Se encontrou correspondência, use o projeto existente
+archon:manage_task(action="list", filter_by="project", filter_value="[existing_project_id]")
+
+# Se NÃO encontrou correspondência, então crie
+archon:manage_project(action="create", title="Existing Project Name")
 ```
 
 ### Scenario 3: Continuing Archon Project

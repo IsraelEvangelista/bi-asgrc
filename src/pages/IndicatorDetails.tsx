@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import Layout from '../components/Layout';
 import {
-  Indicator,
+  IndicatorWithHistory,
   SituacaoIndicador,
   Tolerancia,
   getIndicatorStatusColor,
@@ -22,108 +22,112 @@ import {
   IndicatorHistory
 } from '../types';
 
-// Interface local para indicador com histórico
-interface IndicatorWithHistory {
-  indicator: Indicator;
-  history: IndicatorHistory[];
-  metrics: {
-    average_result: number;
-    trend: string;
-    months_in_tolerance: number;
-    months_out_tolerance: number;
-    best_result: number;
-    worst_result: number;
-    improvement_rate: number;
-  };
+// Interface para métricas do indicador
+interface IndicatorMetrics {
+  average_result: number;
+  trend: string;
+  months_in_tolerance: number;
+  months_out_tolerance: number;
+  best_result: number;
+  worst_result: number;
+  improvement_rate: number;
 }
 
 const IndicatorDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [indicator, setIndicator] = useState<IndicatorWithHistory | null>(null);
+  const [history, setHistory] = useState<IndicatorHistory[]>([]);
+  const [metrics, setMetrics] = useState<IndicatorMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'analysis'>('overview');
 
   // Mock data - será substituído pela integração com Supabase
-  const mockIndicatorWithHistory: IndicatorWithHistory = useMemo(() => ({
-    indicator: {
-      id: '1',
-      id_risco: 'RISK-001',
-      responsavel_risco: 'João Silva',
-      indicador_risco: 'Taxa de Conformidade Regulatória',
-      situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
-      justificativa_observacao: 'Indicador implementado com sucesso após revisão dos processos internos',
-      impacto_n_implementacao: 'Baixo impacto - Processos já estão alinhados com as regulamentações',
-      meta_desc: 'Manter conformidade regulatória acima de 95% em todas as auditorias',
-      tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-      limite_tolerancia: '90%',
-      tipo_acompanhamento: 'Percentual',
+  const mockIndicator: IndicatorWithHistory = useMemo(() => ({
+    // Dados da tabela dimensão (008)
+    id: '1',
+    id_risco: 'RISK-001',
+    responsavel_risco: 'João Silva',
+    indicador_risco: 'Taxa de Conformidade Regulatória',
+    situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
+    meta_efetiva: 95,
+    tolerancia: Tolerancia.DENTRO_TOLERANCIA,
+    limite_tolerancia: '90%',
+    tipo_acompanhamento: 'Percentual',
+    apuracao: 'Dezembro/2024',
+    created_at: '2024-01-15T10:00:00Z',
+    updated_at: '2024-01-15T10:00:00Z',
+    // Dados da tabela fato (019) - último registro
+    historico_id: 'hist-1',
+    justificativa_observacao: 'Indicador implementado com sucesso após revisão dos processos internos',
+    impacto_n_implementacao: 'Baixo impacto - Processos já estão alinhados com as regulamentações',
+    resultado_mes: 97.5,
+    data_apuracao: '2024-12-01T10:00:00Z',
+    historico_created_at: '2024-12-01T10:00:00Z',
+    historico_updated_at: '2024-12-01T10:00:00Z'
+  }), []);
+
+  const mockHistory: IndicatorHistory[] = useMemo(() => [
+    {
+      id: 'hist-1',
+      id_indicador: '1',
+      justificativa_observacao: 'Resultado excelente, mantendo padrão de qualidade',
+      impacto_n_implementacao: 'Nenhum impacto significativo',
       resultado_mes: 97.5,
-      apuracao: 'Dezembro/2024',
-      created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-15T10:00:00Z'
+      data_apuracao: '2024-12-01T10:00:00Z',
+      created_at: '2024-12-01T10:00:00Z',
+      updated_at: '2024-12-01T10:00:00Z'
     },
-    history: [
-      {
-        id: 'hist-1',
-        indicator_id: '1',
-        resultado_mes: 97.5,
-        tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-        apuracao: 'Dezembro/2024',
-        observacoes: 'Resultado excelente, mantendo padrão de qualidade',
-        recorded_at: '2024-12-31T23:59:59Z',
-        recorded_by: 'João Silva'
-      },
-      {
-        id: 'hist-2',
-        indicator_id: '1',
-        resultado_mes: 96.2,
-        tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-        apuracao: 'Novembro/2024',
-        observacoes: 'Pequena melhoria em relação ao mês anterior',
-        recorded_at: '2024-11-30T23:59:59Z',
-        recorded_by: 'João Silva'
-      },
-      {
-        id: 'hist-3',
-        indicator_id: '1',
-        resultado_mes: 94.8,
-        tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-        apuracao: 'Outubro/2024',
-        observacoes: 'Resultado dentro da meta estabelecida',
-        recorded_at: '2024-10-31T23:59:59Z',
-        recorded_by: 'João Silva'
-      },
-      {
-        id: 'hist-4',
-        indicator_id: '1',
-        resultado_mes: 88.5,
-        tolerancia: Tolerancia.FORA_TOLERANCIA,
-        apuracao: 'Setembro/2024',
-        observacoes: 'Resultado abaixo da tolerância - ações corretivas implementadas',
-        recorded_at: '2024-09-30T23:59:59Z',
-        recorded_by: 'João Silva'
-      },
-      {
-        id: 'hist-5',
-        indicator_id: '1',
-        resultado_mes: 92.1,
-        tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-        apuracao: 'Agosto/2024',
-        observacoes: 'Recuperação após implementação de melhorias',
-        recorded_at: '2024-08-31T23:59:59Z',
-        recorded_by: 'João Silva'
-      }
-    ],
-    metrics: {
-      average_result: 93.82,
-      trend: 'positive',
-      months_in_tolerance: 4,
-      months_out_tolerance: 1,
-      best_result: 97.5,
-      worst_result: 88.5,
-      improvement_rate: 10.2
+    {
+      id: 'hist-2',
+      id_indicador: '1',
+      justificativa_observacao: 'Pequena melhoria em relação ao mês anterior',
+      impacto_n_implementacao: 'Nenhum impacto significativo',
+      resultado_mes: 96.2,
+      data_apuracao: '2024-11-01T10:00:00Z',
+      created_at: '2024-11-01T10:00:00Z',
+      updated_at: '2024-11-01T10:00:00Z'
+    },
+    {
+      id: 'hist-3',
+      id_indicador: '1',
+      justificativa_observacao: 'Resultado dentro da meta estabelecida',
+      impacto_n_implementacao: 'Nenhum impacto significativo',
+      resultado_mes: 94.8,
+      data_apuracao: '2024-10-01T10:00:00Z',
+      created_at: '2024-10-01T10:00:00Z',
+      updated_at: '2024-10-01T10:00:00Z'
+    },
+    {
+      id: 'hist-4',
+      id_indicador: '1',
+      justificativa_observacao: 'Resultado abaixo da tolerância - ações corretivas implementadas',
+      impacto_n_implementacao: 'Perda de eficiência operacional',
+      resultado_mes: 88.5,
+      data_apuracao: '2024-09-01T10:00:00Z',
+      created_at: '2024-09-01T10:00:00Z',
+      updated_at: '2024-09-01T10:00:00Z'
+    },
+    {
+      id: 'hist-5',
+      id_indicador: '1',
+      justificativa_observacao: 'Recuperação após implementação de melhorias',
+      impacto_n_implementacao: 'Nenhum impacto significativo',
+      resultado_mes: 92.1,
+      data_apuracao: '2024-08-01T10:00:00Z',
+      created_at: '2024-08-01T10:00:00Z',
+      updated_at: '2024-08-01T10:00:00Z'
     }
+  ], []);
+
+  const mockMetrics: IndicatorMetrics = useMemo(() => ({
+    average_result: 93.82,
+    trend: 'positive',
+    months_in_tolerance: 4,
+    months_out_tolerance: 1,
+    best_result: 97.5,
+    worst_result: 88.5,
+    improvement_rate: 10.2
   }), []);
 
   useEffect(() => {
@@ -136,20 +140,22 @@ const IndicatorDetails: React.FC = () => {
       setLoading(true);
       // Aqui será implementada a integração com Supabase
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       if (id === '1') {
-        setIndicator(mockIndicatorWithHistory);
+        setIndicator(mockIndicator);
+        setHistory(mockHistory);
+        setMetrics(mockMetrics);
       } else {
         // Indicador não encontrado
         navigate('/indicadores');
         return;
       }
-      
+
       setLoading(false);
     };
 
     loadIndicator();
-  }, [id, navigate, mockIndicatorWithHistory]);
+  }, [id, navigate, mockIndicator, mockHistory, mockMetrics]);
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -207,10 +213,10 @@ const IndicatorDetails: React.FC = () => {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {indicator.indicator.indicador_risco}
+              {indicator?.indicador_risco}
             </h1>
             <p className="text-gray-600 mt-1">
-              ID do Risco: {indicator.indicator.id_risco}
+              ID do Risco: {indicator?.id_risco}
             </p>
           </div>
         </div>
@@ -230,11 +236,11 @@ const IndicatorDetails: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Resultado Atual</p>
               <p className="text-2xl font-bold text-gray-900">
-                {indicator.indicator.resultado_mes?.toFixed(1) || 'N/A'}
-                {indicator.indicator.tipo_acompanhamento === 'Percentual' ? '%' : ''}
+                {indicator?.resultado_mes?.toFixed(1) || 'N/A'}
+                {indicator?.tipo_acompanhamento === 'Percentual' ? '%' : ''}
               </p>
             </div>
-            {getTrendIcon(indicator.metrics.trend)}
+            {metrics && getTrendIcon(metrics.trend)}
           </div>
         </div>
 
@@ -243,8 +249,8 @@ const IndicatorDetails: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Média Histórica</p>
               <p className="text-2xl font-bold text-gray-900">
-                {indicator.metrics.average_result.toFixed(1)}
-                {indicator.indicator.tipo_acompanhamento === 'Percentual' ? '%' : ''}
+                {metrics?.average_result.toFixed(1)}
+                {indicator?.tipo_acompanhamento === 'Percentual' ? '%' : ''}
               </p>
             </div>
             <BarChart3 className="h-5 w-5 text-blue-500" />
@@ -256,9 +262,9 @@ const IndicatorDetails: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Situação</p>
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                getIndicatorStatusColor(indicator.indicator.situacao_indicador)
+                getIndicatorStatusColor(indicator?.situacao_indicador)
               }`}>
-                {indicator.indicator.situacao_indicador}
+                {indicator?.situacao_indicador}
               </span>
             </div>
             <User className="h-5 w-5 text-gray-500" />
@@ -270,13 +276,13 @@ const IndicatorDetails: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Tolerância</p>
               <div className="flex items-center gap-2">
-                {indicator.indicator.tolerancia === Tolerancia.FORA_TOLERANCIA && (
+                {indicator?.tolerancia === Tolerancia.FORA_TOLERANCIA && (
                   <AlertTriangle className="h-4 w-4 text-red-500" />
                 )}
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  getToleranceColor(indicator.indicator.tolerancia)
+                  getToleranceColor(indicator?.tolerancia)
                 }`}>
-                  {indicator.indicator.tolerancia}
+                  {indicator?.tolerancia}
                 </span>
               </div>
             </div>
@@ -324,22 +330,22 @@ const IndicatorDetails: React.FC = () => {
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Responsável</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.responsavel_risco}</p>
+                      <p className="text-sm text-gray-900">{indicator?.responsavel_risco}</p>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Tipo de Acompanhamento</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.tipo_acompanhamento}</p>
+                      <p className="text-sm text-gray-900">{indicator?.tipo_acompanhamento}</p>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Limite de Tolerância</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.limite_tolerancia}</p>
+                      <p className="text-sm text-gray-900">{indicator?.limite_tolerancia}</p>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Última Apuração</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.apuracao}</p>
+                      <p className="text-sm text-gray-900">{indicator?.apuracao}</p>
                     </div>
                   </div>
                 </div>
@@ -349,18 +355,18 @@ const IndicatorDetails: React.FC = () => {
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Meta</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.meta_desc}</p>
+                      <label className="block text-sm font-medium text-gray-700">Meta Efetiva</label>
+                      <p className="text-sm text-gray-900">{indicator?.meta_efetiva}{indicator?.tipo_acompanhamento === 'Percentual' ? '%' : ''}</p>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Justificativa/Observação</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.justificativa_observacao}</p>
+                      <p className="text-sm text-gray-900">{indicator?.justificativa_observacao}</p>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Impacto da Não Implementação</label>
-                      <p className="text-sm text-gray-900">{indicator.indicator.impacto_n_implementacao}</p>
+                      <p className="text-sm text-gray-900">{indicator?.impacto_n_implementacao}</p>
                     </div>
                   </div>
                 </div>
@@ -398,19 +404,19 @@ const IndicatorDetails: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {indicator.history.map((record, index) => {
-                      const previousRecord = indicator.history[index + 1];
+                    {history.map((record, index) => {
+                      const previousRecord = history[index + 1];
                       const variation = previousRecord ? getResultVariation(record.resultado_mes, previousRecord.resultado_mes) : null;
                       
                       return (
                         <tr key={record.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.apuracao}
+                            {new Date(record.data_apuracao).toLocaleDateString('pt-BR')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-gray-900">
-                              {record.resultado_mes.toFixed(1)}
-                              {indicator.indicator.tipo_acompanhamento === 'Percentual' ? '%' : ''}
+                              {record.resultado_mes?.toFixed(1) || 'N/A'}
+                              {indicator?.tipo_acompanhamento === 'Percentual' ? '%' : ''}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -427,18 +433,18 @@ const IndicatorDetails: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              getToleranceColor(record.tolerancia)
+                              getToleranceColor(indicator?.tolerancia)
                             }`}>
-                              {record.tolerancia}
+                              {indicator?.tolerancia}
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-sm text-gray-900 max-w-xs truncate" title={record.observacoes}>
-                              {record.observacoes}
+                            <p className="text-sm text-gray-900 max-w-xs truncate" title={record.justificativa_observacao}>
+                              {record.justificativa_observacao}
                             </p>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.recorded_by}
+                            {new Date(record.created_at).toLocaleDateString('pt-BR')}
                           </td>
                         </tr>
                       );
@@ -461,29 +467,29 @@ const IndicatorDetails: React.FC = () => {
                     <TrendingUp className="h-4 w-4 text-green-500" />
                   </div>
                   <p className="text-xl font-bold text-gray-900">
-                    {indicator.metrics.best_result.toFixed(1)}
-                    {indicator.indicator.tipo_acompanhamento === 'Percentual' ? '%' : ''}
+                    {metrics?.best_result.toFixed(1)}
+                    {indicator?.tipo_acompanhamento === 'Percentual' ? '%' : ''}
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-600">Pior Resultado</span>
                     <TrendingDown className="h-4 w-4 text-red-500" />
                   </div>
                   <p className="text-xl font-bold text-gray-900">
-                    {indicator.metrics.worst_result.toFixed(1)}
-                    {indicator.indicator.tipo_acompanhamento === 'Percentual' ? '%' : ''}
+                    {metrics?.worst_result.toFixed(1)}
+                    {indicator?.tipo_acompanhamento === 'Percentual' ? '%' : ''}
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-600">Taxa de Melhoria</span>
                     <BarChart3 className="h-4 w-4 text-blue-500" />
                   </div>
                   <p className="text-xl font-bold text-gray-900">
-                    {indicator.metrics.improvement_rate.toFixed(1)}%
+                    {metrics?.improvement_rate.toFixed(1)}%
                   </p>
                 </div>
                 
@@ -493,28 +499,28 @@ const IndicatorDetails: React.FC = () => {
                     <Target className="h-4 w-4 text-green-500" />
                   </div>
                   <p className="text-xl font-bold text-gray-900">
-                    {indicator.metrics.months_in_tolerance}
+                    {metrics?.months_in_tolerance}
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-600">Meses Fora da Tolerância</span>
                     <AlertTriangle className="h-4 w-4 text-red-500" />
                   </div>
                   <p className="text-xl font-bold text-gray-900">
-                    {indicator.metrics.months_out_tolerance}
+                    {metrics?.months_out_tolerance}
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-600">Tendência</span>
-                    {getTrendIcon(indicator.metrics.trend)}
+                    {metrics && getTrendIcon(metrics.trend)}
                   </div>
                   <p className="text-xl font-bold text-gray-900 capitalize">
-                    {indicator.metrics.trend === 'positive' ? 'Positiva' : 
-                     indicator.metrics.trend === 'negative' ? 'Negativa' : 'Estável'}
+                    {metrics?.trend === 'positive' ? 'Positiva' :
+                     metrics?.trend === 'negative' ? 'Negativa' : 'Estável'}
                   </p>
                 </div>
               </div>

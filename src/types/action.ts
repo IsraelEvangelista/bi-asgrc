@@ -11,12 +11,11 @@ export enum TipoAcao {
 export enum StatusAcao {
   NAO_INICIADA = 'Não iniciada',
   EM_IMPLEMENTACAO = 'Em implementação',
-  IMPLEMENTADA = 'Implementada',
-  ACOES_IMPLEMENTADAS = 'Ações Implementadas'
+  IMPLEMENTADA = 'Implementada'
 }
 
 export enum SituacaoAcao {
-  NO_PRAZO = 'No prazo',
+  NO_PRAZO = 'No Prazo',
   ATRASADO = 'Atrasado'
 }
 
@@ -24,6 +23,7 @@ export enum SituacaoAcao {
 export interface Action {
   id: string;
   id_ref?: string; // Referência para ação pai (relacionamento recursivo)
+  id_risco?: string; // FK para tabela 006_matriz_riscos
   desc_acao: string;
   area_executora: string[]; // JSONB array de áreas
   acao_transversal: boolean;
@@ -41,6 +41,10 @@ export interface Action {
   apuracao?: string;
   created_at: string;
   updated_at: string;
+  // Campos relacionados das tabelas JOINadas
+  eventos_riscos?: string; // Da tabela 006_matriz_riscos
+  sigla_area?: string; // Da tabela 003_areas_gerencias
+  hist_created_at?: string; // Da tabela 023_hist_acao
 }
 
 // Interface para criação de ação
@@ -207,8 +211,8 @@ export const TIPO_ACAO_OPTIONS: ActionSelectOption[] = [
 
 export const STATUS_ACAO_OPTIONS: ActionSelectOption[] = [
   { value: StatusAcao.NAO_INICIADA, label: 'Não Iniciada' },
-  { value: StatusAcao.EM_IMPLEMENTACAO, label: 'Em Implementação' },
-  { value: StatusAcao.ACOES_IMPLEMENTADAS, label: 'Ações Implementadas' }
+  { value: StatusAcao.EM_IMPLEMENTACAO, label: 'Em implementação' },
+  { value: StatusAcao.IMPLEMENTADA, label: 'Implementada' }
 ];
 
 export const SITUACAO_ACAO_OPTIONS: ActionSelectOption[] = [
@@ -219,7 +223,7 @@ export const SITUACAO_ACAO_OPTIONS: ActionSelectOption[] = [
 // Funções utilitárias
 export const getActionStatusColor = (status: StatusAcao): string => {
   switch (status) {
-    case StatusAcao.ACOES_IMPLEMENTADAS:
+    case StatusAcao.IMPLEMENTADA:
       return 'text-green-600 bg-green-100';
     case StatusAcao.EM_IMPLEMENTACAO:
       return 'text-yellow-600 bg-yellow-100';
@@ -254,7 +258,7 @@ export const isActionOverdue = (action: Action): boolean => {
   const deadline = new Date(action.prazo_implementacao);
   const today = new Date();
   
-  return today > deadline && action.status !== StatusAcao.ACOES_IMPLEMENTADAS;
+  return today > deadline && action.status !== StatusAcao.IMPLEMENTADA;
 };
 
 export const getDaysUntilDeadline = (deadline: string): number => {
