@@ -19,6 +19,8 @@ interface RiskActionsData {
   refetch: () => Promise<void>;
 }
 
+// Removidos dados mock - agora usando apenas dados reais do Supabase
+
 export const useRiskActionsData = (filters?: {
   searchTerm?: string;
   tipo_acao?: string;
@@ -74,7 +76,7 @@ export const useRiskActionsData = (filters?: {
         }
         
         // Se chegou até aqui, a tabela existe, tentar consulta com JOINs
-        // Construir consulta com filtros base (riscos específicos) + filtros adicionais
+        // Buscar TODOS os dados primeiro, depois aplicar filtros localmente
         let query = supabase
           .from('016_rel_acoes_riscos')
           .select(`
@@ -88,50 +90,10 @@ export const useRiskActionsData = (filters?: {
               situacao,
               tipo_acao,
               desc_acao,
-              area_executora,
-              sigla_area
+              area_executora
             )
-          `);
-          
-        // Aplicar filtro base nos riscos específicos (SEMPRE aplicado)
-        // Note: Vamos filtrar isso após a consulta já que o filtro seria no JOIN
-        
-        // Aplicar filtros adicionais se fornecidos
-        if (filters) {
-          if (filters.status || filters.selectedStatus) {
-            const statusFilter = filters.status || filters.selectedStatus;
-            query = query.eq('acoes.status', statusFilter);
-          }
-          
-          if (filters.situacao) {
-            query = query.eq('acoes.situacao', filters.situacao);
-          }
-          
-          if (filters.selectedPrazo) {
-            if (filters.selectedPrazo === 'no_prazo') {
-              query = query.eq('acoes.situacao', 'No Prazo');
-            } else if (filters.selectedPrazo === 'atrasado') {
-              query = query.eq('acoes.situacao', 'Atrasado');
-            }
-          }
-          
-          if (filters.tipo_acao) {
-            query = query.eq('acoes.tipo_acao', filters.tipo_acao);
-          }
-          
-          if (filters.area_executora) {
-            // Filtrar por sigla_area: fazer JOIN com a tabela de áreas
-            // Como area_executora é um array de IDs, precisamos usar uma consulta mais complexa
-            // Por enquanto, desabilitar filtro no banco e fazer apenas localmente
-            console.log('Filtro de área aplicado (processamento local):', filters.area_executora);
-          }
-          
-          if (filters.searchTerm) {
-            query = query.ilike('acoes.desc_acao', `%${filters.searchTerm}%`);
-          }
-        }
-        
-        query = query.limit(200); // Limite maior para capturar mais dados
+          `)
+          .limit(1000); // Buscar mais dados para garantir que temos todos os registros
         
         const { data, error: fetchError } = await query;
         
@@ -140,41 +102,101 @@ export const useRiskActionsData = (filters?: {
           // Não lançar erro, usar dados zerados como fallback
         } else if (data && data.length > 0) {
           console.log('Consulta bem-sucedida:', data.length, 'registros');
-          console.log('Filtros aplicados:', filters);
+          console.log('Filtros a aplicar:', filters);
           
           // Processar os dados retornados - SEMPRE filtrar pelos riscos específicos
           data.forEach((item: any) => {
             const sigla = item.matriz_riscos?.sigla;
             const status = item.acoes?.status;
+            const situacao = item.acoes?.situacao;
+            const tipo_acao = item.acoes?.tipo_acao;
+            const desc_acao = item.acoes?.desc_acao;
+            const area_executora = item.acoes?.area_executora;
             
             // FILTRO BASE: Apenas riscos específicos (SEMPRE aplicado)
             if (sigla && targetRisks.includes(sigla) && status) {
-              console.log(`Processando risco: ${sigla}, status: ${status}`);
               
-              const currentData = riskMap.get(sigla)!;
+              // Aplicar filtros localmente
+              let includeRecord = true;
               
-              // Mapear status para as categorias corretas
-              switch (status) {
-                case 'Em implementação':
-                  currentData.emImplementacao++;
-                  break;
-                case 'Implementada':
-                  currentData.implementada++;
-                  break;
-                case 'Não Iniciada':
-                case 'Não iniciada':
-                  currentData.naoIniciada++;
-                  break;
-                default:
-                  console.warn(`Status desconhecido: ${status}`);
+              if (filters) {
+                // Filtro por status
+                if (filters.status || filters.selectedStatus) {
+                  const statusFilter = filters.status || filters.selectedStatus;
+                  if (status !== statusFilter) {
+                    includeRecord = false;
+                  }
+                }
+                
+                // Filtro por situação
+                if (includeRecord && filters.situacao && situacao !== filters.situacao) {
+                  includeRecord = false;
+                }
+                
+                // Filtro por prazo (baseado na situação)
+                if (includeRecord && filters.selectedPrazo) {
+                  if (filters.selectedPrazo === 'no_prazo' && situacao !== 'No Prazo') {
+                    includeRecord = false;
+                  } else if (filters.selectedPrazo === 'atrasado' && situacao !== 'Atrasado') {
+                    includeRecord = false;
+                  }
+                }
+                
+                // Filtro por tipo de ação
+                if (includeRecord && filters.tipo_acao && tipo_acao !== filters.tipo_acao) {
+                  includeRecord = false;
+                }
+                
+                // Filtro por área executora
+                if (includeRecord && filters.area_executora && area_executora) {
+                  if (Array.isArray(area_executora)) {
+                    if (!area_executora.includes(filters.area_executora)) {
+                      includeRecord = false;
+                    }
+                  } else {
+                    if (area_executora !== filters.area_executora) {
+                      includeRecord = false;
+                    }
+                  }
+                }
+                
+                // Filtro por termo de busca
+                if (includeRecord && filters.searchTerm && desc_acao) {
+                  if (!desc_acao.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+                    includeRecord = false;
+                  }
+                }
               }
               
-              riskMap.set(sigla, currentData);
+              // Se passou por todos os filtros, incluir no resultado
+              if (includeRecord) {
+                console.log(`Processando risco: ${sigla}, status: ${status}`);
+                
+                const currentData = riskMap.get(sigla)!;
+                
+                // Mapear status para as categorias corretas
+                switch (status) {
+                  case 'Em implementação':
+                    currentData.emImplementacao++;
+                    break;
+                  case 'Implementada':
+                    currentData.implementada++;
+                    break;
+                  case 'Não Iniciada':
+                  case 'Não iniciada':
+                    currentData.naoIniciada++;
+                    break;
+                  default:
+                    console.warn(`Status desconhecido: ${status}`);
+                }
+                
+                riskMap.set(sigla, currentData);
+              }
             }
           });
           
           // Log dos resultados finais
-          console.log('Dados processados por risco:');
+          console.log('Dados processados por risco após filtros:');
           targetRisks.forEach(risk => {
             const data = riskMap.get(risk);
             console.log(`${risk}:`, data);

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Filtro Hierárquico Corrigido</title>
+</head>
+<body>
+    <h1>Testando Filtro Hierárquico Corrigido</h1>
+    <p>Redirecionando para a página de riscos e testando o subprocesso problemático...</p>
+    
+    <script>
+        // Redirecionar para a página de riscos
+        window.location.href = 'http://localhost:5173/riscos-processos-trabalho';
+        
+        // Aguardar carregamento e testar
+        setTimeout(() => {
+            try {
+                console.log('🧪 TESTE: Iniciando teste do filtro hierárquico corrigido');
+                
+                // Tentar expandir os filtros
+                const expandButton = document.querySelector('[data-testid="expand-filters"], button[aria-expanded="false"]');
+                if (expandButton) {
+                    console.log('🧪 TESTE: Expandindo filtros...');
+                    expandButton.click();
+                    
+                    // Aguardar carregamento dos dados
+                    setTimeout(() => {
+                        try {
+                            // Tentar selecionar o subprocesso problemático
+                            const subprocessoSelect = document.querySelector('select[name="subprocesso"], #subprocesso');
+                            if (subprocessoSelect) {
+                                console.log('🧪 TESTE: Selecionando subprocesso problemático...');
+                                subprocessoSelect.value = '1fb553a9-2426-4fa4-a7dc-8ce87a55225b';
+                                
+                                // Disparar evento de mudança
+                                const changeEvent = new Event('change', { bubbles: true });
+                                subprocessoSelect.dispatchEvent(changeEvent);
+                                
+                                console.log('🧪 TESTE: Subprocesso selecionado, aguardando filtragem hierárquica...');
+                                
+                                // Verificar se os filtros foram atualizados
+                                setTimeout(() => {
+                                    const processoSelect = document.querySelector('select[name="processo"], #processo');
+                                    const macroprocessoSelect = document.querySelector('select[name="macroprocesso"], #macroprocesso');
+                                    
+                                    console.log('🧪 TESTE: Verificando se os filtros foram atualizados...');
+                                    console.log('🧪 TESTE: Processo selecionado:', processoSelect?.value || 'Nenhum');
+                                    console.log('🧪 TESTE: Macroprocesso selecionado:', macroprocessoSelect?.value || 'Nenhum');
+                                    
+                                    if (processoSelect?.value && macroprocessoSelect?.value) {
+                                        console.log('✅ TESTE: SUCESSO! Filtragem hierárquica funcionando!');
+                                    } else {
+                                        console.log('❌ TESTE: FALHA! Filtragem hierárquica não funcionou.');
+                                    }
+                                }, 3000);
+                            } else {
+                                console.log('❌ TESTE: Select de subprocesso não encontrado');
+                            }
+                        } catch (error) {
+                            console.error('❌ TESTE: Erro ao selecionar subprocesso:', error);
+                        }
+                    }, 2000);
+                } else {
+                    console.log('❌ TESTE: Botão de expandir filtros não encontrado');
+                }
+            } catch (error) {
+                console.error('❌ TESTE: Erro geral:', error);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

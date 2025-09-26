@@ -37,12 +37,12 @@ const ProtectedRoute = ({
     // Se não há usuário, não pode fazer verificações
     if (!user) return null;
     
-    // Se há usuário mas não há perfil e ainda está carregando, aguarda
-    if (!userProfile && loading) return null;
+    // Se ainda está inicializando ou carregando perfil, aguarda
+    if (!isFullyInitialized || !authCheckCompleted) return null;
     
-    // Se há usuário mas não há perfil e não está carregando, permite acesso básico
+    // Se há usuário mas não há perfil, permite acesso básico
     // (o perfil básico será criado pelo authStore)
-    if (!userProfile && !loading) {
+    if (!userProfile) {
       return {
         hasAdminAccess: !requireAdmin, // Só permite se não requer admin
         hasRouteAccess: !requiredRoute, // Só permite se não requer rota específica
@@ -58,11 +58,10 @@ const ProtectedRoute = ({
       hasPermission: requiredPermission ? hasUserPermission(requiredPermission) : true,
       hasCustomAccess: customCheck ? customCheck() : true
     };
-  }, [user, userProfile, loading, requireAdmin, requiredRoute, requiredPermission, customCheck, isUserAdmin, canAccessRoute, hasUserPermission]);
+  }, [user, userProfile, isFullyInitialized, authCheckCompleted, requireAdmin, requiredRoute, requiredPermission, customCheck, isUserAdmin, canAccessRoute, hasUserPermission]);
   
   // Show loading only if we're truly checking auth for the first time
-  // Don't show loading if user exists but profile is loading (navigation case)
-  if ((loading || !authCheckCompleted) && !user) {
+  if (!authCheckCompleted) {
     return <FullScreenLoader text="Verificando autenticação..." />;
   }
 
@@ -71,47 +70,18 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If user exists but profile is still loading, show loading
-  if (user && !userProfile && !isFullyInitialized) {
+  // If user exists but system is still initializing, show loading
+  if (user && !isFullyInitialized) {
     return <FullScreenLoader text="Carregando perfil do usuário..." />;
   }
 
-  // Se o usuário existe mas o perfil não foi encontrado e o estado está inicializado
-  // Mas só exibe erro se não for um perfil básico válido
-  if (user && !userProfile && isFullyInitialized && !loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-yellow-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Perfil não encontrado</h2>
-          <p className="text-gray-600 mb-6">
-            Seu perfil de usuário não pôde ser carregado. Entre em contato com o administrador.
-          </p>
-          <button
-            onClick={() => {
-              // Não fazer logout automático, apenas redirecionar para conceitos
-              window.location.href = '/conceitos';
-            }}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Continuar para o sistema
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Remover esta verificação pois o authStore já cria um perfil básico como fallback
 
-  // Usa as verificações memoizadas para evitar re-renderizações
-  // Só mostra loading de permissões se realmente está carregando e há usuário
-  if (!permissionChecks && user && loading) {
-    return <FullScreenLoader text="Verificando permissões..." />;
-  }
-  
-  // Se não há permissionChecks mas há usuário e não está carregando,
-  // significa que algo deu errado - redireciona para conceitos
-  if (!permissionChecks && user && !loading) {
+  // Se ainda não temos permissionChecks mas o sistema está inicializado,
+  // aguarda um pouco mais ou redireciona para conceitos como fallback
+  if (!permissionChecks && user && isFullyInitialized && authCheckCompleted) {
+    // Se chegou aqui, algo pode ter dado errado nas verificações
+    // Redireciona para conceitos como fallback seguro
     return <Navigate to="/conceitos" replace />;
   }
 
@@ -131,6 +101,11 @@ const ProtectedRoute = ({
       </div>
     </div>
   );
+
+  // Se ainda não temos permissionChecks, aguarda
+  if (!permissionChecks) {
+    return <FullScreenLoader text="Verificando permissões..." />;
+  }
 
   // Verifica se requer acesso de administrador
   if (!permissionChecks.hasAdminAccess) {

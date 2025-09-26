@@ -19,6 +19,8 @@ interface RiskBarChartData {
   refetch: () => Promise<void>;
 }
 
+// Removidos dados mock - agora usando apenas dados reais do Supabase
+
 export const useRiskBarChart = (): RiskBarChartData => {
   const [data, setData] = useState<RiskBarData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

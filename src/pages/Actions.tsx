@@ -316,12 +316,23 @@ const Actions: React.FC = () => {
   const overdueAlerts = useOverdueActionAlerts(filteredActions);
 
   // Usar hooks corrigidos para dados dos gráficos
-  // Para o gráfico de barras horizontais, usar dados filtrados quando há filtros aplicados
+  // Para o gráfico de barras horizontais, priorizar dados filtrados mas usar dados base como fallback
   const riscoDataToUse = useMemo(() => {
-    let data = hasFiltersApplied ? filteredRiskData : (riskBarData || []);
+    console.log('🔄 Processando dados para gráfico de barras horizontais...');
+    console.log('📊 filteredRiskData:', filteredRiskData);
+    console.log('📊 riskBarData:', riskBarData);
     
-    // Validar se temos dados válidos
-    if (!data || !Array.isArray(data) || data.length === 0) {
+    // Priorizar filteredRiskData se disponível, senão usar riskBarData
+    let data = [];
+    
+    if (filteredRiskData && Array.isArray(filteredRiskData) && filteredRiskData.length > 0) {
+      console.log('✅ Usando filteredRiskData');
+      data = filteredRiskData;
+    } else if (riskBarData && Array.isArray(riskBarData) && riskBarData.length > 0) {
+      console.log('✅ Usando riskBarData como fallback');
+      data = riskBarData;
+    } else {
+      console.log('⚠️ Nenhum dado disponível');
       return [];
     }
     
@@ -342,20 +353,29 @@ const Actions: React.FC = () => {
       } else {
         // Formato do useRiskBarChart - precisa ser convertido
         return {
-          riskId: item.risk || 'Desconhecido',
+          riskId: item.risk || item.riskId || 'Desconhecido',
           statusData: {
-            emImplementacao: item['Em implementação'] || 0,
-            implementada: item['Implementada'] || 0,
-            naoIniciada: item['Não Iniciada'] || 0
+            emImplementacao: item['Em implementação'] || item.emImplementacao || 0,
+            implementada: item['Implementada'] || item.implementada || 0,
+            naoIniciada: item['Não Iniciada'] || item.naoIniciada || 0
           },
-          total: (item['Não Iniciada'] || 0) + (item['Em implementação'] || 0) + (item['Implementada'] || 0)
+          total: (item['Não Iniciada'] || item.naoIniciada || 0) + (item['Em implementação'] || item.emImplementacao || 0) + (item['Implementada'] || item.implementada || 0)
         };
       }
     }).filter(item => item && item.riskId && item.statusData); // Filtrar apenas itens válidos
     
+    // Garantir que apenas os riscos específicos sejam exibidos
+    const targetRisks = ['R01', 'R02', 'R03', 'R04', 'R05', 'R09', 'R17', 'R35'];
+    const filteredByTargetRisks = processedData.filter(item => targetRisks.includes(item.riskId));
+    
     // Ordenar por total do maior para o menor
-    return processedData.sort((a, b) => b.total - a.total);
-  }, [hasFiltersApplied, filteredRiskData, riskBarData]);
+    const finalData = filteredByTargetRisks.sort((a, b) => b.total - a.total);
+    
+    console.log('🎯 Dados finais para o gráfico:', finalData);
+    console.log('📈 Total de riscos a exibir:', finalData.length);
+    
+    return finalData;
+  }, [filteredRiskData, riskBarData]);
   
   const { statusData, prazoData, statusCardsData } = useActionsChartData(
     filteredActions,

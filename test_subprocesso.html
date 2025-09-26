@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Subprocesso Problemático</title>
+</head>
+<body>
+    <h1>Teste do Subprocesso Problemático</h1>
+    <p>Este script irá redirecionar para a página de riscos e simular a seleção do subprocesso problemático.</p>
+    
+    <script>
+        // Aguardar um pouco e redirecionar
+        setTimeout(() => {
+            window.location.href = 'http://localhost:8080/processos/riscos-trabalho';
+        }, 2000);
+        
+        // Após o redirecionamento, simular a seleção do subprocesso
+        setTimeout(() => {
+            // Tentar encontrar e expandir os filtros
+            const expandButton = document.querySelector('[data-testid="expand-filters"]') || 
+                               document.querySelector('button[aria-expanded="false"]') ||
+                               document.querySelector('button:contains("Filtros")');
+            
+            if (expandButton) {
+                console.log('🔍 Expandindo filtros...');
+                expandButton.click();
+                
+                // Aguardar um pouco para os dados carregarem
+                setTimeout(() => {
+                    // Tentar encontrar o select de subprocessos
+                    const subprocessoSelect = document.querySelector('select[name="subprocesso"]') ||
+                                             document.querySelector('#subprocesso') ||
+                                             document.querySelector('[data-testid="subprocesso-select"]');
+                    
+                    if (subprocessoSelect) {
+                        console.log('🔍 Selecionando subprocesso problemático...');
+                        subprocessoSelect.value = '1fb553a9-2426-4fa4-a7dc-8ce87a55225b';
+                        
+                        // Disparar evento de mudança
+                        const event = new Event('change', { bubbles: true });
+                        subprocessoSelect.dispatchEvent(event);
+                        
+                        console.log('✅ Subprocesso selecionado!');
+                    } else {
+                        console.log('❌ Select de subprocesso não encontrado');
+                        console.log('Elementos disponíveis:', document.querySelectorAll('select'));
+                    }
+                }, 3000);
+            } else {
+                console.log('❌ Botão de expandir filtros não encontrado');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
