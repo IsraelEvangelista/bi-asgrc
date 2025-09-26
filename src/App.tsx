@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy, memo, useRef, useCallback } from 'react';
+import React, { useEffect, Suspense, lazy, memo, useRef, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
@@ -36,76 +36,93 @@ const ArquiteturaProcessos = lazy(() => import('./pages/ArquiteturaProcessos'));
 const RiscosProcessosTrabalho = lazy(() => import('./pages/RiscosProcessosTrabalho'));
 const MatrizRisco = lazy(() => import('./pages/MatrizRisco'));
 const PortfolioAcoes = lazy(() => import('./pages/PortfolioAcoes'));
-const MonitoramentoRiscos = lazy(() => import('./pages/MonitoramentoRiscos'));
 
+
+// Componente memoizado para rotas estáticas
+const StaticRoutes = memo(() => (
+  <>
+    <Route path="/login" element={<Login />} />
+
+    <Route
+      path="/indicadores"
+      element={
+        <ProtectedRoute>
+          <Indicators />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/indicadores/novo"
+      element={
+        <ProtectedRoute>
+          <CreateIndicator />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/indicadores/:id"
+      element={
+        <ProtectedRoute>
+          <IndicatorDetails />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/indicadores/:id/editar"
+      element={
+        <ProtectedRoute>
+          <EditIndicator />
+        </ProtectedRoute>
+      }
+    />
+  </>
+));
+
+StaticRoutes.displayName = 'StaticRoutes';
 
 function App() {
-  const { 
-    user, 
-    userProfile, 
-    loading, 
-    
-    authCheckCompleted, 
+  const {
+    user,
+    userProfile,
+    loading,
+
+    authCheckCompleted,
     isFullyInitialized,
     isInitializing,
-    initialize 
+    initialize
   } = useAuthStore();
 
   const initializeRef = useRef(false);
-  
+
   // Reset ref on hot reload during development
   useEffect(() => {
     if (import.meta.hot) {
       initializeRef.current = false;
     }
   }, []);
+
   const visibilityTimeoutRef = useRef<NodeJS.Timeout>();
   const lastVisibilityChangeRef = useRef<number>(0);
 
-  // Debug logs removed for production
-
+  // Memoizar handler de mudança de visibilidade (desabilitado temporariamente para evitar loops)
   const handleVisibilityChange = useCallback(() => {
-    const now = Date.now();
-    
-    // Prevent rapid visibility changes (debounce)
-    if (now - lastVisibilityChangeRef.current < 1000) {
-      return;
-    }
-    
-    lastVisibilityChangeRef.current = now;
-    
-    if (document.visibilityState === 'visible') {
-      // Clear any existing timeout
-      if (visibilityTimeoutRef.current) {
-        clearTimeout(visibilityTimeoutRef.current);
-      }
-      
-      // Only reinitialize if not already initialized and not currently initializing
-      if (!isFullyInitialized && !isInitializing) {
-        console.log('🔄 App: Página visível, verificando necessidade de reinicialização...');
-        
-        visibilityTimeoutRef.current = setTimeout(() => {
-          const currentState = useAuthStore.getState();
-          if (!currentState.isFullyInitialized && !currentState.isInitializing) {
-            console.log('🔄 App: Reinicializando auth após mudança de visibilidade...');
-            initialize();
-          }
-        }, 500);
-      }
-    }
-  }, [isFullyInitialized, isInitializing, initialize]);
+    // Temporariamente desabilitado para evitar loops de inicialização
+    console.log('🔄 App: Mudança de visibilidade detectada, mas reinicialização desabilitada');
+  }, []);
 
   useEffect(() => {
     // Prevent multiple initializations
-    if (initializeRef.current) {
+    if (initializeRef.current || isFullyInitialized || isInitializing) {
       return;
     }
     
     // Only initialize once on mount
-    if (!isFullyInitialized && !isInitializing) {
-      initializeRef.current = true;
-      initialize();
-    }
+    initializeRef.current = true;
+    console.log('🔄 App: Iniciando inicialização única do AuthStore...');
+    initialize();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- Deve rodar apenas uma vez no mount para evitar loops
 
   useEffect(() => {
@@ -120,17 +137,20 @@ function App() {
     };
   }, [handleVisibilityChange]);
 
-  // Show loading only during initial app load
-  if (loading && !authCheckCompleted) {
-    return <FullScreenLoader text="Inicializando aplicação..." />;
+  // Memoizar estado de loading para evitar re-renders
+  const loadingState = useMemo(() => {
+    if (loading && !authCheckCompleted) {
+      return { isLoading: true, text: 'Inicializando aplicação...' };
+    }
+    if (user && !userProfile && !isFullyInitialized) {
+      return { isLoading: true, text: 'Carregando perfil do usuário...' };
+    }
+    return { isLoading: false, text: '' };
+  }, [loading, authCheckCompleted, user, userProfile, isFullyInitialized]);
+
+  if (loadingState.isLoading) {
+    return <FullScreenLoader text={loadingState.text} />;
   }
-  
-  // If there's a user but profile is still loading and we're not fully initialized
-  if (user && !userProfile && !isFullyInitialized) {
-    return <FullScreenLoader text="Carregando perfil do usuário..." />;
-  }
-  
-  // App render state tracking removed for production
 
   return (
     <Router>

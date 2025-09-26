@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Layout from '../components/Layout';
 import RiscosProcessosFilterSection from '../components/RiscosProcessosFilterSection';
 import { AlertTriangle, Filter, Workflow, Users, TrendingUp, PieChart, Plus, Edit, Trash2, ChevronUp, ChevronDown, Settings, CheckCircle, FileText, Shield, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 // import { useRiscosCards } from '../hooks/useRiscosCards';
 // Removidos hooks agregados; usaremos agregação local a partir da tabela base
@@ -15,13 +16,13 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
 
   // Estado de filtros gerais (bloco de filtros)
   const [filtrosGerais, setFiltrosGerais] = useState<{
-    macroprocessoId: string;
-    processoId: string;
-    subprocessoId: string;
-    responsavelId: string;
-    acaoId: string;
-    situacaoRisco: string;
-  }>({ macroprocessoId: '', processoId: '', subprocessoId: '', responsavelId: '', acaoId: '', situacaoRisco: '' });
+    macroprocesso: string | null;
+    processo: string | null;
+    subprocesso: string | null;
+    responsavel: string | null;
+    acaoControle: string | null;
+    situacaoRisco: string | null;
+  }>({ macroprocesso: null, processo: null, subprocesso: null, responsavel: null, acaoControle: null, situacaoRisco: null });
   
   // Estados para filtragem dinâmica por clique
   const [filtroNivelRiscoSelecionado, setFiltroNivelRiscoSelecionado] = useState<string | null>(null);
@@ -45,12 +46,12 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
   const limparTodosFiltros = () => {
     // Resetar filtros gerais
     setFiltrosGerais({
-      macroprocessoId: '',
-      processoId: '',
-      subprocessoId: '',
-      responsavelId: '',
-      acaoId: '',
-      situacaoRisco: ''
+      macroprocesso: null,
+      processo: null,
+      subprocesso: null,
+      responsavel: null,
+      acaoControle: null,
+      situacaoRisco: null
     });
     
     // Resetar filtros dinâmicos
@@ -71,12 +72,12 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
   };
 
   const handleApplyFiltrosGerais = (payload: {
-    macroprocessoId: string;
-    processoId: string;
-    subprocessoId: string;
-    responsavelId: string;
-    acaoId: string;
-    situacaoRisco: string;
+    macroprocesso: string | null;
+    processo: string | null;
+    subprocesso: string | null;
+    responsavel: string | null;
+    acaoControle: string | null;
+    situacaoRisco: string | null;
   }) => {
     setFiltrosGerais(payload);
     setIsFilterExpanded(false);
@@ -153,33 +154,72 @@ const RiscosProcessosTrabalhoContent: React.FC = () => {
   const { dados: dadosTabela, loading: loadingTabela, error: errorTabela } = useRiscosProcessosTrabalhoData();
   
 
-  // Aplicar filtros gerais (bloco de filtros) - VERSÃO CORRIGIDA COM COMPARAÇÃO DE STRINGS
+  // Estado para armazenar dados de subprocessos para filtragem
+  const [subprocessosParaFiltragem, setSubprocessosParaFiltragem] = useState<{id: string, id_processo: string}[]>([]);
+
+  // Carregar dados de subprocessos para filtragem quando necessário
+  useEffect(() => {
+    const carregarSubprocessos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('013_subprocessos')
+          .select('id, id_processo');
+        
+        if (!error && data) {
+          setSubprocessosParaFiltragem(data);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar subprocessos para filtragem:', err);
+      }
+    };
+
+    carregarSubprocessos();
+  }, []);
+
+  // Aplicar filtros gerais (bloco de filtros) - VERSÃO CORRIGIDA COM LÓGICA DE SUBPROCESSOS
   const baseGeral = useMemo(() => {
     let arr = [...dadosTabela];
-    const { macroprocessoId, processoId, subprocessoId, responsavelId, acaoId, situacaoRisco } = filtrosGerais;
+    const { macroprocesso, processo, subprocesso, responsavel, acaoControle, situacaoRisco } = filtrosGerais;
+    
+    console.log('🔍 Aplicando filtros gerais:', filtrosGerais);
     
     // Aplicar cada filtro apenas se não estiver vazio - usando String() para comparações
-    if (macroprocessoId) {
-      arr = arr.filter(i => String(i.id_macroprocesso) === String(macroprocessoId));
+    if (macroprocesso) {
+      arr = arr.filter(i => String(i.id_macroprocesso) === String(macroprocesso));
+      console.log(`📊 Após filtro macroprocesso (${macroprocesso}):`, arr.length, 'registros');
     }
-    if (processoId) {
-      arr = arr.filter(i => String(i.id_processo) === String(processoId));
+    if (processo) {
+      arr = arr.filter(i => String(i.id_processo) === String(processo));
+      console.log(`📊 Após filtro processo (${processo}):`, arr.length, 'registros');
     }
-    if (subprocessoId) {
-      arr = arr.filter(i => String(i.id_subprocesso) === String(subprocessoId));
+    if (subprocesso) {
+      // CORREÇÃO: Buscar o id_processo do subprocesso selecionado
+      const subprocessoInfo = subprocessosParaFiltragem.find(sub => String(sub.id) === String(subprocesso));
+      if (subprocessoInfo) {
+        arr = arr.filter(i => String(i.id_processo) === String(subprocessoInfo.id_processo));
+        console.log(`📊 Após filtro subprocesso (${subprocesso} → processo ${subprocessoInfo.id_processo}):`, arr.length, 'registros');
+      } else {
+        console.warn('⚠️ Subprocesso não encontrado para filtragem:', subprocesso);
+        // Se não encontrar o subprocesso, retornar array vazio para indicar filtro inválido
+        arr = [];
+      }
     }
-    if (responsavelId) {
-      arr = arr.filter(i => String(i.responsavel_processo_id) === String(responsavelId));
+    if (responsavel) {
+      arr = arr.filter(i => String(i.responsavel_processo_id) === String(responsavel));
+      console.log(`📊 Após filtro responsável (${responsavel}):`, arr.length, 'registros');
     }
-    if (acaoId) {
-      arr = arr.filter(i => String(i.id_acao_controle) === String(acaoId));
+    if (acaoControle) {
+      arr = arr.filter(i => String(i.id_acao_controle) === String(acaoControle));
+      console.log(`📊 Após filtro ação controle (${acaoControle}):`, arr.length, 'registros');
     }
     if (situacaoRisco) {
       arr = arr.filter(i => (i.situacao_risco || '').toLowerCase() === situacaoRisco.toLowerCase());
+      console.log(`📊 Após filtro situação risco (${situacaoRisco}):`, arr.length, 'registros');
     }
     
+    console.log('✅ Total final após todos os filtros:', arr.length, 'registros');
     return arr;
-  }, [dadosTabela, filtrosGerais]);
+  }, [dadosTabela, filtrosGerais, subprocessosParaFiltragem]);
 
   // Combinar filtros dinâmicos (complementares aos gerais)
   const baseFiltrada = useMemo(() => {
@@ -393,8 +433,8 @@ const handleContainerClick = (e: React.MouseEvent) => {
             {/* Botões de Filtro */}
             <div className="flex items-center gap-2">
               {/* Verificar se há filtros ativos */}
-              {(filtrosGerais.macroprocessoId || filtrosGerais.processoId || filtrosGerais.subprocessoId ||
-                filtrosGerais.responsavelId || filtrosGerais.acaoId || filtrosGerais.situacaoRisco) && (
+              {(filtrosGerais.macroprocesso || filtrosGerais.processo || filtrosGerais.subprocesso ||
+                filtrosGerais.responsavel || filtrosGerais.acaoControle || filtrosGerais.situacaoRisco) && (
                 <button
                   onClick={() => {
                     limparTodosFiltros();

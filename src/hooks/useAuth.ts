@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { RegisterData, RegisterResponse } from '../types/user';
 
@@ -21,6 +22,7 @@ interface UseAuthReturn {
 export const useAuth = (): UseAuthReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   const { signIn, signUp, signOut, activateUser, needsVerification } = useAuthStore();
 
@@ -51,10 +53,10 @@ export const useAuth = (): UseAuthReturn => {
       
       console.log('✅ useAuth.login: Login realizado com sucesso');
       
-      // Implementar refresh automático da página após 500ms para garantir carregamento correto
+      // Navegar diretamente para /conceitos sem reload
       setTimeout(() => {
-        console.log('🔄 useAuth.login: Executando refresh automático da página');
-        window.location.reload();
+        console.log('🔄 useAuth.login: Navegando para /conceitos');
+        navigate('/conceitos', { replace: true });
       }, 500);
       
       return true;

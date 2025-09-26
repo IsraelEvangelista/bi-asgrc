@@ -58,19 +58,19 @@ export const useRiscosProcessosTrabalhoData = () => {
         return;
       }
 
-      // Segunda query: dados dos processos
+      // Segunda query: dados dos processos (incluindo id_macroprocesso)
       const processosIds = [...new Set(dadosBase.map(item => item.id_processo).filter(Boolean))];
       let processosData: any[] | null = [];
       if (processosIds.length > 0) {
         try {
-          const resp = await supabase
+          const respProcessos = await supabase
             .from('005_processos')
             .select('id, processo, id_macroprocesso')
             .in('id', processosIds);
-          if (resp.error) {
+          if (respProcessos.error) {
             processosData = [];
           } else {
-            processosData = resp.data || [];
+            processosData = respProcessos.data || [];
           }
         } catch (err) {
           processosData = [];
@@ -95,15 +95,18 @@ export const useRiscosProcessosTrabalhoData = () => {
         }
       }
 
-      // Terceira query: dados das áreas/gerências (para responsável_acao)
+      // Terceira query: dados das áreas/gerências (para responsável_acao e responsavel_processo)
       const responsaveisAcaoIds = [...new Set(dadosBase.map(item => item.responsavel_acao).filter(Boolean))];
+      const responsaveisProcessoIds = [...new Set(dadosBase.map(item => item.responsavel_processo).filter(Boolean))];
+      const todosResponsaveisIds = [...new Set([...responsaveisAcaoIds, ...responsaveisProcessoIds])];
+      
       let areasData: any[] | null = [];
-      if (responsaveisAcaoIds.length > 0) {
+      if (todosResponsaveisIds.length > 0) {
         try {
           const respAreas = await supabase
             .from('003_areas_gerencias')
             .select('id, sigla_area, gerencia')
-            .in('id', responsaveisAcaoIds);
+            .in('id', todosResponsaveisIds);
           if (respAreas.error) {
             areasData = [];
           } else {
@@ -152,11 +155,15 @@ export const useRiscosProcessosTrabalhoData = () => {
       }
 
       // Criar mapas para lookup rápido
-      const processosMap = new Map<string, any>();
+      const processosMap = new Map<string, string>();
+      const macroprocessosMap = new Map<string, string>();
       processosData?.forEach(processo => {
         const k = String(processo.id);
         processosMap.set(k, processo.processo);
-        processosMap.set(`${k}_macro`, processo.id_macroprocesso);
+        // Mapear id_macroprocesso para cada processo
+        if (processo.id_macroprocesso) {
+          macroprocessosMap.set(k, String(processo.id_macroprocesso));
+        }
       });
 
       const subprocessosMap = new Map<string, any>();
@@ -235,6 +242,7 @@ export const useRiscosProcessosTrabalhoData = () => {
         const acaoTexto = idAcao ? acoesMap.get(idAcao) : '';
         const procKey = item.id_processo ? String(item.id_processo) : '';
         const responsavelAcaoKey = item.responsavel_acao ? String(item.responsavel_acao) : '';
+        const responsavelProcessoKey = item.responsavel_processo ? String(item.responsavel_processo) : '';
         
         // Buscar subprocesso relacionado ao processo atual
         const subprocessoRelacionado = subprocessosData.find(sub => 
@@ -248,7 +256,7 @@ export const useRiscosProcessosTrabalhoData = () => {
           processo: procKey ? (processosMap.get(procKey) || '') : '',
           risco: item.id_risco ? (riscosMap.get(String(item.id_risco)) || '') : '',
           acao: acaoTexto || '',
-          responsavel_acao: item.responsavel_acao || '',
+          responsavel_acao: responsavelAcaoKey || '',
           nivel_risco: item.nivel_risco || '',
           nivel_risco_tratado: item.nivel_risco_tratado || '',
           resposta_risco: item.resposta_risco || '',
@@ -256,10 +264,10 @@ export const useRiscosProcessosTrabalhoData = () => {
           situacao_risco: item.situacao_risco || '',
           id_processo: procKey || null,
           id_subprocesso: subprocessoId,
-          id_macroprocesso: procKey ? (processosMap.get(`${procKey}_macro`) || null) : null,
+          id_macroprocesso: procKey ? (macroprocessosMap.get(procKey) || null) : null,
           id_acao_controle: idAcao || null,
-          responsavel_processo_id: responsavelAcaoKey || null, // CORRIGIDO: usar responsavel_acao
-          responsavel_risco: areasMap.get(responsavelAcaoKey) || '' // CORRIGIDO: usar responsavel_acao
+          responsavel_processo_id: responsavelProcessoKey || null, // CORRIGIDO: usar responsavel_processo
+          responsavel_risco: areasMap.get(responsavelAcaoKey) || '' // Mantém responsavel_acao para responsavel_risco
         };
       });
 

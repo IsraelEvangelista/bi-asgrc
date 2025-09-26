@@ -288,10 +288,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             try {
               await get().loadUserProfile();
               
-              // Force immediate redirect to conceitos
-              if (window.location.pathname === '/login') {
-                window.location.replace('/conceitos');
-              }
+              // Login detectado - deixar o roteamento natural do React Router lidar com o redirecionamento
+              console.log('✅ AuthStore: Login detectado, estado atualizado');
             } catch (error) {
               console.error('❌ AuthStore: Erro ao carregar perfil após login:', error);
             }
@@ -420,10 +418,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           console.log('✅ loadUserProfile: Perfil básico criado temporariamente');
           
-          // Force immediate redirect to conceitos
-          if (window.location.pathname !== '/conceitos') {
-            window.location.replace('/conceitos');
-          }
+          // Perfil básico criado - deixar o roteamento natural lidar com a navegação
+          console.log('✅ AuthStore: Perfil básico criado');
           
           return;
         }
