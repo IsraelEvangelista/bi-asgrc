@@ -15,7 +15,7 @@ interface EventoRisco {
 }
 
 interface ResponsavelRisco {
-  id: number;
+  id: string;
   responsavel_risco: string;
 }
 
@@ -295,7 +295,7 @@ const MatrizRiscoFilterSection: React.FC<MatrizRiscoFilterSectionProps> = ({
                 {responsaveisRisco.map(responsavel => (
                   <option 
                     key={responsavel.id} 
-                    value={responsavel.id.toString()}
+                    value={responsavel.id}
                     className="text-gray-900"
                   >
                     {responsavel.responsavel_risco}

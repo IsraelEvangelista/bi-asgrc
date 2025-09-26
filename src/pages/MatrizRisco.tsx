@@ -511,8 +511,8 @@ const MatrizRisco = () => {
         <div className="grid gap-6 mb-8" style={{gridTemplateColumns: '0.8fr 0.8fr 1fr 1.4fr'}}>
           {/* Linha 1, Coluna 1: Total de Riscos */}
           <div className="col-span-1 row-span-1">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-              <div className="flex items-center justify-between">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200 h-32">
+              <div className="flex items-center justify-between h-full">
                 <div>
                   <p className="text-blue-100 text-sm font-medium mb-1">Total de Riscos</p>
                   {loading ? (
@@ -535,8 +535,8 @@ const MatrizRisco = () => {
 
           {/* Linha 1, Coluna 2: Média de Severidade */}
           <div className="col-span-1 row-span-1">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-              <div className="flex items-center justify-between">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200 h-32">
+              <div className="flex items-center justify-between h-full">
                 <div>
                   <p className="text-blue-100 text-sm font-medium mb-1">Média de Severidade</p>
                   {loading ? (

@@ -153,7 +153,9 @@ export const useMatrizRiscos = (): MatrizRiscosStats => {
       // Aplicar filtro de responsável pelo risco se existir
       if (filtroResponsavelRisco) {
         console.log('🔍 Aplicando filtro de responsável pelo risco:', filtroResponsavelRisco);
-        query = query.or(`responsavel_risco.ilike.%${filtroResponsavelRisco}%,demais_responsaveis.ilike.%${filtroResponsavelRisco}%`);
+        // CORREÇÃO: responsavel_risco é UUID, usar eq() diretamente
+        // Como demais_responsaveis também é UUID (baseado na migração 013), usar eq() para ambos
+        query = query.or(`responsavel_risco.eq.${filtroResponsavelRisco},demais_responsaveis.eq.${filtroResponsavelRisco}`);
       }
       
       // Aplicar filtro de quadrante se existir
