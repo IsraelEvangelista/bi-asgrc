@@ -273,43 +273,70 @@ type StackLabelProps = LabelProps & {
   };
 };
 
+// Componente customizado para renderizar rótulos dentro das barras
+const CustomBarLabel = ({ x, y, width, height, value, fill }: any) => {
+  if (!value || value === 0) return null;
+  
+  const barWidth = Number(width ?? 0);
+  const barHeight = Number(height ?? 0);
+  const centerX = Number(x ?? 0) + barWidth / 2;
+  const centerY = Number(y ?? 0) + barHeight / 2;
+  
+  // Definir tamanho mínimo para mostrar o rótulo dentro da barra
+  const minHeightForLabel = 24;
+  const shouldShowInside = barHeight >= minHeightForLabel;
+  
+  if (shouldShowInside) {
+    // Rótulo dentro da barra com cor branca
+    return (
+      <text
+        x={centerX}
+        y={centerY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={12}
+        fontWeight={600}
+        fill="white"
+      >
+        {value}
+      </text>
+    );
+  } else {
+    // Rótulo ao lado direito da barra com cor do segmento
+    return (
+      <text
+        x={Number(x ?? 0) + barWidth + 6}
+        y={centerY}
+        textAnchor="start"
+        dominantBaseline="middle"
+        fontSize={11}
+        fontWeight={500}
+        fill={fill || '#374151'}
+      >
+        {value}
+      </text>
+    );
+  }
+};
+
 const renderStackedLabels = ({ x, y, width, payload }: StackLabelProps): React.ReactNode => {
   const centerX = Number(x ?? 0) + Number(width ?? 0) / 2;
   const baseY = Number(y ?? 0);
 
   const safePayload = payload ?? {};
   const total = Number(safePayload.total ?? 0);
-  const dentro = Number(safePayload['Dentro da Tolerância'] ?? 0);
-  const fora = Number(safePayload['Fora da Tolerância'] ?? 0);
 
-  const segmentLines = [
-    { label: 'Dentro', value: dentro, color: '#1d4ed8' },
-    { label: 'Fora', value: fora, color: '#ef4444' }
-  ];
-
-  const lineHeight = 16;
-  const startY = baseY - ((segmentLines.length + 1) * lineHeight + 4);
-
+  // Apenas mostrar o total no topo da barra
   return (
     <text
       x={centerX}
-      y={startY}
+      y={baseY - 8}
       textAnchor="middle"
-      fontSize={12}
+      fontSize={13}
+      fontWeight={700}
+      fill="#111827"
     >
-      <tspan x={centerX} dy={0} fontWeight={700} fill="#111827">
-        {total}
-      </tspan>
-      {segmentLines.map((line) => (
-        <tspan
-          key={line.label}
-          x={centerX}
-          dy={lineHeight}
-          fill={line.color}
-        >
-          {`${line.label}: ${line.value}`}
-        </tspan>
-      ))}
+      {total}
     </text>
   );
 };
@@ -741,7 +768,7 @@ const Indicators: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={riskChartData}
-                  margin={{ top: 80, right: 16, left: 0, bottom: 24 }}
+                  margin={{ top: 40, right: 40, left: 0, bottom: 24 }}
                   barCategoryGap="24%"
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -757,13 +784,17 @@ const Indicators: React.FC = () => {
                     stackId="indicadores"
                     fill="#1d4ed8"
                     radius={[4, 4, 0, 0]}
-                  />
+                  >
+                    <LabelList content={CustomBarLabel} />
+                  </Bar>
                   <Bar
                     dataKey="Fora da Tolerância"
                     stackId="indicadores"
                     fill="#ef4444"
                     radius={[4, 4, 0, 0]}
-                  />
+                  >
+                    <LabelList content={CustomBarLabel} />
+                  </Bar>
                   <Bar dataKey="total" fill="transparent" legendType="none" isAnimationActive={false}>
                     <LabelList dataKey="total" content={renderStackedLabels} />
                   </Bar>

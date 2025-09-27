@@ -71,14 +71,15 @@ const DonutChart: React.FC<DonutChartProps> = ({
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">{title}</h3>
-      <div className="flex h-full w-full flex-col items-center">
-        <div
-          className="relative flex items-center justify-center"
-          style={{ width: viewBoxSize, height: viewBoxSize }}
-        >
-          <svg className="w-full h-full" viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center flex-shrink-0">{title}</h3>
+      <div className="flex-1 flex flex-col justify-center items-center min-h-0">
+        <div className="flex-1 flex items-center justify-center" style={{ maxWidth: '100%', maxHeight: '70%' }}>
+          <div
+            className="relative flex items-center justify-center"
+            style={{ width: Math.min(viewBoxSize, 240), height: Math.min(viewBoxSize, 240) }}
+          >
+            <svg className="w-full h-full" viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}>
             {showEmptyState ? (
               <>
                 <circle
@@ -176,12 +177,13 @@ const DonutChart: React.FC<DonutChartProps> = ({
                   </text>
                 );
               })}
-          </svg>
+            </svg>
+          </div>
         </div>
 
         {!showEmptyState && (
-          <div className="mt-auto w-full pt-6">
-            <div className="rounded-lg bg-white/90 backdrop-blur px-4 py-3 shadow-sm border border-white/60">
+          <div className="w-full flex-shrink-0 mt-4">
+            <div className="rounded-lg bg-gray-50 px-3 py-2 border border-gray-200">
               <div className="space-y-2">
                 {segments.map((segment) => {
                   const percentage = segment.percentage > 0 ? (segment.percentage * 100).toFixed(1) : '0.0';
@@ -193,12 +195,12 @@ const DonutChart: React.FC<DonutChartProps> = ({
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-3 h-3 rounded-full"
+                          className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{ backgroundColor: segment.color }}
                         />
-                        <span className="text-gray-700">{segment.name}</span>
+                        <span className="text-gray-700 truncate">{segment.name}</span>
                       </div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-gray-900 flex-shrink-0 ml-2">
                         {segment.value} ({percentage}%)
                       </span>
                     </div>
