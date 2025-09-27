@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface DonutChartProps {
   data: Array<{
@@ -20,12 +20,15 @@ const DonutChart: React.FC<DonutChartProps> = ({
   selectedSegment
 }) => {
   const total = data.reduce((sum, item) => sum + item.value, 0);
-  const centerX = 140;
-  const centerY = 140;
-  const outerRadius = 80;
-  const innerRadius = 50;
-  
-  // Se total é zero, mostrar um círculo vazio para indicar que não há dados
+  const viewBoxSize = size;
+  const centerX = viewBoxSize / 2;
+  const centerY = viewBoxSize / 2;
+  const outerRadius = viewBoxSize * 0.285;
+  const innerRadius = viewBoxSize * 0.19;
+  const labelRadius = viewBoxSize * 0.42;
+
+  const activeSegment = selectedSegment ?? null;
+  const isInteractive = typeof onSegmentClick === 'function';
   const showEmptyState = total === 0;
 
   const generatePath = (startAngle: number, endAngle: number) => {
@@ -52,137 +55,159 @@ const DonutChart: React.FC<DonutChartProps> = ({
     ].join(' ');
   };
 
-  let cumulativePercentage = 0;
+  let accumulatedAngle = 0;
+  const segments = data.map((item) => {
+    const percentage = total > 0 ? item.value / total : 0;
+    const startAngle = accumulatedAngle;
+    const endAngle = startAngle + percentage * 360;
+    accumulatedAngle = endAngle;
+
+    return {
+      ...item,
+      percentage,
+      startAngle,
+      endAngle
+    };
+  });
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">{title}</h3>
-      <div className="flex flex-col items-center">
-      <div className="relative w-72 h-72">
-        <svg className="w-full h-full" viewBox="0 0 280 280">
-          {showEmptyState ? (
-            // Mostrar círculo vazio quando não há dados
-            <>
-              <circle
-                cx={centerX}
-                cy={centerY}
-                r={outerRadius}
-                fill="none"
-                stroke="#E5E7EB"
-                strokeWidth={2}
-                className="drop-shadow-sm"
-              />
-              <circle
-                cx={centerX}
-                cy={centerY}
-                r={innerRadius}
-                fill="white"
-                stroke="#E5E7EB"
-                strokeWidth={2}
-              />
-            </>
-          ) : (
-            // Mostrar dados normalmente
-            data.map((item, index) => {
-              const percentage = (item.value / total) * 100;
-              const startAngle = (cumulativePercentage / 100) * 360;
-              const endAngle = ((cumulativePercentage + percentage) / 100) * 360;
-              const pathData = generatePath(startAngle, endAngle);
-              cumulativePercentage += percentage;
-
-              const isOtherFiltered = selectedSegment !== null && selectedSegment !== item.name;
-              const opacity = isOtherFiltered ? 0.5 : 1;
-
-              return (
-                <path
-                  key={item.name}
-                  d={pathData}
-                  fill={item.color}
-                  stroke="white"
+      <div className="flex h-full w-full flex-col items-center">
+        <div
+          className="relative flex items-center justify-center"
+          style={{ width: viewBoxSize, height: viewBoxSize }}
+        >
+          <svg className="w-full h-full" viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}>
+            {showEmptyState ? (
+              <>
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={outerRadius}
+                  fill="none"
+                  stroke="#E5E7EB"
                   strokeWidth={2}
-                  className={`drop-shadow-lg cursor-pointer transition-all duration-200 hover:opacity-80`}
-                  style={{ opacity }}
-                  onClick={() => onSegmentClick?.(item.name)}
+                  className="drop-shadow-sm"
                 />
-              );
-            })
-          )}
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={innerRadius}
+                  fill="white"
+                  stroke="#E5E7EB"
+                  strokeWidth={2}
+                />
+              </>
+            ) : (
+              segments.map((segment) => {
+                if (segment.percentage <= 0) {
+                  return null;
+                }
 
-          {/* Centro com total */}
-          <text
-            x={centerX}
-            y={centerY - 5}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="24"
-            fontWeight="bold"
-            fill="#1f2937"
-          >
-            {total}
-          </text>
-          <text
-            x={centerX}
-            y={centerY + 15}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="14"
-            fill="#6b7280"
-          >
-            Total
-          </text>
+                const pathData = generatePath(segment.startAngle, segment.endAngle);
+                const isOtherFiltered = activeSegment !== null && activeSegment !== segment.name;
+                const opacity = isOtherFiltered ? 0.5 : 1;
 
-          {/* Rótulos externos - apenas quando há dados */}
-          {!showEmptyState && data.map((item, index) => {
-            const percentage = (item.value / total) * 100;
-            const startAngle = data.slice(0, index).reduce((sum, d) => sum + (d.value / total) * 360, 0);
-            const midAngle = startAngle + (percentage / 2) / 100 * 360;
-            const midAngleRad = (midAngle - 90) * (Math.PI / 180);
-
-            const labelRadius = 125;
-            const labelX = centerX + labelRadius * Math.cos(midAngleRad);
-            const labelY = centerY + labelRadius * Math.sin(midAngleRad);
-
-            return (
-              <text
-                key={`label-${item.name}`}
-                x={labelX}
-                y={labelY}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize="12"
-                fontWeight="500"
-                fill="#374151"
-              >
-                {percentage.toFixed(1)}%
-              </text>
-            );
-          })}
-        </svg>
-      </div>
-
-        {/* Legenda Vertical */}
-        <div className="mt-6 space-y-2 w-full max-w-xs">
-          {data.map((item, index) => {
-            const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
-            return (
-              <div
-                key={`legend-${item.name}`}
-                className="flex justify-between items-center w-full"
-              >
-                <div className="flex items-center gap-2 text-left">
-                  <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: item.color }}
+                return (
+                  <path
+                    key={segment.name}
+                    d={pathData}
+                    fill={segment.color}
+                    stroke="white"
+                    strokeWidth={2}
+                    className={`drop-shadow-lg transition-all duration-200 ${
+                      isInteractive ? 'cursor-pointer hover:opacity-80' : ''
+                    }`}
+                    style={{ opacity }}
+                    onClick={() => onSegmentClick?.(segment.name)}
                   />
-                  <span className="text-sm text-gray-700">{item.name}</span>
-                </div>
-                <span className="text-sm font-medium text-gray-900 text-right ml-4">
-                  {item.value} ({percentage}%)
-                </span>
-              </div>
-            );
-          })}
+                );
+              })
+            )}
+
+            <text
+              x={centerX}
+              y={centerY - 5}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="24"
+              fontWeight="bold"
+              fill="#1f2937"
+            >
+              {total}
+            </text>
+            <text
+              x={centerX}
+              y={centerY + 15}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="14"
+              fill="#6b7280"
+            >
+              Total
+            </text>
+
+            {!showEmptyState &&
+              segments.map((segment) => {
+                if (segment.percentage <= 0) {
+                  return null;
+                }
+
+                const segmentAngle = segment.endAngle - segment.startAngle;
+                const midAngle = segment.startAngle + segmentAngle / 2;
+                const midAngleRad = (midAngle - 90) * (Math.PI / 180);
+
+                const labelX = centerX + labelRadius * Math.cos(midAngleRad);
+                const labelY = centerY + labelRadius * Math.sin(midAngleRad);
+
+                return (
+                  <text
+                    key={`label-${segment.name}`}
+                    x={labelX}
+                    y={labelY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="12"
+                    fontWeight="500"
+                    fill="#374151"
+                  >
+                    {(segment.percentage * 100).toFixed(1)}%
+                  </text>
+                );
+              })}
+          </svg>
         </div>
+
+        {!showEmptyState && (
+          <div className="mt-auto w-full pt-6">
+            <div className="rounded-lg bg-white/90 backdrop-blur px-4 py-3 shadow-sm border border-white/60">
+              <div className="space-y-2">
+                {segments.map((segment) => {
+                  const percentage = segment.percentage > 0 ? (segment.percentage * 100).toFixed(1) : '0.0';
+
+                  return (
+                    <div
+                      key={`legend-${segment.name}`}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: segment.color }}
+                        />
+                        <span className="text-gray-700">{segment.name}</span>
+                      </div>
+                      <span className="font-medium text-gray-900">
+                        {segment.value} ({percentage}%)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

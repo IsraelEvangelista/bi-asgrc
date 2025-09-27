@@ -1,399 +1,867 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
-import {
-  IndicatorWithHistory,
-  IndicatorFilters,
-  SituacaoIndicador,
-  Tolerancia,
-  getIndicatorStatusColor,
-  getToleranceColor,
-  SITUACAO_INDICADOR_OPTIONS,
-  TOLERANCIA_OPTIONS
-} from '../types';
-import { useToleranceAlerts } from '../hooks/useAlerts';
-import AlertBanner from '../components/AlertBanner';
+﻿import React, { useMemo, useState } from 'react';
 import Layout from '../components/Layout';
+import DonutChart from '../components/DonutChart';
+import {
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Search,
+  PieChart,
+  ArrowUpDown
+} from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Bar,
+  LabelList,
+  LabelProps
+} from 'recharts';
+
+type IndicatorStatus = 'Em Implementação' | 'Não Iniciada' | 'Implementada';
+type IndicatorTolerance = 'Dentro da Tolerância' | 'Fora da Tolerância';
+type RiskCode = 'R01' | 'R02' | 'R03' | 'R04' | 'R05' | 'R09' | 'R17' | 'R35';
+
+type SortField =
+  | 'status'
+  | 'projeto'
+  | 'area'
+  | 'risco'
+  | 'dono'
+  | 'apuracao'
+  | 'prazo'
+  | 'situacao'
+  | 'percentualAtual'
+  | 'percentualAnterior';
+
+interface IndicatorRow {
+  id: string;
+  status: IndicatorStatus;
+  projeto: string;
+  area: string;
+  riscoCodigo: RiskCode;
+  riscoDescricao: string;
+  dono: string;
+  apuracao: string;
+  prazo: string;
+  situacao: IndicatorTolerance;
+  percentualAtual: number;
+  percentualAnterior: number;
+}
+
+const INDICATOR_STATUS_COLORS: Record<IndicatorStatus, string> = {
+  'Em Implementação': '#2563eb',
+  'Não Iniciada': '#f59e0b',
+  'Implementada': '#16a34a'
+};
+
+const INDICATOR_TOLERANCE_COLORS: Record<IndicatorTolerance, string> = {
+  'Dentro da Tolerância': '#1d4ed8',
+  'Fora da Tolerância': '#ef4444'
+};
+
+const STATUS_BADGE_CLASSES: Record<IndicatorStatus, string> = {
+  'Em Implementação': 'bg-blue-100 text-blue-700',
+  'Não Iniciada': 'bg-amber-100 text-amber-700',
+  'Implementada': 'bg-emerald-100 text-emerald-700'
+};
+
+const TOLERANCE_BADGE_CLASSES: Record<IndicatorTolerance, string> = {
+  'Dentro da Tolerância': 'bg-blue-100 text-blue-700',
+  'Fora da Tolerância': 'bg-red-100 text-red-700'
+};
+
+const TABLE_COLUMNS: Array<{ key: SortField; label: string }> = [
+  { key: 'status', label: 'Status' },
+  { key: 'projeto', label: 'Ações/Projetos Mitigatórios' },
+  { key: 'area', label: 'Área Responsável' },
+  { key: 'risco', label: 'Risco Descritivo' },
+  { key: 'dono', label: 'Dono do Risco' },
+  { key: 'apuracao', label: 'Apuração' },
+  { key: 'prazo', label: 'Prazo' },
+  { key: 'situacao', label: 'Situação' },
+  { key: 'percentualAtual', label: '% mês atual' },
+  { key: 'percentualAnterior', label: '% mês anterior' }
+];
+
+const RISK_CODES: RiskCode[] = ['R01', 'R02', 'R03', 'R04', 'R05', 'R09', 'R17', 'R35'];
+
+const INDICATORS_MOCK: IndicatorRow[] = [
+  {
+    id: '1',
+    status: 'Em Implementação',
+    projeto: 'Monitoramento contínuo dos níveis de reservatório',
+    area: 'Operações',
+    riscoCodigo: 'R01',
+    riscoDescricao: 'Risco hídrico - abastecimento contingente',
+    dono: 'Ana Barbosa',
+    apuracao: 'Agosto/2024',
+    prazo: '30/11/2024',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 68,
+    percentualAnterior: 55
+  },
+  {
+    id: '2',
+    status: 'Em Implementação',
+    projeto: 'Automação de alertas para recalque de água',
+    area: 'Tecnologia',
+    riscoCodigo: 'R02',
+    riscoDescricao: 'Interrupção de bombeamento em pontos críticos',
+    dono: 'Carlos Lima',
+    apuracao: 'Agosto/2024',
+    prazo: '15/12/2024',
+    situacao: 'Fora da Tolerância',
+    percentualAtual: 42,
+    percentualAnterior: 51
+  },
+  {
+    id: '3',
+    status: 'Não Iniciada',
+    projeto: 'Plano emergencial para seca prolongada',
+    area: 'Planejamento',
+    riscoCodigo: 'R03',
+    riscoDescricao: 'Redução severa de disponibilidade hídrica',
+    dono: 'Bianca Soares',
+    apuracao: 'Julho/2024',
+    prazo: '20/02/2025',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 0,
+    percentualAnterior: 0
+  },
+  {
+    id: '4',
+    status: 'Implementada',
+    projeto: 'Programa de auditoria de processos críticos',
+    area: 'Governança',
+    riscoCodigo: 'R04',
+    riscoDescricao: 'Falhas de conformidade regulatória',
+    dono: 'Eduardo Freitas',
+    apuracao: 'Agosto/2024',
+    prazo: '10/07/2024',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 100,
+    percentualAnterior: 100
+  },
+  {
+    id: '5',
+    status: 'Implementada',
+    projeto: 'Integração de dados meteorológicos em tempo real',
+    area: 'Operações',
+    riscoCodigo: 'R05',
+    riscoDescricao: 'Previsão inadequada de eventos extremos',
+    dono: 'Marina Arrais',
+    apuracao: 'Agosto/2024',
+    prazo: '05/06/2024',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 94,
+    percentualAnterior: 90
+  },
+  {
+    id: '6',
+    status: 'Em Implementação',
+    projeto: 'Capacitação de equipes sobre protocolos de crise',
+    area: 'Segurança',
+    riscoCodigo: 'R09',
+    riscoDescricao: 'Resposta inadequada a incidentes operacionais',
+    dono: 'Paulo Victor',
+    apuracao: 'Agosto/2024',
+    prazo: '30/01/2025',
+    situacao: 'Fora da Tolerância',
+    percentualAtual: 37,
+    percentualAnterior: 29
+  },
+  {
+    id: '7',
+    status: 'Não Iniciada',
+    projeto: 'Revisão de fornecedores estratégicos de insumos',
+    area: 'Suprimentos',
+    riscoCodigo: 'R17',
+    riscoDescricao: 'Dependência elevada de fornecedor único',
+    dono: 'Rogério Neves',
+    apuracao: 'Julho/2024',
+    prazo: '28/03/2025',
+    situacao: 'Fora da Tolerância',
+    percentualAtual: 0,
+    percentualAnterior: 0
+  },
+  {
+    id: '8',
+    status: 'Em Implementação',
+    projeto: 'Plataforma de indicadores em tempo real',
+    area: 'Tecnologia',
+    riscoCodigo: 'R35',
+    riscoDescricao: 'Visibilidade tardia de desvios críticos',
+    dono: 'Larissa Alves',
+    apuracao: 'Agosto/2024',
+    prazo: '18/01/2025',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 73,
+    percentualAnterior: 61
+  },
+  {
+    id: '9',
+    status: 'Implementada',
+    projeto: 'Sistema de redundância para captação prioritária',
+    area: 'Operações',
+    riscoCodigo: 'R01',
+    riscoDescricao: 'Risco hídrico - abastecimento contingente',
+    dono: 'Ana Barbosa',
+    apuracao: 'Agosto/2024',
+    prazo: '12/05/2024',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 100,
+    percentualAnterior: 100
+  },
+  {
+    id: '10',
+    status: 'Em Implementação',
+    projeto: 'Governança de indicadores estratégicos',
+    area: 'Governança',
+    riscoCodigo: 'R02',
+    riscoDescricao: 'Interrupção de bombeamento em pontos críticos',
+    dono: 'Carlos Lima',
+    apuracao: 'Agosto/2024',
+    prazo: '22/12/2024',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 58,
+    percentualAnterior: 47
+  },
+  {
+    id: '11',
+    status: 'Não Iniciada',
+    projeto: 'Mapeamento de alarmes críticos por bacia',
+    area: 'Planejamento',
+    riscoCodigo: 'R05',
+    riscoDescricao: 'Previsão inadequada de eventos extremos',
+    dono: 'Bianca Soares',
+    apuracao: 'Julho/2024',
+    prazo: '14/02/2025',
+    situacao: 'Fora da Tolerância',
+    percentualAtual: 0,
+    percentualAnterior: 0
+  },
+  {
+    id: '12',
+    status: 'Implementada',
+    projeto: 'Dashboard de tolerância e severidade consolidada',
+    area: 'Segurança',
+    riscoCodigo: 'R35',
+    riscoDescricao: 'Visibilidade tardia de desvios críticos',
+    dono: 'Larissa Alves',
+    apuracao: 'Agosto/2024',
+    prazo: '30/06/2024',
+    situacao: 'Dentro da Tolerância',
+    percentualAtual: 96,
+    percentualAnterior: 92
+  }
+];
+
+const AREA_OPTIONS = Array.from(new Set(INDICATORS_MOCK.map((item) => item.area))).sort((a, b) =>
+  a.localeCompare(b, 'pt-BR', { sensitivity: 'accent' })
+);
+
+type StackLabelProps = LabelProps & {
+  payload?: {
+    total?: number;
+    [key: string]: number | string | undefined;
+  };
+};
+
+const renderStackedLabels = ({ x, y, width, payload }: StackLabelProps): React.ReactNode => {
+  const centerX = Number(x ?? 0) + Number(width ?? 0) / 2;
+  const baseY = Number(y ?? 0);
+
+  const safePayload = payload ?? {};
+  const total = Number(safePayload.total ?? 0);
+  const dentro = Number(safePayload['Dentro da Tolerância'] ?? 0);
+  const fora = Number(safePayload['Fora da Tolerância'] ?? 0);
+
+  const segmentLines = [
+    { label: 'Dentro', value: dentro, color: '#1d4ed8' },
+    { label: 'Fora', value: fora, color: '#ef4444' }
+  ];
+
+  const lineHeight = 16;
+  const startY = baseY - ((segmentLines.length + 1) * lineHeight + 4);
+
+  return (
+    <text
+      x={centerX}
+      y={startY}
+      textAnchor="middle"
+      fontSize={12}
+    >
+      <tspan x={centerX} dy={0} fontWeight={700} fill="#111827">
+        {total}
+      </tspan>
+      {segmentLines.map((line) => (
+        <tspan
+          key={line.label}
+          x={centerX}
+          dy={lineHeight}
+          fill={line.color}
+        >
+          {`${line.label}: ${line.value}`}
+        </tspan>
+      ))}
+    </text>
+  );
+};
 
 const Indicators: React.FC = () => {
-  const [indicators, setIndicators] = useState<IndicatorWithHistory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<IndicatorFilters>({
-    situacao_indicador: undefined,
-    tolerancia: undefined
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeStatuses, setActiveStatuses] = useState<IndicatorStatus[]>([]);
+  const [activeTolerances, setActiveTolerances] = useState<IndicatorTolerance[]>([]);
+  const [selectedArea, setSelectedArea] = useState<string>('todos');
+  const [statusSelectedSegment, setStatusSelectedSegment] = useState<string | null>(null);
+  const [toleranceSelectedSegment, setToleranceSelectedSegment] = useState<string | null>(null);
+  const [riskSortAscending, setRiskSortAscending] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: 'asc' | 'desc' } | null>(null);
 
-  // Mock data - será substituído pela integração com Supabase
-  const mockIndicators: IndicatorWithHistory[] = useMemo(() => [
-    {
-      // Dados da tabela dimensão (008)
-      id: '1',
-      id_risco: 'RISK-001',
-      responsavel_risco: 'João Silva',
-      indicador_risco: 'Taxa de Conformidade Regulatória',
-      situacao_indicador: SituacaoIndicador.IMPLEMENTADO,
-      meta_efetiva: 95,
-      tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-      limite_tolerancia: '90%',
-      tipo_acompanhamento: 'Mensal',
-      apuracao: 'Dezembro/2024',
-      created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-15T10:00:00Z',
-      // Dados da tabela fato (019) - último registro
-      historico_id: 'hist-1',
-      justificativa_observacao: 'Indicador implementado com sucesso',
-      impacto_n_implementacao: 'Baixo impacto',
-      resultado_mes: 97.5,
-      data_apuracao: '2024-12-01T10:00:00Z',
-      historico_created_at: '2024-12-01T10:00:00Z',
-      historico_updated_at: '2024-12-01T10:00:00Z'
-    },
-    {
-      // Dados da tabela dimensão (008)
-      id: '2',
-      id_risco: 'RISK-002',
-      responsavel_risco: 'Maria Santos',
-      indicador_risco: 'Índice de Satisfação do Cliente',
-      situacao_indicador: SituacaoIndicador.EM_IMPLEMENTACAO,
-      meta_efetiva: 85,
-      tolerancia: Tolerancia.FORA_TOLERANCIA,
-      limite_tolerancia: '80%',
-      tipo_acompanhamento: 'Mensal',
-      apuracao: 'Dezembro/2024',
-      created_at: '2024-01-10T14:30:00Z',
-      updated_at: '2024-01-15T09:15:00Z',
-      // Dados da tabela fato (019) - último registro
-      historico_id: 'hist-2',
-      justificativa_observacao: 'Em fase de coleta de dados',
-      impacto_n_implementacao: 'Médio impacto',
-      resultado_mes: 78.2,
-      data_apuracao: '2024-12-01T14:30:00Z',
-      historico_created_at: '2024-12-01T14:30:00Z',
-      historico_updated_at: '2024-12-01T14:30:00Z'
-    },
-    {
-      // Dados da tabela dimensão (008)
-      id: '3',
-      id_risco: 'RISK-003',
-      responsavel_risco: 'Carlos Oliveira',
-      indicador_risco: 'Tempo Médio de Resposta',
-      situacao_indicador: SituacaoIndicador.NAO_INICIADO,
-      meta_efetiva: 2,
-      tolerancia: Tolerancia.DENTRO_TOLERANCIA,
-      limite_tolerancia: '3 horas',
-      tipo_acompanhamento: 'Semanal',
-      apuracao: 'Dezembro/2024',
-      created_at: '2024-01-05T16:45:00Z',
-      updated_at: '2024-01-12T11:20:00Z',
-      // Dados da tabela fato (019) - sem histórico ainda
-      historico_id: undefined,
-      justificativa_observacao: 'Aguardando aprovação do orçamento',
-      impacto_n_implementacao: 'Alto impacto',
-      resultado_mes: undefined,
-      data_apuracao: undefined,
-      historico_created_at: undefined,
-      historico_updated_at: undefined
+  const filteredIndicators = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return INDICATORS_MOCK.filter((item) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        item.projeto.toLowerCase().includes(normalizedSearch) ||
+        item.riscoDescricao.toLowerCase().includes(normalizedSearch) ||
+        item.riscoCodigo.toLowerCase().includes(normalizedSearch) ||
+        item.dono.toLowerCase().includes(normalizedSearch);
+
+      const matchesStatus =
+        activeStatuses.length === 0 || activeStatuses.includes(item.status);
+
+      const matchesTolerance =
+        activeTolerances.length === 0 || activeTolerances.includes(item.situacao);
+
+      const matchesArea = selectedArea === 'todos' || item.area === selectedArea;
+
+      return matchesSearch && matchesStatus && matchesTolerance && matchesArea;
+    });
+  }, [searchTerm, activeStatuses, activeTolerances, selectedArea]);
+
+  const sortedIndicators = useMemo(() => {
+    if (!sortConfig) {
+      return filteredIndicators;
     }
-  ], []);
 
-  const loadIndicators = useCallback(async () => {
-    setLoading(true);
-    // Aqui será implementada a integração com Supabase
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIndicators(mockIndicators);
-    setLoading(false);
-  }, [mockIndicators]);
+    const getComparableValue = (item: IndicatorRow, field: SortField): string | number => {
+      switch (field) {
+        case 'status':
+          return item.status;
+        case 'projeto':
+          return item.projeto;
+        case 'area':
+          return item.area;
+        case 'risco':
+          return `${item.riscoCodigo} ${item.riscoDescricao}`;
+        case 'dono':
+          return item.dono;
+        case 'apuracao':
+          return item.apuracao;
+        case 'prazo':
+          return item.prazo;
+        case 'situacao':
+          return item.situacao;
+        case 'percentualAtual':
+          return item.percentualAtual;
+        case 'percentualAnterior':
+          return item.percentualAnterior;
+        default:
+          return '';
+      }
+    };
 
-  useEffect(() => {
-    loadIndicators();
-  }, [loadIndicators]);
+    const sorted = [...filteredIndicators].sort((a, b) => {
+      const aValue = getComparableValue(a, sortConfig.field);
+      const bValue = getComparableValue(b, sortConfig.field);
 
-  const filteredIndicators = indicators.filter(indicator => {
-    const matchesSearch = !searchTerm || 
-      indicator.indicador_risco.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      indicator.responsavel_risco.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      indicator.id_risco.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSituacao = !filters.situacao_indicador || 
-      indicator.situacao_indicador === filters.situacao_indicador;
-    
-    const matchesTolerancia = !filters.tolerancia || 
-      indicator.tolerancia === filters.tolerancia;
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        const diff = aValue - bValue;
+        return sortConfig.direction === 'asc' ? diff : -diff;
+      }
 
-    return matchesSearch && matchesSituacao && matchesTolerancia;
-  });
+      const compareResult = String(aValue).localeCompare(String(bValue), 'pt-BR', {
+        sensitivity: 'accent'
+      });
 
-  // Alertas de tolerância
-  const toleranceAlerts = useToleranceAlerts(filteredIndicators);
+      return sortConfig.direction === 'asc' ? compareResult : -compareResult;
+    });
 
-  const handleFilterChange = (key: keyof IndicatorFilters, value: string | undefined) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    return sorted;
+  }, [filteredIndicators, sortConfig]);
+
+  const statusBreakdown = useMemo(() => {
+    const counts: Record<IndicatorStatus, number> = {
+      'Em Implementação': 0,
+      'Não Iniciada': 0,
+      'Implementada': 0
+    };
+
+    filteredIndicators.forEach((item) => {
+      counts[item.status] += 1;
+    });
+
+    return (Object.keys(counts) as IndicatorStatus[]).map((status) => ({
+      name: status,
+      value: counts[status],
+      color: INDICATOR_STATUS_COLORS[status]
+    }));
+  }, [filteredIndicators]);
+
+  const toleranceBreakdown = useMemo(() => {
+    const counts: Record<IndicatorTolerance, number> = {
+      'Dentro da Tolerância': 0,
+      'Fora da Tolerância': 0
+    };
+
+    filteredIndicators.forEach((item) => {
+      counts[item.situacao] += 1;
+    });
+
+    return (Object.keys(counts) as IndicatorTolerance[]).map((tolerance) => ({
+      name: tolerance,
+      value: counts[tolerance],
+      color: INDICATOR_TOLERANCE_COLORS[tolerance]
+    }));
+  }, [filteredIndicators]);
+
+  const riskChartData = useMemo(() => {
+    const baseData = RISK_CODES.map((risk) => {
+      const dentro = filteredIndicators.filter(
+        (item) => item.riscoCodigo === risk && item.situacao === 'Dentro da Tolerância'
+      ).length;
+      const fora = filteredIndicators.filter(
+        (item) => item.riscoCodigo === risk && item.situacao === 'Fora da Tolerância'
+      ).length;
+
+      return {
+        risk,
+        'Dentro da Tolerância': dentro,
+        'Fora da Tolerância': fora,
+        total: dentro + fora
+      };
+    });
+
+    return [...baseData].sort((a, b) => {
+      if (riskSortAscending) {
+        return a.total - b.total || a.risk.localeCompare(b.risk, 'pt-BR', { sensitivity: 'accent' });
+      }
+
+      return b.total - a.total || a.risk.localeCompare(b.risk, 'pt-BR', { sensitivity: 'accent' });
+    });
+  }, [filteredIndicators, riskSortAscending]);
+
+  const isFilterActive =
+    searchTerm.trim().length > 0 ||
+    activeStatuses.length > 0 ||
+    activeTolerances.length > 0 ||
+    selectedArea !== 'todos';
+
+  const toggleStatus = (status: IndicatorStatus) => {
+    setActiveStatuses((prev) =>
+      prev.includes(status) ? prev.filter((item) => item !== status) : [...prev, status]
+    );
+  };
+
+  const toggleTolerance = (tolerance: IndicatorTolerance) => {
+    setActiveTolerances((prev) =>
+      prev.includes(tolerance)
+        ? prev.filter((item) => item !== tolerance)
+        : [...prev, tolerance]
+    );
   };
 
   const clearFilters = () => {
-    setFilters({
-      situacao_indicador: undefined,
-      tolerancia: undefined
-    });
     setSearchTerm('');
+    setActiveStatuses([]);
+    setActiveTolerances([]);
+    setSelectedArea('todos');
   };
 
-  const getResultIcon = (resultado: number, tolerancia: Tolerancia) => {
-    if (tolerancia === Tolerancia.FORA_TOLERANCIA) {
-      return <TrendingDown className="h-4 w-4 text-red-500" />;
-    }
-    return <TrendingUp className="h-4 w-4 text-green-500" />;
+  const handleStatusSegmentClick = (segment: string) => {
+    setStatusSelectedSegment((prev) => (prev === segment ? null : segment));
   };
 
-  if (loading) {
+  const handleToleranceSegmentClick = (segment: string) => {
+    setToleranceSelectedSegment((prev) => (prev === segment ? null : segment));
+  };
+
+  const handleTableSort = (field: SortField) => {
+    setSortConfig((prev) => {
+      if (prev?.field === field) {
+        const nextDirection = prev.direction === 'asc' ? 'desc' : 'asc';
+        return { field, direction: nextDirection };
+      }
+
+      return { field, direction: 'asc' };
+    });
+  };
+
+  const formatPercentage = (value: number) => `${value.toFixed(0)}%`;
+
+  const renderSortIndicators = (field: SortField) => {
+    const isActive = sortConfig?.field === field;
+    const direction = isActive ? sortConfig?.direction : null;
+
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-7rem)]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
+      <span className="flex flex-col leading-none">
+        <ChevronUp
+          className={`h-3 w-3 ${direction === 'asc' ? 'text-white' : 'text-blue-200'}`}
+        />
+        <ChevronDown
+          className={`h-3 w-3 -mt-1 ${direction === 'desc' ? 'text-white' : 'text-blue-200'}`}
+        />
+      </span>
     );
-  }
+  };
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Indicadores de Risco</h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie e monitore os indicadores de risco da organização
-          </p>
-        </div>
-        <Link
-          to="/indicadores/novo"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Indicador
-        </Link>
-      </div>
-
-      {/* Alertas de Tolerância */}
-      {toleranceAlerts.hasAlerts && (
-        <AlertBanner
-          type="warning"
-          title="Indicadores Fora da Tolerância"
-          message={`${toleranceAlerts.count} indicador${toleranceAlerts.count > 1 ? 'es' : ''} está${toleranceAlerts.count > 1 ? 'ão' : ''} fora da tolerância estabelecida e requer${toleranceAlerts.count > 1 ? 'm' : ''} atenção imediata.`}
-          count={toleranceAlerts.count}
-        />
-      )}
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Buscar por indicador, responsável ou ID do risco..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Filter className="h-4 w-4" />
-            Filtros
-          </button>
-        </div>
-
-        {/* Filters */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Situação
-                </label>
-                <select
-                  value={filters.situacao_indicador || ''}
-                  onChange={(e) => handleFilterChange('situacao_indicador', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todas as situações</option>
-                  {SITUACAO_INDICADOR_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <PieChart className="w-6 h-6 text-blue-600" />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tolerância
-                </label>
-                <select
-                  value={filters.tolerancia || ''}
-                  onChange={(e) => handleFilterChange('tolerancia', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Todas as tolerâncias</option>
-                  {TOLERANCIA_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <h1 className="text-2xl font-bold text-gray-900">Indicadores Estratégicos</h1>
+                <p className="text-gray-600 mt-1 max-w-2xl">
+                  Visualize a evolução dos indicadores-chave de riscos prioritários e acompanhe
+                  o andamento das iniciativas mitigatórias relacionadas.
+                </p>
               </div>
-              
-              <div className="flex items-end">
+            </div>
+            <div className="flex items-center gap-3">
+              {isFilterActive && (
                 <button
                   onClick={clearFilters}
-                  className="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-sm text-sm"
                 >
-                  Limpar Filtros
+                  <X className="h-4 w-4" />
+                  Limpar
                 </button>
+              )}
+              <button
+                onClick={() => setShowFilters((prev) => !prev)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 shadow-sm text-sm ${
+                  showFilters ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                <Filter className="h-4 w-4" />
+                Filtros
+                {showFilters ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {isFilterActive && (
+            <div className="flex flex-wrap gap-2 mt-6">
+              <span className="text-sm text-gray-600 font-medium mr-2">Filtros ativos:</span>
+              {searchTerm.trim().length > 0 && (
+                <span className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  <Search className="w-3 h-3" />
+                  <span>Busca: "{searchTerm}"</span>
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              {activeStatuses.map((status) => (
+                <span
+                  key={status}
+                  className="flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm"
+                >
+                  <span>Status: {status}</span>
+                  <button
+                    onClick={() => toggleStatus(status)}
+                    className="ml-1 hover:bg-emerald-200 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+
+              {activeTolerances.map((tolerance) => (
+                <span
+                  key={tolerance}
+                  className="flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm"
+                >
+                  <span>Situação: {tolerance}</span>
+                  <button
+                    onClick={() => toggleTolerance(tolerance)}
+                    className="ml-1 hover:bg-yellow-200 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+
+              {selectedArea !== 'todos' && (
+                <span className="flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                  <span>Área: {selectedArea}</span>
+                  <button
+                    onClick={() => setSelectedArea('todos')}
+                    className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+          {showFilters && (
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <div className="grid gap-6 md:grid-cols-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                    Busca rápida
+                  </h3>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Procure por risco, indicador ou responsável"
+                      className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                    Status de implementação
+                  </h3>
+                  <div className="space-y-2">
+                    {(Object.keys(INDICATOR_STATUS_COLORS) as IndicatorStatus[]).map((status) => (
+                      <label key={status} className="flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={activeStatuses.includes(status)}
+                          onChange={() => toggleStatus(status)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                    Situação de tolerância
+                  </h3>
+                  <div className="space-y-2">
+                    {(Object.keys(INDICATOR_TOLERANCE_COLORS) as IndicatorTolerance[]).map((tolerance) => (
+                      <label key={tolerance} className="flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={activeTolerances.includes(tolerance)}
+                          onChange={() => toggleTolerance(tolerance)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{tolerance}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                    Área responsável
+                  </h3>
+                  <select
+                    value={selectedArea}
+                    onChange={(event) => setSelectedArea(event.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                  >
+                    <option value="todos">Todas as áreas</option>
+                    {AREA_OPTIONS.map((area) => (
+                      <option key={area} value={area}>
+                        {area}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Results Summary */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">
-            {filteredIndicators.length} indicador(es) encontrado(s)
-          </span>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-red-100 rounded-full"></div>
-              <span className="text-gray-600">
-                {filteredIndicators.filter(i => i.tolerancia === Tolerancia.FORA_TOLERANCIA).length} fora da tolerância
-              </span>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <DonutChart
+            title="Índice de Indicadores por Implementação"
+            data={statusBreakdown}
+            selectedSegment={statusSelectedSegment}
+            onSegmentClick={handleStatusSegmentClick}
+          />
+          <DonutChart
+            title="Quantidade Percentual por Prazo"
+            data={toleranceBreakdown}
+            selectedSegment={toleranceSelectedSegment}
+            onSegmentClick={handleToleranceSegmentClick}
+          />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-col">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Indicadores por Risco Prioritário</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Barras segmentadas pela tolerância vigente de cada indicador.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRiskSortAscending((prev) => !prev)}
+                className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Ordenar: {riskSortAscending ? 'crescente' : 'decrescente'}
+                <ArrowUpDown className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-yellow-100 rounded-full"></div>
-              <span className="text-gray-600">
-                {filteredIndicators.filter(i => i.situacao_indicador === SituacaoIndicador.EM_IMPLEMENTACAO).length} em implementação
-              </span>
+            <div className="flex-1 mt-4" style={{ minHeight: 320 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={riskChartData}
+                  margin={{ top: 80, right: 16, left: 0, bottom: 24 }}
+                  barCategoryGap="24%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="risk" tickLine={false} axisLine={false} tick={{ fill: '#4B5563' }} />
+                  <YAxis hide />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
+                    formatter={(value: number, name: string) => [value, name]}
+                  />
+                  <Legend iconType="circle" verticalAlign="bottom" height={36} />
+                  <Bar
+                    dataKey="Dentro da Tolerância"
+                    stackId="indicadores"
+                    fill="#1d4ed8"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="Fora da Tolerância"
+                    stackId="indicadores"
+                    fill="#ef4444"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar dataKey="total" fill="transparent" legendType="none" isAnimationActive={false}>
+                    <LabelList dataKey="total" content={renderStackedLabels} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Indicators Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Indicador
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Responsável
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Situação
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Resultado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tolerância
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Apuração
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredIndicators.map((indicator) => (
-                <tr key={indicator.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {indicator.indicador_risco}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        ID Risco: {indicator.id_risco}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{indicator.responsavel_risco}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      getIndicatorStatusColor(indicator.situacao_indicador)
-                    }`}>
-                      {indicator.situacao_indicador}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {getResultIcon(indicator.resultado_mes || 0, indicator.tolerancia)}
-                      <span className="text-sm font-medium text-gray-900">
-                        {indicator.resultado_mes?.toFixed(1) || 'N/A'}
-                        {indicator.tipo_acompanhamento === 'Percentual' ? '%' : ''}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {indicator.tolerancia === Tolerancia.FORA_TOLERANCIA && (
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                      )}
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        getToleranceColor(indicator.tolerancia)
-                      }`}>
-                        {indicator.tolerancia}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{indicator.apuracao}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      to={`/indicadores/${indicator.id}`}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-blue-600">
+                <tr>
+                  {TABLE_COLUMNS.map((column) => (
+                    <th
+                      key={column.key}
+                      className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wide"
                     >
-                      Ver Detalhes
-                    </Link>
-                    <Link
-                      to={`/indicadores/${indicator.id}/editar`}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Editar
-                    </Link>
-                  </td>
+                      <button
+                        type="button"
+                        onClick={() => handleTableSort(column.key)}
+                        className="flex items-center justify-between gap-2 w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                      >
+                        <span className="whitespace-normal text-left">{column.label}</span>
+                        {renderSortIndicators(column.key)}
+                      </button>
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {filteredIndicators.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg mb-2">Nenhum indicador encontrado</div>
-            <p className="text-gray-400">
-              {searchTerm || Object.values(filters).some(f => f) 
-                ? 'Tente ajustar os filtros de busca'
-                : 'Comece criando seu primeiro indicador de risco'
-              }
-            </p>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedIndicators.map((indicator) => (
+                  <tr key={indicator.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 align-top">
+                      <span
+                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          STATUS_BADGE_CLASSES[indicator.status]
+                        }`}
+                      >
+                        {indicator.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <div className="text-sm font-medium text-gray-900 leading-relaxed">
+                        {indicator.projeto}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span className="text-sm text-gray-700">{indicator.area}</span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <div className="text-sm text-gray-900 font-medium">{indicator.riscoCodigo}</div>
+                      <div className="text-sm text-gray-600">{indicator.riscoDescricao}</div>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span className="text-sm text-gray-700">{indicator.dono}</span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span className="text-sm text-gray-700">{indicator.apuracao}</span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span className="text-sm text-gray-700">{indicator.prazo}</span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span
+                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          TOLERANCE_BADGE_CLASSES[indicator.situacao]
+                        }`}
+                      >
+                        {indicator.situacao}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatPercentage(indicator.percentualAtual)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 align-top">
+                      <span className="text-sm text-gray-700">
+                        {formatPercentage(indicator.percentualAnterior)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          {filteredIndicators.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg font-medium">Nenhum indicador encontrado</p>
+              <p className="text-gray-400">
+                Ajuste os filtros selecionados ou limpe-os para visualizar todos os registros.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );

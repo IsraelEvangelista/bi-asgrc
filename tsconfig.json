@@ -22,6 +22,8 @@
     "noFallthroughCasesInSwitch": false,
     "noUncheckedSideEffectImports": false,
     "forceConsistentCasingInFileNames": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "paths": {
       "@/*": [
@@ -30,11 +32,19 @@
     },
     "types": [
       "node",
-      "express"
+      "express",
+      "jest",
+      "@testing-library/jest-dom"
     ]
   },
   "include": [
     "src",
     "api"
+  ],
+  "exclude": [
+    "src/**/__tests__/**/*",
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "node_modules"
   ]
 }
