@@ -23,8 +23,8 @@ const DonutChart: React.FC<DonutChartProps> = ({
   const viewBoxSize = size;
   const centerX = viewBoxSize / 2;
   const centerY = viewBoxSize / 2;
-  const outerRadius = viewBoxSize * 0.285;
-  const innerRadius = viewBoxSize * 0.19;
+  const outerRadius = viewBoxSize * 0.35;
+  const innerRadius = viewBoxSize * 0.22;
   const labelRadius = viewBoxSize * 0.42;
 
   const activeSegment = selectedSegment ?? null;
@@ -32,6 +32,42 @@ const DonutChart: React.FC<DonutChartProps> = ({
   const showEmptyState = total === 0;
 
   const generatePath = (startAngle: number, endAngle: number) => {
+    // Caso especial: arco completo (360 graus ou 100%)
+    const angleDiff = endAngle - startAngle;
+    if (angleDiff >= 360 || angleDiff >= 359.99) {
+      // Para arco completo, usar dois semi-círculos para evitar problemas de renderização
+      const midAngle = startAngle + 180;
+      const startAngleRad = (startAngle - 90) * (Math.PI / 180);
+      const midAngleRad = (midAngle - 90) * (Math.PI / 180);
+      const endAngleRad = (endAngle - 90) * (Math.PI / 180);
+
+      const x1Outer = centerX + outerRadius * Math.cos(startAngleRad);
+      const y1Outer = centerY + outerRadius * Math.sin(startAngleRad);
+      const xMidOuter = centerX + outerRadius * Math.cos(midAngleRad);
+      const yMidOuter = centerY + outerRadius * Math.sin(midAngleRad);
+      const x2Outer = centerX + outerRadius * Math.cos(endAngleRad);
+      const y2Outer = centerY + outerRadius * Math.sin(endAngleRad);
+      
+      const x1Inner = centerX + innerRadius * Math.cos(startAngleRad);
+      const y1Inner = centerY + innerRadius * Math.sin(startAngleRad);
+      const xMidInner = centerX + innerRadius * Math.cos(midAngleRad);
+      const yMidInner = centerY + innerRadius * Math.sin(midAngleRad);
+      const x2Inner = centerX + innerRadius * Math.cos(endAngleRad);
+      const y2Inner = centerY + innerRadius * Math.sin(endAngleRad);
+
+      return [
+        `M ${x1Inner} ${y1Inner}`,
+        `L ${x1Outer} ${y1Outer}`,
+        `A ${outerRadius} ${outerRadius} 0 1 1 ${xMidOuter} ${yMidOuter}`,
+        `A ${outerRadius} ${outerRadius} 0 1 1 ${x2Outer} ${y2Outer}`,
+        `L ${x2Inner} ${y2Inner}`,
+        `A ${innerRadius} ${innerRadius} 0 1 0 ${xMidInner} ${yMidInner}`,
+        `A ${innerRadius} ${innerRadius} 0 1 0 ${x1Inner} ${y1Inner}`,
+        'Z'
+      ].join(' ');
+    }
+
+    // Caso normal: arco parcial
     const startAngleRad = (startAngle - 90) * (Math.PI / 180);
     const endAngleRad = (endAngle - 90) * (Math.PI / 180);
     const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
@@ -72,12 +108,12 @@ const DonutChart: React.FC<DonutChartProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center flex-shrink-0">{title}</h3>
-      <div className="flex-1 flex flex-col justify-center items-center min-h-0">
-        <div className="flex-1 flex items-center justify-center" style={{ maxWidth: '100%', maxHeight: '70%' }}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center flex-shrink-0">{title}</h3>
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex items-center justify-center" style={{ minHeight: '200px' }}>
           <div
             className="relative flex items-center justify-center"
-            style={{ width: Math.min(viewBoxSize, 240), height: Math.min(viewBoxSize, 240) }}
+            style={{ width: Math.min(viewBoxSize, 260), height: Math.min(viewBoxSize, 260) }}
           >
             <svg className="w-full h-full" viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}>
             {showEmptyState ? (
@@ -182,8 +218,8 @@ const DonutChart: React.FC<DonutChartProps> = ({
         </div>
 
         {!showEmptyState && (
-          <div className="w-full flex-shrink-0 mt-4">
-            <div className="rounded-lg bg-gray-50 px-3 py-2 border border-gray-200">
+          <div className="w-full flex-shrink-0 mt-3">
+            <div className="px-2">
               <div className="space-y-2">
                 {segments.map((segment) => {
                   const percentage = segment.percentage > 0 ? (segment.percentage * 100).toFixed(1) : '0.0';

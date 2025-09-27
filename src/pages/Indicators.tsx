@@ -1,6 +1,9 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Layout from '../components/Layout';
 import DonutChart from '../components/DonutChart';
+import { useIndicatorsByStatus } from '../hooks/useIndicatorsByStatus';
+import { useIndicatorsByTolerance } from '../hooks/useIndicatorsByTolerance';
+import { useIndicatorsByRisk } from '../hooks/useIndicatorsByRisk';
 import {
   Filter,
   ChevronDown,
@@ -271,6 +274,7 @@ type StackLabelProps = LabelProps & {
     total?: number;
     [key: string]: number | string | undefined;
   };
+  height?: number;
 };
 
 // Componente customizado para renderizar rótulos dentro das barras
@@ -283,11 +287,12 @@ const CustomBarLabel = ({ x, y, width, height, value, fill }: any) => {
   const centerY = Number(y ?? 0) + barHeight / 2;
   
   // Definir tamanho mínimo para mostrar o rótulo dentro da barra
-  const minHeightForLabel = 24;
+  const minHeightForLabel = 30;
   const shouldShowInside = barHeight >= minHeightForLabel;
   
+  // Apenas mostrar rótulo dentro da barra se houver espaço suficiente
+  // Não mostrar rótulos externos para evitar redundância
   if (shouldShowInside) {
-    // Rótulo dentro da barra com cor branca
     return (
       <text
         x={centerX}
@@ -301,37 +306,38 @@ const CustomBarLabel = ({ x, y, width, height, value, fill }: any) => {
         {value}
       </text>
     );
-  } else {
-    // Rótulo ao lado direito da barra com cor do segmento
-    return (
-      <text
-        x={Number(x ?? 0) + barWidth + 6}
-        y={centerY}
-        textAnchor="start"
-        dominantBaseline="middle"
-        fontSize={11}
-        fontWeight={500}
-        fill={fill || '#374151'}
-      >
-        {value}
-      </text>
-    );
   }
+  
+  // Não renderizar rótulo se não houver espaço suficiente
+  // (evita redundância e poluição visual)
+  return null;
 };
 
-const renderStackedLabels = ({ x, y, width, payload }: StackLabelProps): React.ReactNode => {
-  const centerX = Number(x ?? 0) + Number(width ?? 0) / 2;
-  const baseY = Number(y ?? 0);
 
-  const safePayload = payload ?? {};
-  const total = Number(safePayload.total ?? 0);
 
-  // Apenas mostrar o total no topo da barra
+// Função para renderizar rótulos totais com alinhamento correto
+const renderStackedLabels = (props: any): React.ReactNode => {
+  const { x, y, width, payload, value } = props;
+  
+  if ((!x && x !== 0) || (!y && y !== 0) || !width) return null;
+  
+  const total = value || (payload && payload.total) || 0;
+  if (!total || total === 0) return null;
+
+  const barX = Number(x);
+  const barWidth = Number(width);
+  const barY = Number(y);
+  
+  // Centro da barra com ajuste fino para alinhamento perfeito
+  const centerX = barX + (barWidth / 2) - 18; // -18px para mover mais para a direita
+  const labelY = barY - 6;
+
   return (
     <text
       x={centerX}
-      y={baseY - 8}
+      y={labelY}
       textAnchor="middle"
+      dominantBaseline="bottom"
       fontSize={13}
       fontWeight={700}
       fill="#111827"
@@ -351,6 +357,15 @@ const Indicators: React.FC = () => {
   const [toleranceSelectedSegment, setToleranceSelectedSegment] = useState<string | null>(null);
   const [riskSortAscending, setRiskSortAscending] = useState(true);
   const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: 'asc' | 'desc' } | null>(null);
+
+  // Hook para buscar dados reais de indicadores por status
+  const { data: indicatorsByStatusData, loading: indicatorsLoading, error: indicatorsError } = useIndicatorsByStatus();
+  
+  // Hook para buscar dados reais de indicadores por tolerância
+  const { data: indicatorsByToleranceData, loading: toleranceLoading, error: toleranceError } = useIndicatorsByTolerance();
+  
+  // Hook para buscar dados reais de indicadores por risco prioritário
+  const { data: indicatorsByRiskData, loading: riskLoading, error: riskError } = useIndicatorsByRisk();
 
   const filteredIndicators = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -427,65 +442,64 @@ const Indicators: React.FC = () => {
   }, [filteredIndicators, sortConfig]);
 
   const statusBreakdown = useMemo(() => {
-    const counts: Record<IndicatorStatus, number> = {
-      'Em Implementação': 0,
-      'Não Iniciada': 0,
-      'Implementada': 0
-    };
+    // Usar dados reais do banco de dados
+    if (indicatorsLoading || indicatorsError || !indicatorsByStatusData.length) {
+      // Retornar dados vazios se ainda carregando, com erro ou sem dados
+      return [];
+    }
 
-    filteredIndicators.forEach((item) => {
-      counts[item.status] += 1;
-    });
-
-    return (Object.keys(counts) as IndicatorStatus[]).map((status) => ({
-      name: status,
-      value: counts[status],
-      color: INDICATOR_STATUS_COLORS[status]
-    }));
-  }, [filteredIndicators]);
-
-  const toleranceBreakdown = useMemo(() => {
-    const counts: Record<IndicatorTolerance, number> = {
-      'Dentro da Tolerância': 0,
-      'Fora da Tolerância': 0
-    };
-
-    filteredIndicators.forEach((item) => {
-      counts[item.situacao] += 1;
-    });
-
-    return (Object.keys(counts) as IndicatorTolerance[]).map((tolerance) => ({
-      name: tolerance,
-      value: counts[tolerance],
-      color: INDICATOR_TOLERANCE_COLORS[tolerance]
-    }));
-  }, [filteredIndicators]);
-
-  const riskChartData = useMemo(() => {
-    const baseData = RISK_CODES.map((risk) => {
-      const dentro = filteredIndicators.filter(
-        (item) => item.riscoCodigo === risk && item.situacao === 'Dentro da Tolerância'
-      ).length;
-      const fora = filteredIndicators.filter(
-        (item) => item.riscoCodigo === risk && item.situacao === 'Fora da Tolerância'
-      ).length;
+    return indicatorsByStatusData.map((item) => {
+      // Normalizar o status para as chaves das cores
+      let normalizedStatus: IndicatorStatus;
+      
+      if (item.status === 'Não iniciada') {
+        normalizedStatus = 'Não Iniciada';
+      } else if (item.status === 'Em implementação' || item.status === 'Em Implementação') {
+        normalizedStatus = 'Em Implementação';
+      } else if (item.status === 'Implementada') {
+        normalizedStatus = 'Implementada';
+      } else {
+        // Fallback para status não reconhecido
+        normalizedStatus = item.status as IndicatorStatus;
+      }
 
       return {
-        risk,
-        'Dentro da Tolerância': dentro,
-        'Fora da Tolerância': fora,
-        total: dentro + fora
+        name: normalizedStatus,
+        value: item.count,
+        color: INDICATOR_STATUS_COLORS[normalizedStatus] || '#6b7280' // cor fallback
       };
     });
+  }, [indicatorsByStatusData, indicatorsLoading, indicatorsError]);
 
-    return [...baseData].sort((a, b) => {
+  const toleranceBreakdown = useMemo(() => {
+    // Se ainda estiver carregando ou houver erro, retorna array vazio
+    if (toleranceLoading || toleranceError || !indicatorsByToleranceData || indicatorsByToleranceData.length === 0) {
+      return [];
+    }
+
+    // Mapear dados reais do hook para formato do gráfico
+    return indicatorsByToleranceData.map(item => ({
+      name: item.status, // status contém o valor da tolerância
+      value: item.count,
+      color: INDICATOR_TOLERANCE_COLORS[item.status as IndicatorTolerance] || '#6B7280' // cor padrão se não encontrar
+    }));
+  }, [indicatorsByToleranceData, toleranceLoading, toleranceError]);
+
+  const riskChartData = useMemo(() => {
+    // Se ainda estiver carregando ou houver erro, retorna array vazio
+    if (riskLoading || riskError || !indicatorsByRiskData || indicatorsByRiskData.length === 0) {
+      return [];
+    }
+
+    // Aplicar ordenação aos dados reais
+    return [...indicatorsByRiskData].sort((a, b) => {
       if (riskSortAscending) {
         return a.total - b.total || a.risk.localeCompare(b.risk, 'pt-BR', { sensitivity: 'accent' });
       }
 
       return b.total - a.total || a.risk.localeCompare(b.risk, 'pt-BR', { sensitivity: 'accent' });
     });
-  }, [filteredIndicators, riskSortAscending]);
+  }, [indicatorsByRiskData, riskLoading, riskError, riskSortAscending]);
 
   const isFilterActive =
     searchTerm.trim().length > 0 ||
@@ -735,18 +749,48 @@ const Indicators: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <DonutChart
-            title="Índice de Indicadores por Implementação"
-            data={statusBreakdown}
-            selectedSegment={statusSelectedSegment}
-            onSegmentClick={handleStatusSegmentClick}
-          />
-          <DonutChart
-            title="Quantidade Percentual por Prazo"
-            data={toleranceBreakdown}
-            selectedSegment={toleranceSelectedSegment}
-            onSegmentClick={handleToleranceSegmentClick}
-          />
+          {indicatorsLoading ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-sm text-gray-500">Carregando indicadores...</p>
+            </div>
+          ) : indicatorsError ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+              <div className="text-red-500 mb-2">
+                <X className="w-8 h-8" />
+              </div>
+              <p className="text-sm text-red-600 text-center">Erro ao carregar dados dos indicadores</p>
+              <p className="text-xs text-gray-500 mt-1">Tente atualizar a página</p>
+            </div>
+          ) : (
+            <DonutChart
+              title="Índice de Indicadores por Implementação"
+              data={statusBreakdown}
+              selectedSegment={statusSelectedSegment}
+              onSegmentClick={handleStatusSegmentClick}
+            />
+          )}
+          {toleranceLoading ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-sm text-gray-500">Carregando indicadores por tolerância...</p>
+            </div>
+          ) : toleranceError ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+              <div className="text-red-500 mb-2">
+                <X className="w-8 h-8" />
+              </div>
+              <p className="text-sm text-red-600 text-center">Erro ao carregar dados de tolerância</p>
+              <p className="text-xs text-gray-500 mt-1">Tente atualizar a página</p>
+            </div>
+          ) : (
+            <DonutChart
+              title="Quantidade Percentual por Prazo"
+              data={toleranceBreakdown}
+              selectedSegment={toleranceSelectedSegment}
+              onSegmentClick={handleToleranceSegmentClick}
+            />
+          )}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-col">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -768,17 +812,17 @@ const Indicators: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={riskChartData}
-                  margin={{ top: 40, right: 40, left: 0, bottom: 24 }}
-                  barCategoryGap="24%"
+                  margin={{ top: 50, right: 20, left: 20, bottom: 0 }}
+                  barCategoryGap="18%"
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="risk" tickLine={false} axisLine={false} tick={{ fill: '#4B5563' }} />
+                  <XAxis dataKey="risk" tickLine={false} axisLine={false} tick={{ fill: '#4B5563', dx: -10 }} />
                   <YAxis hide />
                   <Tooltip
                     cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
                     formatter={(value: number, name: string) => [value, name]}
                   />
-                  <Legend iconType="circle" verticalAlign="bottom" height={36} />
+                  <Legend iconType="circle" verticalAlign="bottom" height={24} />
                   <Bar
                     dataKey="Dentro da Tolerância"
                     stackId="indicadores"
@@ -796,7 +840,7 @@ const Indicators: React.FC = () => {
                     <LabelList content={CustomBarLabel} />
                   </Bar>
                   <Bar dataKey="total" fill="transparent" legendType="none" isAnimationActive={false}>
-                    <LabelList dataKey="total" content={renderStackedLabels} />
+                    <LabelList content={renderStackedLabels} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>

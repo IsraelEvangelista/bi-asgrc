@@ -16,3 +16,4 @@ export * from './useRisks';
 export * from './useTheme';
 export * from './useUsers';
 export * from './useHierarchicalSeverityData';
+export * from './useIndicatorsByStatus';

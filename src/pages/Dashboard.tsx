@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useAuthStore } from '../store/authStore';
 import Layout from '../components/Layout';
 import AlertsDashboard from '../components/AlertsDashboard';
+import IndicatorsByStatusChart from '../components/IndicatorsByStatusChart';
 import { BarChart3, Shield, AlertTriangle, TrendingUp } from 'lucide-react';
 import { IndicatorWithHistory, Tolerancia, SituacaoIndicador } from '../types/indicator';
 import { Action, StatusAcao, SituacaoAcao, TipoAcao } from '../types/action';
@@ -165,15 +166,8 @@ const Dashboard = () => {
 
         {/* Área de Conteúdo Principal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Gráfico de Riscos por Categoria */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Riscos por Categoria
-            </h3>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Gráfico será implementado com dados reais</p>
-            </div>
-          </div>
+          {/* Gráfico de Indicadores por Status de Implementação */}
+          <IndicatorsByStatusChart height={320} />
 
           {/* Matriz de Riscos */}
           <div className="bg-white rounded-lg shadow p-6">

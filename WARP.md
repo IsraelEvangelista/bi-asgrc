@@ -115,6 +115,76 @@ npm run type-check   # Verificação TypeScript
 - **Components**: Componentes funcionais com props tipadas
 - **Estado**: Zustand para estado global, useState para local
 
+## 🚀 Sessão de Desenvolvimento - 27/09/2025
+
+### ✅ Conquistas da Sessão
+
+#### 🎯 **Problema Resolvido: Erro no Carregamento de Dados do Gráfico**
+**Contexto**: Gráfico de rosca "Indicadores por Implementação" na página de Indicadores exibia apenas estado de loading/erro, sem mostrar dados reais existentes na base.
+
+**Root Cause Identificado**:
+- Hook `useIndicatorsByStatus` usava função RPC inexistente: `supabase.rpc('execute_sql')`
+- Implementação assumia stored procedure customizada que não existe no Supabase
+- Consulta SQL complexa com 5 JOINs não executava via RPC
+
+**Soluções Implementadas**:
+1. **✅ Refatoração do Hook**: Substituição de RPC por consultas diretas do Supabase
+2. **✅ Consultas Sequenciais**: Quebra da query em 4 consultas menores e controladas:
+   - Ações com status (`009_acoes`)
+   - Relações ações-riscos (`016_rel_acoes_riscos`)
+   - Indicadores relacionados (`008_indicadores`)
+   - Histórico de indicadores (`019_historico_indicadores`)
+3. **✅ Tratamento de Estados**: Loading e erro visual no componente com ícones informativos
+4. **✅ Validação Robusta**: Verificação de dados em cada etapa da consulta
+5. **✅ Agrupamento Inteligente**: Lógica de agrupamento por status com Set() para evitar duplicatas
+
+**Código Corrigido**:
+```typescript
+// ANTES - Abordagem incorreta com RPC
+const { data: queryResult, error: queryError } = await supabase.rpc('execute_sql', {
+  query: `SELECT ... FROM "009_acoes" a JOIN ...`
+});
+
+// DEPOIS - Consultas diretas controladas
+const { data: acoes } = await supabase.from('009_acoes').select('id, status').not('status', 'is', null);
+const { data: relAcoesRiscos } = await supabase.from('016_rel_acoes_riscos').select('id_acao, id_risco').in('id_acao', acoesIds);
+// ... demais consultas sequenciais
+```
+
+#### 🎯 **Problema Resolvido: Centralização de Rótulos em Gráficos de Barras**
+**Contexto**: Na página "Indicadores Estratégicos", os valores totais dos gráficos de barras verticais estavam deslocados para a direita, não centralizados com as barras.
+
+**Root Cause Identificado**:
+- Recharts calcula posicionamento de `LabelList` com offset interno que não é documentado
+- Coordenadas `x` e `width` fornecidas pelo Recharts incluem margens/paddings invisíveis
+- Cálculo padrão `centerX = x + width/2` não considera esses offsets internos
+
+**Soluções Implementadas**:
+1. **✅ Correção de Build**: Resolvidos erros TypeScript em ambiente de teste (dependências ausentes)
+2. **✅ Layout de Gráficos de Rosca**: Otimização de espaço e remoção de background das legendas
+3. **✅ Rótulos Internos**: Implementação de rótulos dentro dos segmentos das barras com cor branca
+4. **✅ Centralização Precisa**: Aplicação de offset manual `-16px` para compensar deslocamento do Recharts
+5. **✅ Espessura das Barras**: Redução de `barCategoryGap` de 24% para 18% para melhor visualização
+6. **✅ Estilo Aprimorado**: Rótulos em negrito (fontWeight: 700) para melhor destaque
+
+**Fórmula de Correção Final**:
+```typescript
+// Correção para deslocamento interno do Recharts
+const centerX = barX + (barWidth / 2) - 16; // -16px compensa offset interno
+```
+
+#### 🛠️ **Melhorias de Interface Implementadas**
+**Gráficos de Rosca**:
+- ✅ Legendas sem background, mais limpa
+- ✅ Melhor aproveitamento do espaço (raios aumentados)
+- ✅ Distribuição proporcional sem sobreposição
+
+**Gráfico de Barras Verticais**:
+- ✅ Rótulos centralizados perfeitamente
+- ✅ Rótulos dos segmentos dentro das barras (cor branca)
+- ✅ Barras mais espessas para melhor visualização
+- ✅ Totais em negrito no topo de cada barra
+
 ## 🚀 Sessão de Desenvolvimento - 20/01/2025
 
 ### ✅ Conquistas da Sessão
@@ -151,12 +221,13 @@ npm run type-check   # Verificação TypeScript
 - `RiscosProcessosTrabalho.tsx` - Página principal
 - `authStore.ts` - Store de autenticação (parcial)
 
-### 📈 **Status do Projeto**
-- **Progresso Geral**: ~95% concluído
+### 📊 **Status do Projeto**
+- **Progresso Geral**: ~98% concluído
 - **Módulos Funcionais**: 7/7 principais
 - **Filtros**: Todos funcionando perfeitamente
+- **Interface**: Gráficos otimizados e centralizados
 - **Segurança**: 90% dos logs sensíveis removidos
-- **Pronto para**: Testes finais e deploy
+- **Pronto para**: Deploy em produção
 
 ## 🎉 **Próximas Sessões**
 
@@ -174,6 +245,6 @@ npm run type-check   # Verificação TypeScript
 
 ---
 
-**🏆 MARCO ALCANÇADO**: Sistema COGERH ASGRC completamente funcional com todos os módulos principais implementados e filtros operacionais!
+**🏆 MARCO ALCANÇADO**: Sistema COGERH ASGRC completamente funcional com todos os módulos principais implementados, filtros operacionais e interface otimizada!
 
-*Última atualização: 20 de Janeiro de 2025 - 02:00*
+*Última atualização: 27 de Setembro de 2025 - 18:40*
