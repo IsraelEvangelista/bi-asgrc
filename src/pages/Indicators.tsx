@@ -337,7 +337,7 @@ const renderStackedLabels = (props: any): React.ReactNode => {
       x={centerX}
       y={labelY}
       textAnchor="middle"
-      dominantBaseline="bottom"
+      dominantBaseline="text-after-edge"
       fontSize={13}
       fontWeight={700}
       fill="#111827"
